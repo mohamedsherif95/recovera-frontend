@@ -30,6 +30,7 @@ import {
 } from '@/lib/branchScope';
 import {
   BRANCH_SUBSCRIPTION_ACCESS_STATUS,
+  BRANCH_PRICING_MODELS,
   CLINIC_PROFILES,
   PERMISSIONS,
 } from '@/lib/constants';
@@ -64,16 +65,31 @@ const STATUS_OPTIONS = [
   },
 ];
 
+const PRICING_MODEL_OPTIONS = [
+  {
+    value: BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
+    label: 'Flexible branch plan',
+  },
+  {
+    value: BRANCH_PRICING_MODELS.CAPACITY_PACKAGE,
+    label: 'Capacity branch package',
+  },
+];
+
 const emptyForm = {
   accessStatus: BRANCH_SUBSCRIPTION_ACCESS_STATUS.ACTIVE,
   accessNotes: '',
   enabledProfiles: [],
   baseMonthlyFee: '',
-  visitRates: {},
+  pricingModel: BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
+  packageName: '',
+  includedMonthlyVisits: '',
+  overageBlockSize: '',
+  overageBlockFee: '',
 };
 
-const getProfileLabel = (profile) =>
-  PROFILE_OPTIONS.find((option) => option.value === profile)?.label || profile;
+const getPricingModelLabel = (model) =>
+  PRICING_MODEL_OPTIONS.find((option) => option.value === model)?.label || model;
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -148,51 +164,6 @@ const deriveNextPricingTerm = (pricingTerms, fallbackTerm) => {
   );
 };
 
-const extractVisitRates = (...candidates) => {
-  const rates = {};
-  const source = candidates.find((candidate) => candidate !== null && candidate !== undefined);
-
-  if (Array.isArray(source)) {
-    source.forEach((item) => {
-      const profile =
-        typeof item?.profile === 'string'
-          ? item.profile
-          : item?.profile?.profile ||
-            item?.profile?.profileCode ||
-            item?.profile?.code ||
-            item?.profile?.name ||
-            item?.profileCode ||
-            item?.code ||
-            item?.name;
-      if (!profile) return;
-      rates[profile] = asMoneyInput(
-        item?.rateAmount ??
-          item?.defaultRate ??
-          item?.defaultVisitRate ??
-          item?.rate ??
-          item?.amount,
-      );
-    });
-    return rates;
-  }
-
-  if (source && typeof source === 'object') {
-    Object.entries(source).forEach(([profile, rate]) => {
-      const amount =
-        rate && typeof rate === 'object'
-          ? rate.rateAmount ??
-            rate.defaultRate ??
-            rate.defaultVisitRate ??
-            rate.rate ??
-            rate.amount
-          : rate;
-      rates[profile] = asMoneyInput(amount);
-    });
-  }
-
-  return rates;
-};
-
 const normalizeProfiles = (subscription) => {
   if (Array.isArray(subscription?.enabledProfiles)) {
     return subscription.enabledProfiles.filter(Boolean);
@@ -254,9 +225,6 @@ const formatMoney = (value) => {
 };
 
 const PricingTermPanel = ({ title, term }) => {
-  const visitRates = extractVisitRates(term?.visitRates, term?.profileRates);
-  const profiles = Object.keys(visitRates);
-
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -269,8 +237,18 @@ const PricingTermPanel = ({ title, term }) => {
           <>
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
+                <p className="text-xs text-muted-foreground">Pricing model</p>
+                <p className="font-medium">
+                  {getPricingModelLabel(term.pricingModel)}
+                </p>
+              </div>
+              <div>
                 <p className="text-xs text-muted-foreground">Base monthly fee</p>
                 <p className="font-medium">{formatMoney(term.baseMonthlyFee)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Package label</p>
+                <p className="font-medium">{term.packageName || '--'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Effective month</p>
@@ -281,32 +259,21 @@ const PricingTermPanel = ({ title, term }) => {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Effective to</p>
+                <p className="text-xs text-muted-foreground">Included visits</p>
                 <p className="font-medium">
-                  {formatDate(term.effectiveTo || term.endsAt)}
+                  {formatMoney(term.includedMonthlyVisits)}
                 </p>
               </div>
-            </div>
-            <div className="rounded-md border">
-              <div className="grid grid-cols-[1fr_auto] gap-3 border-b bg-muted/40 px-3 py-2 text-xs font-medium uppercase text-muted-foreground">
-                <span>Profile</span>
-                <span>Visit rate</span>
+              <div>
+                <p className="text-xs text-muted-foreground">Overage block</p>
+                <p className="font-medium">
+                  {term.overageBlockSize
+                    ? `${formatMoney(term.overageBlockSize)} visits / ${formatMoney(
+                        term.overageBlockFee,
+                      )}`
+                    : '--'}
+                </p>
               </div>
-              {profiles.length ? (
-                profiles.map((profile) => (
-                  <div
-                    key={profile}
-                    className="grid grid-cols-[1fr_auto] gap-3 border-b px-3 py-2 last:border-b-0"
-                  >
-                    <span>{getProfileLabel(profile)}</span>
-                    <span className="font-medium">{formatMoney(visitRates[profile])}</span>
-                  </div>
-                ))
-              ) : (
-                <div className="px-3 py-2 text-muted-foreground">
-                  No profile visit rates.
-                </div>
-              )}
             </div>
           </>
         )}
@@ -399,13 +366,6 @@ export default function BranchSubscriptionsPage() {
     const enabledProfiles = normalizeProfiles(branchSubscription);
     const nextPricingTerm = normalizedSubscription.nextPricingTerm || {};
     const currentPricingTerm = normalizedSubscription.currentPricingTerm || {};
-    const visitRates = extractVisitRates(
-      nextPricingTerm.visitRates,
-      nextPricingTerm.profileRates,
-      branchSubscription.visitRates,
-      currentPricingTerm.visitRates,
-      currentPricingTerm.profileRates,
-    );
 
     setForm({
       accessStatus:
@@ -418,12 +378,21 @@ export default function BranchSubscriptionsPage() {
           branchSubscription.baseMonthlyFee ??
           currentPricingTerm.baseMonthlyFee,
       ),
-      visitRates: enabledProfiles.reduce(
-        (rates, profile) => ({
-          ...rates,
-          [profile]: visitRates[profile] ?? '0',
-        }),
-        visitRates,
+      pricingModel:
+        nextPricingTerm.pricingModel ||
+        currentPricingTerm.pricingModel ||
+        BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
+      packageName:
+        nextPricingTerm.packageName || currentPricingTerm.packageName || '',
+      includedMonthlyVisits: asMoneyInput(
+        nextPricingTerm.includedMonthlyVisits ??
+          currentPricingTerm.includedMonthlyVisits,
+      ),
+      overageBlockSize: asMoneyInput(
+        nextPricingTerm.overageBlockSize ?? currentPricingTerm.overageBlockSize,
+      ),
+      overageBlockFee: asMoneyInput(
+        nextPricingTerm.overageBlockFee ?? currentPricingTerm.overageBlockFee,
       ),
     });
   }, [normalizedSubscription, selectedBranch, selectedBranchId]);
@@ -438,42 +407,40 @@ export default function BranchSubscriptionsPage() {
       return {
         ...current,
         enabledProfiles,
-        visitRates: enabled
-          ? current.visitRates
-          : {
-              ...current.visitRates,
-              [profile]: current.visitRates[profile] ?? '0',
-            },
       };
     });
   };
 
-  const updateRate = (profile, value) => {
-    setForm((current) => ({
-      ...current,
-      visitRates: {
-        ...current.visitRates,
-        [profile]: value,
-      },
-    }));
-  };
-
   const buildPayload = () => {
     const enabledProfiles = form.enabledProfiles;
-    const visitRates = enabledProfiles.map((profile) => ({
-      profile,
-      visitType: null,
-      rateAmount: toMoneyInteger(form.visitRates[profile] || 0),
-    }));
     const payload = {
       enabledProfiles,
       accessStatus: form.accessStatus,
       accessNotes: form.accessNotes.trim() || null,
-      visitRates,
+      pricingModel: form.pricingModel,
     };
 
     if (form.baseMonthlyFee !== '') {
       payload.baseMonthlyFee = toMoneyInteger(form.baseMonthlyFee);
+    }
+    if (form.packageName.trim()) {
+      payload.packageName = form.packageName.trim();
+    } else {
+      payload.packageName = null;
+    }
+    if (form.includedMonthlyVisits !== '') {
+      payload.includedMonthlyVisits = toMoneyInteger(form.includedMonthlyVisits);
+    }
+    if (form.overageBlockSize !== '') {
+      payload.overageBlockSize = Math.max(
+        1,
+        toMoneyInteger(form.overageBlockSize),
+      );
+    } else {
+      payload.overageBlockSize = null;
+    }
+    if (form.overageBlockFee !== '') {
+      payload.overageBlockFee = toMoneyInteger(form.overageBlockFee);
     }
 
     return payload;
@@ -635,7 +602,48 @@ export default function BranchSubscriptionsPage() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="base-monthly-fee">Next-month base fee</Label>
+                      <Label>Pricing model</Label>
+                      <Select
+                        value={form.pricingModel}
+                        onValueChange={(value) =>
+                          setForm((current) => ({
+                            ...current,
+                            pricingModel: value,
+                          }))
+                        }
+                        disabled={!canManage}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PRICING_MODEL_OPTIONS.map((model) => (
+                            <SelectItem key={model.value} value={model.value}>
+                              {model.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="package-name">Package label</Label>
+                      <Input
+                        id="package-name"
+                        value={form.packageName}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            packageName: event.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Flexible, Growth, Scale"
+                        disabled={!canManage}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="base-monthly-fee">
+                        Next-month base/package fee
+                      </Label>
                       <Input
                         id="base-monthly-fee"
                         type="number"
@@ -651,6 +659,63 @@ export default function BranchSubscriptionsPage() {
                         disabled={!canManage}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="included-monthly-visits">
+                        Included monthly visits
+                      </Label>
+                      <Input
+                        id="included-monthly-visits"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.includedMonthlyVisits}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            includedMonthlyVisits: event.target.value,
+                          }))
+                        }
+                        disabled={!canManage}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="overage-block-size">
+                        Overage block size
+                      </Label>
+                      <Input
+                        id="overage-block-size"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={form.overageBlockSize}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            overageBlockSize: event.target.value,
+                          }))
+                        }
+                        disabled={!canManage}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="overage-block-fee">
+                        Overage block fee
+                      </Label>
+                      <Input
+                        id="overage-block-fee"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={form.overageBlockFee}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            overageBlockFee: event.target.value,
+                          }))
+                        }
+                        disabled={!canManage}
+                      />
+                    </div>
                     {!hasEnabledProfiles && (
                       <p className="text-sm font-medium text-destructive">
                         Select at least one enabled profile before saving.
@@ -659,14 +724,14 @@ export default function BranchSubscriptionsPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label>Enabled profiles and default visit rates</Label>
+                    <Label>Enabled profiles</Label>
                     <div className="rounded-md border">
                       {PROFILE_OPTIONS.map((profile) => {
                         const enabled = form.enabledProfiles.includes(profile.value);
                         return (
                           <div
                             key={profile.value}
-                            className="grid gap-3 border-b p-3 last:border-b-0 sm:grid-cols-[minmax(180px,1fr)_180px]"
+                            className="border-b p-3 last:border-b-0"
                           >
                             <label className="flex min-h-10 items-center gap-3 text-sm font-medium">
                               <Checkbox
@@ -676,25 +741,6 @@ export default function BranchSubscriptionsPage() {
                               />
                               <span>{profile.label}</span>
                             </label>
-                            <div className="space-y-1">
-                              <Label
-                                htmlFor={`rate-${profile.value}`}
-                                className="text-xs text-muted-foreground"
-                              >
-                                Default visit rate
-                              </Label>
-                              <Input
-                                id={`rate-${profile.value}`}
-                                type="number"
-                                min="0"
-                                step="1"
-                                value={form.visitRates[profile.value] ?? ''}
-                                onChange={(event) =>
-                                  updateRate(profile.value, event.target.value)
-                                }
-                                disabled={!canManage || !enabled}
-                              />
-                            </div>
                           </div>
                         );
                       })}

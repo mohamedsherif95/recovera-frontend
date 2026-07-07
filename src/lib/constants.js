@@ -41,6 +41,11 @@ export const BRANCH_SUBSCRIPTION_ACCESS_STATUS = {
   SUSPENDED: 'suspended',
 };
 
+export const BRANCH_PRICING_MODELS = {
+  FLEXIBLE_USAGE: 'flexible_usage',
+  CAPACITY_PACKAGE: 'capacity_package',
+};
+
 // User roles
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',

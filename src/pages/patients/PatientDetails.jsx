@@ -92,6 +92,8 @@ export default function PatientDetailsPage() {
     [branches],
   );
   const canViewBalanceLogs = !isDoctorOnly && hasPermission(PERMISSIONS['patients:viewAll']);
+  const canViewInvoices =
+    !isDoctorOnly && hasPermission(PERMISSIONS['invoices:view']);
 
   const {
     data: balanceLogsData,
@@ -646,6 +648,15 @@ export default function PatientDetailsPage() {
             >
               {t('patients.payments', { defaultValue: 'Payments' })}
             </Button>
+            {canViewInvoices && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate(`/invoices?patientId=${patient.id}`)}
+              >
+                {t('nav.invoices', { defaultValue: 'Invoices' })}
+              </Button>
+            )}
           </>
         }
       />

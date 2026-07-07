@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -16,6 +17,7 @@ import {
   X,
   UserCheck,
   Receipt,
+  FileText,
   Building2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,15 +63,15 @@ const navigationItems = [
       PERMISSIONS['sessions:viewOwn'],
     ],
   },
-  {
-    name: 'nav.patientPayments',
-    href: '/payments',
-    icon: DollarSign,
-    anyPermissions: [
-      PERMISSIONS['payments:viewAll'],
-      PERMISSIONS['payments:viewReports'],
-    ],
-  },
+  // {
+  //   name: 'nav.patientPayments',
+  //   href: '/payments',
+  //   icon: DollarSign,
+  //   anyPermissions: [
+  //     PERMISSIONS['payments:viewAll'],
+  //     PERMISSIONS['payments:viewReports'],
+  //   ],
+  // },
   {
     name: 'nav.payments',
     href: '/patient-payments',
@@ -78,6 +80,14 @@ const navigationItems = [
       PERMISSIONS['payments:viewAll'],
       PERMISSIONS['payments:viewReports'],
     ],
+  },
+  {
+    name: 'nav.invoices',
+    label: 'Invoices',
+    href: '/invoices',
+    icon: FileText,
+    permission: PERMISSIONS['invoices:view'],
+    hideForDoctorOnly: true,
   },
   {
     name: 'nav.doctors',
@@ -111,10 +121,17 @@ export function Sidebar() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const { sidebarOpen, mobileMenuOpen, setMobileMenuOpen } = useUIStore();
-  const { hasAnyRole } = useAuthStore();
+  const { hasAnyRole, user } = useAuthStore();
   const { can, canAny } = usePermissions();
+  const isDoctorOnly = useMemo(() => {
+    const roles = user?.roles?.map((role) => role?.name?.toLowerCase()) || [];
+    return roles.length > 0 && roles.every((role) => role === USER_ROLES.DOCTOR);
+  }, [user]);
 
   const filteredNavigation = navigationItems.filter((item) => {
+    if (item.hideForDoctorOnly && isDoctorOnly) {
+      return false;
+    }
     if (item.hideForRoles?.length && hasAnyRole(item.hideForRoles)) {
       return false;
     }

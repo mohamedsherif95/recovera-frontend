@@ -32,6 +32,7 @@ import ProfilePage from '@/pages/profile';
 import DoctorsPage from '@/pages/doctors';
 import ClinicsPage from '@/pages/clinics';
 import BranchesPage from '@/pages/branches';
+import InvoicesPage from '@/pages/invoices';
 
 const UnauthorizedPage = () => {
   const { t } = useTranslation();
@@ -284,6 +285,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['branches:view']}>
             <BranchesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'invoices',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['invoices:view']}>
+            <InvoicesPage />
           </ProtectedRoute>
         ),
       },

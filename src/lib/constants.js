@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Recovera';
 
 // Doctor shifts
@@ -56,6 +56,7 @@ export const QUERY_KEYS = {
   PERMISSIONS: 'permissions',
   CLINICS: 'clinics',
   BRANCHES: 'branches',
+  INVOICES: 'invoices',
 };
 
 export const PERMISSIONS = {
@@ -95,6 +96,9 @@ export const PERMISSIONS = {
   "payments:update": "payments:update",
   "payments:delete": "payments:delete",
   "payments:viewReports": "payments:viewReports",
+  "invoices:view": "invoices:view",
+  "invoices:create": "invoices:create",
+  "invoices:void": "invoices:void",
   "branches:view": "branches:view",
   "branches:create": "branches:create",
   "branches:update": "branches:update",

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Navigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, Stethoscope, ClipboardCheck, Plus, Minus } from 'lucide-react';
 import { getAllowedStatusTransitions, buildStatusUpdatePayload } from '@/lib/sessionRules';
+import { invoicesApi } from '@/api/endpoints/invoices';
+import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 
 export default function SessionDetailsPage() {
   const { id } = useParams();
@@ -33,7 +35,6 @@ export default function SessionDetailsPage() {
   const { t } = useTranslation();
   const { canAny, can, isOwnSession } = usePermissions();
   const { hasAnyRole, user } = useAuthStore();
-  const queryClient = useQueryClient();
   const [isDeletingSession, setIsDeletingSession] = useState(false);
   const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
 
@@ -793,7 +794,13 @@ export default function SessionDetailsPage() {
         </>
       )}
 
-      {canViewPaymentsSection && <SessionPaymentsSection sessionId={session.id} isAdmin={isAdmin} />}
+      {canViewPaymentsSection && (
+        <SessionPaymentsSection
+          sessionId={session.id}
+          isAdmin={isAdmin}
+          isDoctorOnly={isDoctorOnly}
+        />
+      )}
       {/* Delete/Cancel Dialogs (same as original, but I'll make sure they are here) */}
       <ConfirmDialog
         open={deleteConfirmOpen}
@@ -825,7 +832,7 @@ export default function SessionDetailsPage() {
   );
 }
 
-function SessionPaymentsSection({ sessionId, isAdmin }) {
+function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { can } = usePermissions();
@@ -836,8 +843,37 @@ function SessionPaymentsSection({ sessionId, isAdmin }) {
   } = useSessionPayments(sessionId);
 
   const canCreatePayment = can(PERMISSIONS['payments:create']);
+  const canViewInvoices = can(PERMISSIONS['invoices:view']);
+  const canUseInvoiceActions = canViewInvoices && !isDoctorOnly;
   const deletePayment = useDeletePayment();
   const [paymentPendingDelete, setPaymentPendingDelete] = useState(null);
+  const [invoiceLoadingPaymentId, setInvoiceLoadingPaymentId] = useState(null);
+
+  const handleDownloadPaymentInvoice = async (payment) => {
+    if (!payment?.id) return;
+    try {
+      setInvoiceLoadingPaymentId(payment.id);
+      const invoice = await invoicesApi.getByPaymentSource(payment.id);
+      downloadInvoicePdf(invoice);
+    } catch (error) {
+      if (error?.response?.status === 404) {
+        toast.error(
+          t('reports.invoiceNotFound', {
+            defaultValue: 'No invoice found for this payment.',
+          }),
+        );
+      } else {
+        toast.error(
+          error?.response?.data?.message ||
+            t('reports.failedInvoiceDownload', {
+              defaultValue: 'Failed to load invoice.',
+            }),
+        );
+      }
+    } finally {
+      setInvoiceLoadingPaymentId(null);
+    }
+  };
 
   const isRtl = i18n.language === 'ar';
 
@@ -903,7 +939,11 @@ function SessionPaymentsSection({ sessionId, isAdmin }) {
                     <th className="px-3 py-2 font-medium">{t('payments.method')}</th>
                     <th className="px-3 py-2 font-medium">{t('payments.paymentDate')}</th>
                     <th className="px-3 py-2 font-medium">{t('sessions.notes')}</th>
-                    {isAdmin && <th className="px-3 py-2 font-medium text-right">{t('common.actions')}</th>}
+                    {(isAdmin || canUseInvoiceActions) && (
+                      <th className="px-3 py-2 font-medium text-right">
+                        {t('common.actions')}
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -918,16 +958,32 @@ function SessionPaymentsSection({ sessionId, isAdmin }) {
                         {p.paymentDate ? formatDate(p.paymentDate, 'PP') : '--'}
                       </td>
                       <td className="px-3 py-2">{p.notes || '--'}</td>
-                      {isAdmin && (
+                      {(isAdmin || canUseInvoiceActions) && (
                         <td className="px-3 py-2 text-right">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setPaymentPendingDelete(p)}
-                            disabled={deletePayment.isPending}
-                          >
-                            {t('common.delete')}
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {canUseInvoiceActions && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadPaymentInvoice(p)}
+                                disabled={invoiceLoadingPaymentId === p.id}
+                              >
+                                {invoiceLoadingPaymentId === p.id
+                                  ? t('common.loading')
+                                  : t('nav.invoices', { defaultValue: 'Invoice' })}
+                              </Button>
+                            )}
+                            {isAdmin && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setPaymentPendingDelete(p)}
+                                disabled={deletePayment.isPending}
+                              >
+                                {t('common.delete')}
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>

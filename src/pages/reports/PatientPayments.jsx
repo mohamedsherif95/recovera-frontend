@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,10 +20,14 @@ import { DataTable } from '@/components/common/DataTable';
 import DateRangePicker from '@/components/common/DateRangePicker';
 import { reportsApi } from '@/api/endpoints/reports';
 import { useAuthStore } from '@/store/authStore';
-import { USER_ROLES } from '@/lib/constants';
+import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { DollarSign, CreditCard, Banknote, Wallet, AlertCircle } from 'lucide-react';
 import { usePatientLookupOptions } from '@/hooks/useLookupOptions';
+import { usePermissions } from '@/hooks/usePermissions';
+import { invoicesApi } from '@/api/endpoints/invoices';
+import { downloadInvoicePdf } from '@/lib/invoices/pdf';
+import { useCreateStatementInvoice } from '@/hooks/useInvoices';
 
 const toDateOnlyString = (value) => {
   if (!value) return '';
@@ -60,9 +65,12 @@ export default function IncomeReportPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { can } = usePermissions();
   const { hasAnyRole } = useAuthStore();
   const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
   const isSecretary = hasAnyRole([USER_ROLES.SECRETARY]);
+  const canViewInvoices = can(PERMISSIONS['invoices:view']);
+  const canCreateInvoices = can(PERMISSIONS['invoices:create']);
   const usesSecretaryIncomeScope = isSecretary && !isAdmin;
   const canUseFullRangeFilters = isAdmin || hasAnyRole([USER_ROLES.SECRETARY]);
   const todayDateOnly = useMemo(() => toDateOnlyString(new Date()), []);
@@ -97,6 +105,8 @@ export default function IncomeReportPage() {
     return incomeDate && recentValues.includes(incomeDate) ? incomeDate : todayDateOnly;
   });
   const [showTotalIncome, setShowTotalIncome] = useState(false);
+  const [invoiceLoadingPaymentId, setInvoiceLoadingPaymentId] = useState(null);
+  const createStatementInvoice = useCreateStatementInvoice();
 
   const [page, setPageState] = useState(() => {
     const raw = searchParams.get('page');
@@ -278,85 +288,169 @@ export default function IncomeReportPage() {
     }
   };
 
-  const columns = useMemo(
-    () => [
-      {
-        key: 'patientName',
-        header: t('patients.patient'),
-        cell: (row) => row.patientName || '--',
-      },
-      {
-        key: 'incomeType',
-        header: t('reports.incomeType', { defaultValue: 'Income type' }),
-        cell: (row) => {
-          const isPackage = row.incomeType === 'package';
-          return (
-            <Badge
-              variant="outline"
-              className={
-                isPackage
-                  ? 'border-indigo-300 bg-indigo-100 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200'
-                  : 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
-              }
-            >
-              {isPackage
-                ? t('reports.packageIncome', { defaultValue: 'Package' })
-                : t('reports.individualIncome', { defaultValue: 'Individual' })}
-            </Badge>
-          );
-        },
-      },
-      {
-        key: 'sessionDate',
-        header: t('sessions.date'),
-        cell: (row) => (row.sessionDate ? formatDate(row.sessionDate, 'PP') : '--'),
-      },
-      {
-        key: 'sessionCost',
-        header: t('sessions.cost'),
-        cell: (row) =>
-          row.sessionCost != null ? formatCurrency(row.sessionCost) : '--',
-      },
-      {
-        key: 'amount',
-        header: t('payments.paid'),
-        cell: (row) => (row.amount != null ? formatCurrency(row.amount) : '--'),
-      },
-      {
-        key: 'remaining',
-        header: t('payments.remaining', { defaultValue: 'Remaining' }),
-        cell: (row) => {
-          const remaining =
-            row.sessionRemaining ?? Math.max((row.sessionCost ?? 0) - (row.sessionTotalPaid ?? 0), 0);
-          return (
-            <span className={remaining > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
-              {formatCurrency(remaining)}
-            </span>
-          );
-        },
-      },
-      {
-        key: 'paymentDate',
-        header: t('payments.paymentDate'),
-        cell: (row) => (row.paymentDate ? formatDate(row.paymentDate, 'PP') : '--'),
-      },
-      {
-        key: 'method',
-        header: t('payments.method'),
-        cell: (row) => (
-          <span className="flex items-center gap-1">
-            {getMethodIcon(row.paymentMethod || row.method)}
-            {getMethodLabel(row.paymentMethod || row.method)}
-          </span>
-        ),
-      },
-      {
-        key: 'recordedBy',
-        header: t('payments.recordedBy', { defaultValue: 'Recorded by' }),
-        cell: (row) => row.recordedBy?.fullName || row.recordedByName || '--',
+  const handleDownloadPaymentInvoice = useCallback(async (paymentId) => {
+    if (!paymentId) return;
+    try {
+      setInvoiceLoadingPaymentId(paymentId);
+      const invoice = await invoicesApi.getByPaymentSource(paymentId);
+      downloadInvoicePdf(invoice);
+    } catch (error) {
+      if (error?.response?.status === 404) {
+        toast.error(
+          t('reports.invoiceNotFound', {
+            defaultValue: 'No invoice found for this payment.',
+          }),
+        );
+      } else {
+        toast.error(
+          error?.response?.data?.message ||
+            t('reports.failedInvoiceDownload', {
+              defaultValue: 'Failed to load invoice.',
+            }),
+        );
       }
-    ],
-    [t]
+    } finally {
+      setInvoiceLoadingPaymentId(null);
+    }
+  }, [t]);
+
+  const handleCreateStatementInvoice = () => {
+    if (!selectedPatientId) {
+      toast.error(
+        t('reports.statementPatientRequired', {
+          defaultValue: 'Select a patient to create a statement invoice.',
+        }),
+      );
+      return;
+    }
+
+    createStatementInvoice.mutate(
+      {
+        patientId: Number(selectedPatientId),
+        fromDate: requestFrom ? toDateOnlyString(requestFrom) : undefined,
+        toDate: requestTo ? toDateOnlyString(requestTo) : undefined,
+      },
+      {
+        onSuccess: (invoice) => {
+          downloadInvoicePdf(invoice);
+        },
+      },
+    );
+  };
+
+  const columns = useMemo(
+    () => {
+      const baseColumns = [
+        {
+          key: 'patientName',
+          header: t('patients.patient'),
+          cell: (row) => row.patientName || '--',
+        },
+        {
+          key: 'incomeType',
+          header: t('reports.incomeType', { defaultValue: 'Income type' }),
+          cell: (row) => {
+            const isPackage = row.incomeType === 'package';
+            return (
+              <Badge
+                variant="outline"
+                className={
+                  isPackage
+                    ? 'border-indigo-300 bg-indigo-100 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200'
+                    : 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+                }
+              >
+                {isPackage
+                  ? t('reports.packageIncome', { defaultValue: 'Package' })
+                  : t('reports.individualIncome', { defaultValue: 'Individual' })}
+              </Badge>
+            );
+          },
+        },
+        {
+          key: 'sessionDate',
+          header: t('sessions.date'),
+          cell: (row) => (row.sessionDate ? formatDate(row.sessionDate, 'PP') : '--'),
+        },
+        {
+          key: 'sessionCost',
+          header: t('sessions.cost'),
+          cell: (row) =>
+            row.sessionCost != null ? formatCurrency(row.sessionCost) : '--',
+        },
+        {
+          key: 'amount',
+          header: t('payments.paid'),
+          cell: (row) => (row.amount != null ? formatCurrency(row.amount) : '--'),
+        },
+        {
+          key: 'remaining',
+          header: t('payments.remaining', { defaultValue: 'Remaining' }),
+          cell: (row) => {
+            const remaining =
+              row.sessionRemaining ?? Math.max((row.sessionCost ?? 0) - (row.sessionTotalPaid ?? 0), 0);
+            return (
+              <span className={remaining > 0 ? 'text-red-600 font-medium' : 'text-green-600'}>
+                {formatCurrency(remaining)}
+              </span>
+            );
+          },
+        },
+        {
+          key: 'paymentDate',
+          header: t('payments.paymentDate'),
+          cell: (row) => (row.paymentDate ? formatDate(row.paymentDate, 'PP') : '--'),
+        },
+        {
+          key: 'method',
+          header: t('payments.method'),
+          cell: (row) => (
+            <span className="flex items-center gap-1">
+              {getMethodIcon(row.paymentMethod || row.method)}
+              {getMethodLabel(row.paymentMethod || row.method)}
+            </span>
+          ),
+        },
+        {
+          key: 'recordedBy',
+          header: t('payments.recordedBy', { defaultValue: 'Recorded by' }),
+          cell: (row) => row.recordedBy?.fullName || row.recordedByName || '--',
+        },
+      ];
+
+      if (canViewInvoices) {
+        baseColumns.push({
+          key: 'invoice',
+          header: t('nav.invoices', { defaultValue: 'Invoice' }),
+          cell: (row) => (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                handleDownloadPaymentInvoice(row.id);
+              }}
+              disabled={invoiceLoadingPaymentId === row.id}
+            >
+              {invoiceLoadingPaymentId === row.id
+                ? t('common.loading')
+                : t('common.download', { defaultValue: 'Download' })}
+            </Button>
+          ),
+        });
+      }
+
+      return baseColumns;
+    },
+    [
+      t,
+      canViewInvoices,
+      invoiceLoadingPaymentId,
+      handleDownloadPaymentInvoice,
+      getMethodIcon,
+      getMethodLabel,
+    ]
   );
 
   const isRtl = i18n.language === 'ar';
@@ -468,6 +562,22 @@ export default function IncomeReportPage() {
                   <span className="text-xs">{t('common.refresh', { defaultValue: 'Refresh' })}</span>
                 )}
               </Button>
+              {canCreateInvoices && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateStatementInvoice}
+                  disabled={createStatementInvoice.isPending || !selectedPatientId}
+                >
+                  <span className="text-xs">
+                    {createStatementInvoice.isPending
+                      ? t('common.loading')
+                      : t('reports.createStatementInvoice', {
+                          defaultValue: 'Create statement invoice',
+                        })}
+                  </span>
+                </Button>
+              )}
               {isAdmin && (
                 <Button
                   variant={showTotalIncome ? 'default' : 'secondary'}

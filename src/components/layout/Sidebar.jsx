@@ -104,6 +104,14 @@ const navigationItems = [
     hideForRoles: [USER_ROLES.BRANCH_MANAGER],
   },
   {
+    name: 'nav.branchSubscriptions',
+    label: 'Branch subscriptions',
+    href: '/branch-subscriptions',
+    icon: Building2,
+    permission: PERMISSIONS['branchSubscriptions:view'],
+    hideForRoles: [USER_ROLES.BRANCH_MANAGER],
+  },
+  {
     name: 'nav.users',
     href: '/users',
     icon: UserCog,

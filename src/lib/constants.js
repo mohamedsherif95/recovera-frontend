@@ -29,6 +29,18 @@ export const PAYMENT_METHODS = {
   E_WALLET: 'e_wallet',
 };
 
+export const CLINIC_PROFILES = {
+  PHYSIOTHERAPY: 'physiotherapy',
+  MEDICAL_DOCTOR: 'medical_doctor',
+  DENTIST: 'dentist',
+  LASER_DERMATOLOGY: 'laser_dermatology',
+};
+
+export const BRANCH_SUBSCRIPTION_ACCESS_STATUS = {
+  ACTIVE: 'active',
+  SUSPENDED: 'suspended',
+};
+
 // User roles
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',
@@ -56,6 +68,7 @@ export const QUERY_KEYS = {
   PERMISSIONS: 'permissions',
   CLINICS: 'clinics',
   BRANCHES: 'branches',
+  BRANCH_SUBSCRIPTIONS: 'branchSubscriptions',
   INVOICES: 'invoices',
 };
 
@@ -102,6 +115,8 @@ export const PERMISSIONS = {
   "branches:view": "branches:view",
   "branches:create": "branches:create",
   "branches:update": "branches:update",
+  "branchSubscriptions:view": "branchSubscriptions:view",
+  "branchSubscriptions:manage": "branchSubscriptions:manage",
   "branchCredits:view": "branchCredits:view",
   "branchCredits:reconcile": "branchCredits:reconcile",
   "reports:view": "reports:view",

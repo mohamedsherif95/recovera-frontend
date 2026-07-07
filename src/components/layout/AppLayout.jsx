@@ -6,19 +6,54 @@ import { Sidebar } from './Sidebar';
 import { AppFooter } from './AppFooter';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
+import { useBranches } from '@/hooks/useBranches';
+import {
+  canOverrideBranchScope,
+  resolveEffectiveBranchId,
+  resolveEffectiveClinicId,
+} from '@/lib/branchScope';
+import { BRANCH_SUBSCRIPTION_ACCESS_STATUS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 export function AppLayout() {
-  const { sidebarOpen } = useUIStore();
+  const { sidebarOpen, clinicOverrideId, branchOverrideId } = useUIStore();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const isRtl = i18n.language === 'ar';
-  const isSuspendedClinic =
-    user?.clinicStatus === 'suspended' &&
-    !user?.isSuperAdmin &&
-    !user?.roles?.some((role) => role?.name === 'super_admin');
+  const canOverrideBranch = canOverrideBranchScope(user);
+  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
+  const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
+  const { data: branchesData } = useBranches({
+    enabled: Boolean(
+      user &&
+        (canOverrideBranch ? effectiveClinicId : effectiveBranchId),
+    ),
+  });
+  const hasScopedBranchData = Boolean(
+    canOverrideBranch ? effectiveClinicId : effectiveBranchId,
+  );
+  const branches = hasScopedBranchData
+    ? Array.isArray(branchesData)
+      ? branchesData
+      : Array.isArray(branchesData?.data)
+        ? branchesData.data
+        : []
+    : [];
+  const currentBranch =
+    canOverrideBranch && !effectiveClinicId
+      ? null
+      : branches.find((branch) => Number(branch.id) === Number(effectiveBranchId)) ||
+        branches.find((branch) => branch.isDefault) ||
+        (!canOverrideBranch ? user?.branch : null) ||
+        null;
+  const branchAccessStatus =
+    currentBranch?.subscription?.accessStatus ||
+    currentBranch?.accessStatus ||
+    null;
+  const isReadOnlyBranch =
+    branchAccessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
 
   useEffect(() => {
     const appName = t('app.name');
@@ -47,6 +82,8 @@ export function AppLayout() {
       pageKey = 'nav.reports';
     } else if (pathname === '/clinics') {
       pageKey = 'nav.clinics';
+    } else if (pathname === '/branch-subscriptions') {
+      pageKey = 'nav.branchSubscriptions';
     } else if (pathname === '/users') {
       pageKey = 'nav.users';
     } else if (pathname === '/profile') {
@@ -91,9 +128,9 @@ export function AppLayout() {
             : (sidebarOpen ? 'md:ml-64' : 'md:ml-16')
         )}
       >
-        {isSuspendedClinic && (
-          <div className="mb-4 rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm text-slate-700">
-            This clinic is currently suspended. Data is preserved, but operational access is paused.
+        {isReadOnlyBranch && (
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            This branch is currently in read-only mode. You can view existing records, but changes are disabled. Please contact your administrator.
           </div>
         )}
         <Outlet />

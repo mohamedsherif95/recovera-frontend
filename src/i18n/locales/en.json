@@ -120,7 +120,8 @@
     "settings": "Settings",
     "profile": "Profile",
     "clinics": "Clinics",
-    "branches": "Branches"
+    "branches": "Branches",
+    "branchSubscriptions": "Branch subscriptions"
   },
   "settings": {
     "theme": "Theme",

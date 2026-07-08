@@ -6,14 +6,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
 import { AsyncSearchableSelect } from '@/components/common/AsyncSearchableSelect';
 import { LocalizedDatePicker } from '@/components/common/LocalizedDatePicker';
 import { TimePicker } from '@/components/common/TimePicker';
 import { useSessionCategories } from '@/hooks/useSessions';
+import { useBranches } from '@/hooks/useBranches';
 import { useAuthStore } from '@/store/authStore';
-import { USER_ROLES } from '@/lib/constants';
+import { useUIStore } from '@/store/uiStore';
+import { CLINIC_PROFILES, USER_ROLES } from '@/lib/constants';
+import {
+  canOverrideBranchScope,
+  resolveEffectiveBranchId,
+  resolveEffectiveClinicId,
+} from '@/lib/branchScope';
 import {
   useDoctorLookupOptions,
   usePatientLookupOptions,
@@ -32,8 +46,45 @@ const DEFAULT_SESSION_VALUES = {
   cost: undefined,
   categoryId: undefined,
   categoryNotes: '',
+  profile: CLINIC_PROFILES.PHYSIOTHERAPY,
+  visitType: '',
   isAssessment: false,
   isNewAssessment: false,
+};
+
+const PROFILE_OPTIONS = [
+  {
+    value: CLINIC_PROFILES.PHYSIOTHERAPY,
+    label: 'Physiotherapy',
+  },
+  {
+    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
+    label: 'Medical doctor clinic',
+  },
+  {
+    value: CLINIC_PROFILES.DENTIST,
+    label: 'Dentist',
+  },
+  {
+    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
+    label: 'Laser and dermatology',
+  },
+];
+
+const normalizeBranchProfiles = (branch) => {
+  const profiles = branch?.subscription?.profiles;
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    return [CLINIC_PROFILES.PHYSIOTHERAPY];
+  }
+
+  return profiles
+    .filter((profile) => profile?.isEnabled !== false)
+    .map((profile) =>
+      typeof profile === 'string'
+        ? profile
+        : profile?.profile || profile?.profileCode || profile?.code || profile?.name,
+    )
+    .filter(Boolean);
 };
 
 export function SessionForm({
@@ -46,7 +97,36 @@ export function SessionForm({
   lockDoctor = false,
 }) {
   const { t } = useTranslation();
-  const { hasAnyRole } = useAuthStore();
+  const { hasAnyRole, user } = useAuthStore();
+  const { clinicOverrideId, branchOverrideId } = useUIStore();
+  const canOverrideBranch = canOverrideBranchScope(user);
+  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
+  const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
+  const { data: branchesData } = useBranches({
+    enabled: Boolean(
+      user &&
+        (canOverrideBranch ? effectiveClinicId : effectiveBranchId),
+    ),
+  });
+  const branches = useMemo(() => {
+    if (canOverrideBranch && !effectiveClinicId) return [];
+    if (Array.isArray(branchesData)) return branchesData;
+    if (Array.isArray(branchesData?.data)) return branchesData.data;
+    return [];
+  }, [branchesData, canOverrideBranch, effectiveClinicId]);
+  const currentBranch = useMemo(
+    () =>
+      branches.find((branch) => Number(branch.id) === Number(effectiveBranchId)) ||
+      branches.find((branch) => branch.isDefault) ||
+      (!canOverrideBranch ? user?.branch : null) ||
+      null,
+    [branches, canOverrideBranch, effectiveBranchId, user?.branch],
+  );
+  const enabledProfiles = useMemo(
+    () => normalizeBranchProfiles(currentBranch),
+    [currentBranch],
+  );
+  const showProfileSelector = enabledProfiles.length > 1;
 
   const patientLookup = usePatientLookupOptions({
     enabled: !fixedPatient,
@@ -122,6 +202,17 @@ export function SessionForm({
   const selectedCategoryId = watch('categoryId');
   const selectedPatientId = watch('patientId');
   const selectedCost = watch('cost');
+  const selectedProfile = watch('profile');
+
+  useEffect(() => {
+    const fallbackProfile = enabledProfiles[0] || CLINIC_PROFILES.PHYSIOTHERAPY;
+    if (!selectedProfile || !enabledProfiles.includes(selectedProfile)) {
+      setValue('profile', fallbackProfile, {
+        shouldDirty: false,
+        shouldValidate: true,
+      });
+    }
+  }, [enabledProfiles, selectedProfile, setValue]);
 
   const selectedCategory = useMemo(() => {
     if (!selectedCategoryId) return null;
@@ -239,6 +330,9 @@ export function SessionForm({
 
   const handleFormSubmit = (values) => {
     const payload = { ...values };
+    payload.profile =
+      payload.profile || enabledProfiles[0] || CLINIC_PROFILES.PHYSIOTHERAPY;
+    payload.visitType = payload.visitType?.trim() || null;
 
     const isAssessment =
       (payload.isAssessment ?? false) || isAssessmentCategoryName(selectedCategory?.name);
@@ -499,6 +593,41 @@ export function SessionForm({
               />
               {errors.patientId && (
                 <p className="text-sm text-destructive">{t(errors.patientId.message)}</p>
+              )}
+            </div>
+          )}
+
+          {showProfileSelector && (
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="profile">
+                {t('sessions.profile', { defaultValue: 'Clinic profile' })}
+              </Label>
+              <Controller
+                name="profile"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value || enabledProfiles[0]}
+                    onValueChange={field.onChange}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="profile">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROFILE_OPTIONS.filter((profile) =>
+                        enabledProfiles.includes(profile.value),
+                      ).map((profile) => (
+                        <SelectItem key={profile.value} value={profile.value}>
+                          {profile.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.profile && (
+                <p className="text-sm text-destructive">{t(errors.profile.message)}</p>
               )}
             </div>
           )}

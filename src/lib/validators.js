@@ -102,6 +102,15 @@ export const sessionSchema = z.object({
   cost: optionalNumberField(z.number().min(0, 'validation.sessions.costPositive')),
   categoryId: z.number().optional().nullable(),
   categoryNotes: z.string().optional().nullable(),
+  profile: z
+    .enum([
+      'physiotherapy',
+      'medical_doctor',
+      'dentist',
+      'laser_dermatology',
+    ])
+    .optional(),
+  visitType: z.string().optional().nullable(),
   isAssessment: z.boolean().optional(),
   isNewAssessment: z.boolean().optional(),
 });

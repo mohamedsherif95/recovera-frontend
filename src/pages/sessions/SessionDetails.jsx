@@ -164,6 +164,8 @@ export default function SessionDetailsPage() {
       cost: typeof session?.cost === 'string' ? Number(session.cost) : (session?.cost ?? undefined),
       categoryId: session?.categoryId ?? session?.category?.id ?? undefined,
       categoryNotes: session?.categoryNotes ?? '',
+      profile: session?.profile ?? undefined,
+      visitType: session?.visitType ?? '',
       isAssessment: session?.isAssessment ?? false,
       isNewAssessment: session?.isAssessment ? session?.isReassessment !== true : false,
     }),

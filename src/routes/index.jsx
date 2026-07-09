@@ -33,6 +33,7 @@ import DoctorsPage from '@/pages/doctors';
 import ClinicsPage from '@/pages/clinics';
 import BranchesPage from '@/pages/branches';
 import BranchSubscriptionsPage from '@/pages/branch-subscriptions';
+import PlatformBillingPage from '@/pages/platform-billing';
 import InvoicesPage from '@/pages/invoices';
 
 const UnauthorizedPage = () => {
@@ -296,6 +297,14 @@ export const router = createBrowserRouter([
             requiredPermission={PERMISSIONS['branchSubscriptions:view']}
           >
             <BranchSubscriptionsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'platform-billing',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['platformBilling:view']}>
+            <PlatformBillingPage />
           </ProtectedRoute>
         ),
       },

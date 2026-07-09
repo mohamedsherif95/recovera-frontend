@@ -1,0 +1,101 @@
+import apiClient from '../client';
+
+const buildScopeConfig = (options = {}) => {
+  const config = {};
+
+  if (options.clinicOverrideId !== undefined) {
+    config.clinicOverrideId = options.clinicOverrideId;
+  }
+
+  if (options.branchOverrideId !== undefined) {
+    config.branchOverrideId = options.branchOverrideId;
+  }
+
+  return config;
+};
+
+const downloadBlob = async (url, options = {}) => {
+  const response = await apiClient.get(url, {
+    ...buildScopeConfig(options),
+    responseType: 'blob',
+  });
+  const disposition = response.headers?.['content-disposition'] || '';
+  const fileNameMatch = disposition.match(/filename="?(.*?)"?$/);
+  const fileName = fileNameMatch?.[1] || 'platform-billing-artifact';
+  const blobUrl = window.URL.createObjectURL(response.data);
+  const anchor = document.createElement('a');
+  anchor.href = blobUrl;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(blobUrl);
+};
+
+export const platformBillingApi = {
+  preview: async ({ branchId, billingMonth }, options = {}) => {
+    const response = await apiClient.get('/platform/billing/preview', {
+      ...buildScopeConfig(options),
+      params: { branchId, billingMonth },
+    });
+    return response.data;
+  },
+
+  generateInvoice: async (payload, options = {}) => {
+    const response = await apiClient.post(
+      '/platform/billing/invoices',
+      payload,
+      buildScopeConfig(options),
+    );
+    return response.data;
+  },
+
+  listInvoices: async (params = {}, options = {}) => {
+    const response = await apiClient.get('/platform/billing/invoices', {
+      ...buildScopeConfig(options),
+      params,
+    });
+    return response.data;
+  },
+
+  getInvoice: async (id, options = {}) => {
+    const response = await apiClient.get(
+      `/platform/billing/invoices/${id}`,
+      buildScopeConfig(options),
+    );
+    return response.data;
+  },
+
+  downloadArtifact: async (id, artifactType, options = {}) =>
+    downloadBlob(
+      `/platform/billing/invoices/${id}/artifacts/${artifactType}`,
+      options,
+    ),
+
+  createAdjustment: async (payload, options = {}) => {
+    const response = await apiClient.post(
+      '/platform/billing/adjustments',
+      payload,
+      buildScopeConfig(options),
+    );
+    return response.data;
+  },
+
+  recordCollection: async (id, payload, options = {}) => {
+    const response = await apiClient.post(
+      `/platform/billing/invoices/${id}/collections`,
+      payload,
+      buildScopeConfig(options),
+    );
+    return response.data;
+  },
+
+  voidInvoice: async (id, payload, options = {}) => {
+    const response = await apiClient.post(
+      `/platform/billing/invoices/${id}/void`,
+      payload,
+      buildScopeConfig(options),
+    );
+    return response.data;
+  },
+};

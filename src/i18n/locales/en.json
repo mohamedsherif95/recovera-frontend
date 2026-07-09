@@ -121,7 +121,8 @@
     "profile": "Profile",
     "clinics": "Clinics",
     "branches": "Branches",
-    "branchSubscriptions": "Branch subscriptions"
+    "branchSubscriptions": "Branch subscriptions",
+    "platformBilling": "Platform billing"
   },
   "settings": {
     "theme": "Theme",

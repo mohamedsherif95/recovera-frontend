@@ -74,7 +74,15 @@ export const QUERY_KEYS = {
   CLINICS: 'clinics',
   BRANCHES: 'branches',
   BRANCH_SUBSCRIPTIONS: 'branchSubscriptions',
+  PLATFORM_BILLING: 'platformBilling',
   INVOICES: 'invoices',
+};
+
+export const PLATFORM_INVOICE_STATUS_LABELS = {
+  issued: 'Issued',
+  partially_paid: 'Partially paid',
+  paid: 'Paid',
+  voided: 'Voided',
 };
 
 export const PERMISSIONS = {
@@ -122,6 +130,8 @@ export const PERMISSIONS = {
   "branches:update": "branches:update",
   "branchSubscriptions:view": "branchSubscriptions:view",
   "branchSubscriptions:manage": "branchSubscriptions:manage",
+  "platformBilling:view": "platformBilling:view",
+  "platformBilling:manage": "platformBilling:manage",
   "branchCredits:view": "branchCredits:view",
   "branchCredits:reconcile": "branchCredits:reconcile",
   "reports:view": "reports:view",

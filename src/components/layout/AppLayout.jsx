@@ -84,6 +84,8 @@ export function AppLayout() {
       pageKey = 'nav.clinics';
     } else if (pathname === '/branch-subscriptions') {
       pageKey = 'nav.branchSubscriptions';
+    } else if (pathname === '/platform-billing') {
+      pageKey = 'nav.platformBilling';
     } else if (pathname === '/users') {
       pageKey = 'nav.users';
     } else if (pathname === '/profile') {

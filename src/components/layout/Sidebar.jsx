@@ -112,6 +112,14 @@ const navigationItems = [
     hideForRoles: [USER_ROLES.BRANCH_MANAGER],
   },
   {
+    name: 'nav.platformBilling',
+    label: 'Platform billing',
+    href: '/platform-billing',
+    icon: Receipt,
+    permission: PERMISSIONS['platformBilling:view'],
+    hideForRoles: [USER_ROLES.BRANCH_MANAGER],
+  },
+  {
     name: 'nav.users',
     href: '/users',
     icon: UserCog,

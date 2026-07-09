@@ -44,6 +44,16 @@ export const patientsApi = {
   },
 
   /**
+   * Deactivate a patient relationship to the active branch.
+   */
+  deactivateBranchRelationship: async (patientId, relationshipId) => {
+    const response = await apiClient.delete(
+      `/patients/${patientId}/branch-relationships/${relationshipId}`,
+    );
+    return response.data;
+  },
+
+  /**
    * Update patient
    */
   update: async (patientId, payload) => {

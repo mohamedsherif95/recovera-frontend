@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import {
   usePatient,
   usePatientSessionsInfinite,
@@ -16,15 +17,18 @@ import {
   useUpdatePatientPrograms,
   useCreatePackageTransaction,
   usePatientBalanceLogs,
+  useDeactivatePatientBranchRelationship,
 } from '@/hooks/usePatients';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
+import { useUIStore } from '@/store/uiStore';
+import { resolveEffectiveBranchId } from '@/lib/branchScope';
 import { PatientForm } from './PatientForm';
 import { SessionForm } from '../sessions/SessionForm';
 import { useCreateSession } from '@/hooks/useSessions';
 import { formatDate, formatDateTime, formatTimeWithDate } from '@/lib/utils';
 import { PageHeader } from '@/components/common/PageHeader';
-import { BellRing, Stethoscope, ClipboardCheck, Wallet, CircleOff } from 'lucide-react';
+import { BellRing, Stethoscope, ClipboardCheck, Wallet, CircleOff, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function PatientDetailsPage() {
@@ -43,6 +47,9 @@ export default function PatientDetailsPage() {
   const [isEditingPrograms, setIsEditingPrograms] = useState(false);
   const [programItems, setProgramItems] = useState([]);
   const updatePatientPrograms = useUpdatePatientPrograms();
+  const deactivateRelationship = useDeactivatePatientBranchRelationship();
+  const { branchOverrideId } = useUIStore();
+  const [relationshipToDeactivate, setRelationshipToDeactivate] = useState(null);
   const [addBalanceAmount, setAddBalanceAmount] = useState('');
   const [addBalanceNote, setAddBalanceNote] = useState('');
   const [setBalanceAmount, setSetBalanceAmount] = useState('');
@@ -96,6 +103,10 @@ export default function PatientDetailsPage() {
       hasPermission(PERMISSIONS['patients:update']) ||
       hasPermission(PERMISSIONS['patients:updateAssigned']),
     [hasPermission]
+  );
+  const effectiveBranchId = useMemo(
+    () => resolveEffectiveBranchId(currentUser, branchOverrideId),
+    [currentUser, branchOverrideId],
   );
   const currentBalance = Number(patient?.balance ?? 0);
   const currentRemainingAmount = Number(patient?.packageRemainingAmount ?? 0);
@@ -432,6 +443,36 @@ export default function PatientDetailsPage() {
   ]
     .filter(Boolean)
     .join(' | ');
+  const activeBranchRelationships = useMemo(
+    () =>
+      Array.isArray(patient?.branchRelationships)
+        ? patient.branchRelationships.filter(
+            (relationship) => relationship?.status === 'active',
+          )
+        : [],
+    [patient?.branchRelationships],
+  );
+  const canDeactivateRelationship = (relationship) =>
+    canEdit &&
+    !relationship?.isPrimary &&
+    effectiveBranchId != null &&
+    Number(relationship?.branchId) === Number(effectiveBranchId);
+  const handleConfirmDeactivateRelationship = () => {
+    if (!relationshipToDeactivate) return;
+
+    deactivateRelationship.mutate(
+      {
+        patientId: id,
+        relationshipId: relationshipToDeactivate.id,
+      },
+      {
+        onSuccess: () => {
+          setRelationshipToDeactivate(null);
+          navigate('/patients');
+        },
+      },
+    );
+  };
   const requestedSection = searchParams.get('section');
   const formatSignedAmount = (value) => {
     const numericValue = Number(value || 0);
@@ -728,13 +769,50 @@ export default function PatientDetailsPage() {
               <span className="font-medium">
                 {t('patients.branchRelationships', { defaultValue: 'Branch relationships' })}:
               </span>{' '}
-              {Array.isArray(patient.branchRelationships) && patient.branchRelationships.length
-                ? patient.branchRelationships
-                    .map((relationship) => relationship.branch?.name)
-                    .filter(Boolean)
-                    .join(', ')
-                : '--'}
+              {activeBranchRelationships.length ? '' : '--'}
             </div>
+            {activeBranchRelationships.length > 0 && (
+              <div className="space-y-2 pt-1">
+                {activeBranchRelationships.map((relationship) => (
+                  <div
+                    key={relationship.id}
+                    className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">
+                          {relationship.branch?.name || '--'}
+                        </span>
+                        {relationship.isPrimary && (
+                          <Badge variant="secondary">
+                            {t('patients.primaryBranch', {
+                              defaultValue: 'Primary branch',
+                            })}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {relationship.relationshipType || 'care'}
+                      </div>
+                    </div>
+                    {canDeactivateRelationship(relationship) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setRelationshipToDeactivate(relationship)}
+                        disabled={deactivateRelationship.isPending}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        {t('patients.removeFromThisBranch', {
+                          defaultValue: 'Remove from this branch',
+                        })}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
             <div>
               <span className="font-medium">{t('patients.category', { defaultValue: 'Category' })}:</span>{' '}
               {patient.category?.name || '--'}
@@ -1412,6 +1490,26 @@ export default function PatientDetailsPage() {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={Boolean(relationshipToDeactivate)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRelationshipToDeactivate(null);
+          }
+        }}
+        title={t('patients.removeBranchRelationshipTitle', {
+          defaultValue: 'Remove patient from this branch?',
+        })}
+        description={t('patients.removeBranchRelationshipDescription', {
+          defaultValue:
+            'The patient will no longer appear in this branch. Their company patient record and other branch relationships will remain unchanged.',
+        })}
+        confirmText={t('patients.removeFromThisBranch', {
+          defaultValue: 'Remove from this branch',
+        })}
+        onConfirm={handleConfirmDeactivateRelationship}
+        isLoading={deactivateRelationship.isPending}
+      />
     </div>
   );
 }

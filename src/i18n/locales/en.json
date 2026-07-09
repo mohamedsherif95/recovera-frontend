@@ -255,6 +255,9 @@
     "existingPatientSearchError": "Could not search existing patients.",
     "noExistingPatientMatches": "No matching company patients available for this branch.",
     "addToThisBranch": "Add to this branch",
+    "removeFromThisBranch": "Remove from this branch",
+    "removeBranchRelationshipTitle": "Remove patient from this branch?",
+    "removeBranchRelationshipDescription": "The patient will no longer appear in this branch. Their company patient record and other branch relationships will remain unchanged.",
     "primaryBranch": "Primary branch",
     "branchRelationships": "Branch relationships",
     "crossBranchService": "Cross-branch"

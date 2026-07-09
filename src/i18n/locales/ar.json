@@ -250,6 +250,9 @@
     "existingPatientSearchError": "تعذر البحث عن المرضى الموجودين.",
     "noExistingPatientMatches": "لا توجد نتائج متاحة لهذا الفرع.",
     "addToThisBranch": "إضافة لهذا الفرع",
+    "removeFromThisBranch": "إزالة من هذا الفرع",
+    "removeBranchRelationshipTitle": "إزالة المريض من هذا الفرع؟",
+    "removeBranchRelationshipDescription": "لن يظهر المريض في هذا الفرع بعد الآن. سيظل سجل المريض على مستوى الشركة وعلاقاته بالفروع الأخرى كما هي.",
     "primaryBranch": "الفرع الأساسي",
     "branchRelationships": "علاقات الفروع",
     "crossBranchService": "عبر الفروع"

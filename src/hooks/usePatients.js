@@ -98,6 +98,26 @@ export function useAttachPatientToCurrentBranch() {
   });
 }
 
+export function useDeactivatePatientBranchRelationship() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ patientId, relationshipId }) =>
+      patientsApi.deactivateBranchRelationship(patientId, relationshipId),
+    onSuccess: (_data, variables) => {
+      toast.success('Patient removed from this branch');
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      if (variables?.patientId) {
+        queryClient.invalidateQueries({ queryKey: ['patients', variables.patientId] });
+      }
+    },
+    onError: (error) => {
+      const message =
+        error.response?.data?.message || 'Failed to remove patient from this branch';
+      toast.error(message);
+    },
+  });
+}
+
 export function useUpdatePatient() {
   const queryClient = useQueryClient();
   return useMutation({

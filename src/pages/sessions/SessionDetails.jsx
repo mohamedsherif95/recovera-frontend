@@ -109,12 +109,27 @@ export default function SessionDetailsPage() {
   const updateStatus = useUpdateSessionStatus();
   const deleteSession = useDeleteSession();
 
-  const patient = session?.patient || {};
+  const patient = useMemo(() => {
+    const rawPatient = session?.patient || {};
+    if (rawPatient.primaryBranchId || !Array.isArray(rawPatient.branchRelationships)) {
+      return rawPatient;
+    }
+
+    const primaryRelationship =
+      rawPatient.branchRelationships.find((relationship) => relationship.isPrimary) ||
+      rawPatient.branchRelationships[0];
+
+    return {
+      ...rawPatient,
+      primaryBranchId: primaryRelationship?.branchId ?? null,
+      primaryBranch: primaryRelationship?.branch ?? null,
+    };
+  }, [session?.patient]);
   const doctor = session?.doctor || {};
   const isCrossBranchSession =
     session?.branchId != null &&
-    patient?.homeBranchId != null &&
-    Number(session.branchId) !== Number(patient.homeBranchId);
+    patient?.primaryBranchId != null &&
+    Number(session.branchId) !== Number(patient.primaryBranchId);
 
   const formatTimeForDisplay = (time) => {
     if (!time || !session?.sessionDate) return time || '--';
@@ -186,8 +201,8 @@ export default function SessionDetailsPage() {
           <StatBox label={t('patients.fullName')} value={patient.fullName || '--'} />
           <StatBox label={t('patients.patientId')} value={patient.patientCode || '--'} />
           <StatBox
-            label={t('patients.homeBranch', { defaultValue: 'Home branch' })}
-            value={patient.homeBranch?.name || '--'}
+            label={t('patients.primaryBranch', { defaultValue: 'Primary branch' })}
+            value={patient.primaryBranch?.name || '--'}
           />
           {patient.medicalHistory && patient.medicalHistory.length > 0 && (
             <StatBox
@@ -774,9 +789,9 @@ export default function SessionDetailsPage() {
         <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
           {t('sessions.crossBranchContext', {
             defaultValue:
-              'This session was served in {{serviceBranch}} while the patient home branch is {{homeBranch}}.',
+              'This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.',
             serviceBranch: session.branch?.name || '--',
-            homeBranch: patient.homeBranch?.name || '--',
+            primaryBranch: patient.primaryBranch?.name || '--',
           })}
         </div>
       )}

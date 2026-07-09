@@ -17,7 +17,6 @@ const defaultValues = {
   job: '',
   address: '',
   referral: '',
-  homeBranchId: undefined,
   categoryId: undefined,
   defaultSessionCost: undefined,
   reassessmentCycleLength: undefined,
@@ -30,7 +29,6 @@ export function PatientForm({
   isSubmitting,
   isEditing,
   showDefaultSessionCost = true,
-  branchOptions = [],
 }) {
   const { t } = useTranslation();
   const categoriesQuery = useSessionCategories();
@@ -118,32 +116,6 @@ export function PatientForm({
             <Input id="referral" {...register('referral')} disabled={isSubmitting} />
             {errors.referral && <p className="text-sm text-destructive">{errors.referral.message}</p>}
           </div>
-
-          {branchOptions.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="homeBranchId">
-                {t('patients.homeBranch', { defaultValue: 'Home branch' })}
-              </Label>
-              <Controller
-                name="homeBranchId"
-                control={control}
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={branchOptions}
-                    value={field.value ? String(field.value) : ''}
-                    onChange={(val) => field.onChange(val ? Number(val) : undefined)}
-                    placeholder={t('patients.homeBranch', {
-                      defaultValue: 'Select home branch',
-                    })}
-                    disabled={isSubmitting}
-                  />
-                )}
-              />
-              {errors.homeBranchId && (
-                <p className="text-sm text-destructive">{errors.homeBranchId.message}</p>
-              )}
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="categoryId">{t('patients.category', { defaultValue: 'Category' })}</Label>

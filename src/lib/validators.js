@@ -67,7 +67,6 @@ export const patientSchema = z.object({
   address: optionalStringField(z.string().max(255, 'Address must be at most 255 characters')),
   job: optionalStringField(z.string().max(255, 'Job must be at most 255 characters')),
   referral: optionalStringField(z.string().max(255, 'Referral must be at most 255 characters')),
-  homeBranchId: optionalNumberField(z.number().int('Branch must be an integer')),
   categoryId: optionalNumberField(z.number().int('Category must be an integer')),
   defaultSessionCost: optionalNumberField(
     z

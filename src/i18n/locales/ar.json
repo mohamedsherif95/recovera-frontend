@@ -242,7 +242,8 @@
     "increaseRemainingAmountHint": "استخدمها عند وجود مبلغ إضافي مستحق على الباقة.",
     "logActionIncreasedRemaining": "زيادة المبلغ المتبقي",
     "increaseRemainingNote": "تمت زيادة المبلغ المتبقي بمقدار {{amount}}",
-    "homeBranch": "الفرع الأساسي",
+    "primaryBranch": "الفرع الأساسي",
+    "branchRelationships": "علاقات الفروع",
     "crossBranchService": "عبر الفروع"
   },
   "sessions": {
@@ -315,7 +316,7 @@
     "assessmentCategoryForcesAssessment": "الفئة {{categoryName}} تُعامل كجلسة كشف.",
     "reassessmentDoctorRestriction": "لا يمكن إنشاء جلسة إعادة التقييم إلا بواسطة الطبيب المحدد.",
     "reassessmentLockedDoctorHint": "إعادة التقييم مرتبطة بالطبيب: {{doctorName}}.",
-    "crossBranchContext": "تم تقديم هذه الجلسة في {{serviceBranch}} بينما الفرع الأساسي للمريض هو {{homeBranch}}."
+    "crossBranchContext": "تم تقديم هذه الجلسة في {{serviceBranch}} بينما الفرع الأساسي للمريض هو {{primaryBranch}}."
   },
   "payments": {
     "title": "المدفوعات",

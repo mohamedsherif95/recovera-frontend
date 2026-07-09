@@ -247,7 +247,8 @@
     "medicalHistory": "Medical History",
     "defaultSessionCost": "Default session cost",
     "reassessmentCycleLength": "Reassessment cycle length",
-    "homeBranch": "Home branch",
+    "primaryBranch": "Primary branch",
+    "branchRelationships": "Branch relationships",
     "crossBranchService": "Cross-branch"
   },
   "sessions": {
@@ -320,7 +321,7 @@
     "assessmentCategoryForcesAssessment": "Category {{categoryName}} is treated as an assessment session.",
     "reassessmentDoctorRestriction": "Only the assigned doctor can create this reassessment session.",
     "reassessmentLockedDoctorHint": "This reassessment is locked to Dr. {{doctorName}}.",
-    "crossBranchContext": "This session was served in {{serviceBranch}} while the patient home branch is {{homeBranch}}."
+    "crossBranchContext": "This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}."
   },
   "payments": {
     "title": "Payments",

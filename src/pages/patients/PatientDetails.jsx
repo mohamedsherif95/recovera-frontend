@@ -17,7 +17,6 @@ import {
   useCreatePackageTransaction,
   usePatientBalanceLogs,
 } from '@/hooks/usePatients';
-import { useBranches } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { PatientForm } from './PatientForm';
@@ -27,8 +26,6 @@ import { formatDate, formatDateTime, formatTimeWithDate } from '@/lib/utils';
 import { PageHeader } from '@/components/common/PageHeader';
 import { BellRing, Stethoscope, ClipboardCheck, Wallet, CircleOff } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useUIStore } from '@/store/uiStore';
-import { resolveEffectiveClinicId } from '@/lib/branchScope';
 
 export default function PatientDetailsPage() {
   const { id } = useParams();
@@ -36,7 +33,6 @@ export default function PatientDetailsPage() {
   const [searchParams] = useSearchParams();
   const { t, i18n } = useTranslation();
   const { hasAnyPermission, hasPermission, currentUser } = usePermissions();
-  const { clinicOverrideId } = useUIStore();
   const [isEditing, setIsEditing] = useState(false);
   const updatePatient = useUpdatePatient();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -59,7 +55,6 @@ export default function PatientDetailsPage() {
   const balanceLogsSectionRef = useRef(null);
   const hasScrolledToBalanceLogsRef = useRef(false);
   const createPackageTransaction = useCreatePackageTransaction();
-  const effectiveClinicId = resolveEffectiveClinicId(currentUser, clinicOverrideId);
 
   const canView = hasAnyPermission([
     PERMISSIONS['patients:viewAll'],
@@ -71,26 +66,10 @@ export default function PatientDetailsPage() {
     isLoading: isPatientLoading,
     isError: isPatientError,
   } = usePatient(id);
-  const { data: branchesData } = useBranches({
-    enabled: Boolean(effectiveClinicId),
-  });
   const isDoctorOnly = useMemo(() => {
     const roles = currentUser?.roles?.map((role) => role?.name?.toLowerCase()) || [];
     return roles.length > 0 && roles.every((role) => role === USER_ROLES.DOCTOR);
   }, [currentUser]);
-  const branches = useMemo(() => {
-    if (Array.isArray(branchesData)) return branchesData;
-    if (Array.isArray(branchesData?.data)) return branchesData.data;
-    return [];
-  }, [branchesData]);
-  const branchOptions = useMemo(
-    () =>
-      branches.map((branch) => ({
-        value: String(branch.id),
-        label: branch.name,
-      })),
-    [branches],
-  );
   const canViewBalanceLogs = !isDoctorOnly && hasPermission(PERMISSIONS['patients:viewAll']);
   const canViewInvoices =
     !isDoctorOnly && hasPermission(PERMISSIONS['invoices:view']);
@@ -447,8 +426,8 @@ export default function PatientDetailsPage() {
   );
   const pageDescription = [
     patient?.patientCode ? `#${patient.patientCode}` : null,
-    patient?.homeBranch?.name
-      ? `${t('patients.homeBranch', { defaultValue: 'Home branch' })}: ${patient.homeBranch.name}`
+    patient?.primaryBranch?.name
+      ? `${t('patients.primaryBranch', { defaultValue: 'Primary branch' })}: ${patient.primaryBranch.name}`
       : null,
   ]
     .filter(Boolean)
@@ -694,13 +673,11 @@ export default function PatientDetailsPage() {
             job: patient.job || '',
             address: patient.address || '',
             referral: patient.referral || '',
-            homeBranchId: patient.homeBranchId ?? patient.homeBranch?.id ?? undefined,
             categoryId: patient.categoryId ?? patient.category?.id ?? undefined,
             defaultSessionCost: patient.defaultSessionCost ?? undefined,
             reassessmentCycleLength: patient.reassessmentCycleLength ?? undefined,
           }}
           showDefaultSessionCost={!isDoctorOnly}
-          branchOptions={branchOptions}
           isEditing
           isSubmitting={updatePatient.isPending}
           onCancel={() => setIsEditing(false)}
@@ -743,9 +720,20 @@ export default function PatientDetailsPage() {
             </div>
             <div>
               <span className="font-medium">
-                {t('patients.homeBranch', { defaultValue: 'Home branch' })}:
+                {t('patients.primaryBranch', { defaultValue: 'Primary branch' })}:
               </span>{' '}
-              {patient.homeBranch?.name || '--'}
+              {patient.primaryBranch?.name || '--'}
+            </div>
+            <div>
+              <span className="font-medium">
+                {t('patients.branchRelationships', { defaultValue: 'Branch relationships' })}:
+              </span>{' '}
+              {Array.isArray(patient.branchRelationships) && patient.branchRelationships.length
+                ? patient.branchRelationships
+                    .map((relationship) => relationship.branch?.name)
+                    .filter(Boolean)
+                    .join(', ')
+                : '--'}
             </div>
             <div>
               <span className="font-medium">{t('patients.category', { defaultValue: 'Category' })}:</span>{' '}
@@ -1392,9 +1380,9 @@ export default function PatientDetailsPage() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
                           <span>{session.branch?.name || '--'}</span>
-                          {patient.homeBranchId != null &&
+                          {patient.primaryBranchId != null &&
                             session.branchId != null &&
-                            Number(patient.homeBranchId) !== Number(session.branchId) && (
+                            Number(patient.primaryBranchId) !== Number(session.branchId) && (
                               <Badge variant="outline">
                                 {t('patients.crossBranchService', {
                                   defaultValue: 'Cross-branch',

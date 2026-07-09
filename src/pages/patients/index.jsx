@@ -8,32 +8,21 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { DataTable } from '@/components/common/DataTable';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { usePatients, useCreatePatient, useDeletePatient } from '@/hooks/usePatients';
-import { useBranches } from '@/hooks/useBranches';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
 import { PatientForm } from './PatientForm';
 import { Loader2, Plus, RefreshCcw, Trash2, BellRing, CircleOff } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
-import {
-  resolveEffectiveBranchId,
-  resolveEffectiveClinicId,
-} from '@/lib/branchScope';
 
 export default function PatientsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, canAny } = usePermissions();
-  const { user } = useAuthStore();
-  const { clinicOverrideId, branchOverrideId } = useUIStore();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const debouncedSearch = useDebounce(search, 400);
-  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
 
   // Reset page to 1 when search changes
   useEffect(() => {
@@ -45,32 +34,10 @@ export default function PatientsPage() {
     page,
     limit: pageSize,
   });
-  const { data: branchesData } = useBranches({
-    enabled: Boolean(effectiveClinicId),
-  });
   const createPatient = useCreatePatient();
   const deletePatient = useDeletePatient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
-  const branches = useMemo(() => {
-    if (Array.isArray(branchesData)) return branchesData;
-    if (Array.isArray(branchesData?.data)) return branchesData.data;
-    return [];
-  }, [branchesData]);
-  const branchOptions = useMemo(
-    () =>
-      branches.map((branch) => ({
-        value: String(branch.id),
-        label: branch.name,
-      })),
-    [branches],
-  );
-  const createPatientInitialValues = useMemo(
-    () => ({
-      homeBranchId: effectiveBranchId ?? undefined,
-    }),
-    [effectiveBranchId],
-  );
 
   const canDelete = hasPermission(PERMISSIONS['patients:delete']);
 
@@ -136,9 +103,9 @@ export default function PatientsPage() {
         cell: (row) => row.category?.name || '--',
       },
       {
-        key: 'homeBranch',
-        header: t('patients.homeBranch', { defaultValue: 'Home branch' }),
-        cell: (row) => row.homeBranch?.name || '--',
+        key: 'primaryBranch',
+        header: t('patients.primaryBranch', { defaultValue: 'Primary branch' }),
+        cell: (row) => row.primaryBranch?.name || '--',
       },
       {
         key: 'job',
@@ -232,11 +199,9 @@ export default function PatientsPage() {
 
       {showForm && hasPermission(PERMISSIONS['patients:create']) && (
         <PatientForm
-          initialValues={createPatientInitialValues}
           onSubmit={handleCreate}
           onCancel={() => setShowForm(false)}
           isSubmitting={createPatient.isPending}
-          branchOptions={branchOptions}
         />
       )}
 

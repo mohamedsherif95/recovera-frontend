@@ -12,7 +12,8 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
 import { PatientForm } from './PatientForm';
-import { Loader2, Plus, RefreshCcw, Trash2, BellRing, CircleOff } from 'lucide-react';
+import { ExistingPatientIntake } from './ExistingPatientIntake';
+import { Loader2, Plus, RefreshCcw, Trash2, BellRing, CircleOff, UserPlus } from 'lucide-react';
 
 export default function PatientsPage() {
   const { t, i18n } = useTranslation();
@@ -20,6 +21,7 @@ export default function PatientsPage() {
   const { hasPermission, canAny } = usePermissions();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [intakeMode, setIntakeMode] = useState('new');
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const debouncedSearch = useDebounce(search, 400);
@@ -163,6 +165,16 @@ export default function PatientsPage() {
     });
   };
 
+  const handleCreateToggle = () => {
+    setShowForm((prev) => {
+      const next = !prev;
+      if (next) {
+        setIntakeMode('new');
+      }
+      return next;
+    });
+  };
+
   const handleConfirmDelete = () => {
     if (!patientToDelete) return;
     deletePatient.mutate(patientToDelete.id, {
@@ -188,7 +200,7 @@ export default function PatientsPage() {
               <RefreshCcw className="h-4 w-4" />
             </Button>
             {hasPermission(PERMISSIONS['patients:create']) && (
-              <Button onClick={() => setShowForm((prev) => !prev)}>
+              <Button onClick={handleCreateToggle}>
                 <Plus className="mr-2 h-4 w-4" />
                 {t('patients.createPatient')}
               </Button>
@@ -198,11 +210,46 @@ export default function PatientsPage() {
       />
 
       {showForm && hasPermission(PERMISSIONS['patients:create']) && (
-        <PatientForm
-          onSubmit={handleCreate}
-          onCancel={() => setShowForm(false)}
-          isSubmitting={createPatient.isPending}
-        />
+        <div className="space-y-3">
+          <div className="inline-flex rounded-md border bg-background p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={intakeMode === 'new' ? 'default' : 'ghost'}
+              onClick={() => setIntakeMode('new')}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {t('patients.newPatient')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={intakeMode === 'existing' ? 'default' : 'ghost'}
+              onClick={() => setIntakeMode('existing')}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              {t('patients.existingPatient')}
+            </Button>
+          </div>
+
+          {intakeMode === 'new' ? (
+            <PatientForm
+              onSubmit={handleCreate}
+              onCancel={() => setShowForm(false)}
+              isSubmitting={createPatient.isPending}
+            />
+          ) : (
+            <ExistingPatientIntake
+              onCancel={() => setShowForm(false)}
+              onAttached={(patient) => {
+                setShowForm(false);
+                if (patient?.id) {
+                  navigate(`/patients/${patient.id}`);
+                }
+              }}
+            />
+          )}
+        </div>
       )}
 
       <Card>

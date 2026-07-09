@@ -10,6 +10,14 @@ export const patientsApi = {
   },
 
   /**
+   * Search company-level patients that can be attached to the active branch.
+   */
+  searchCompany: async (params = {}) => {
+    const response = await apiClient.get('/patients/company-search', { params });
+    return response.data;
+  },
+
+  /**
    * Get patient by ID
    */
   getById: async (patientId) => {
@@ -22,6 +30,16 @@ export const patientsApi = {
    */
   create: async (payload) => {
     const response = await apiClient.post('/patients', payload);
+    return response.data;
+  },
+
+  /**
+   * Attach an existing company patient to the active branch.
+   */
+  attachToCurrentBranch: async (patientId) => {
+    const response = await apiClient.post(
+      `/patients/${patientId}/branch-relationships/current`,
+    );
     return response.data;
   },
 

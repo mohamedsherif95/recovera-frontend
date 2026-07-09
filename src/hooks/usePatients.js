@@ -10,6 +10,15 @@ export function usePatients(filters = {}) {
   });
 }
 
+export function useCompanyPatientSearch(filters = {}, options = {}) {
+  return useQuery({
+    queryKey: ['patients', 'company-search', filters],
+    queryFn: () => patientsApi.searchCompany(filters),
+    staleTime: 30 * 1000,
+    ...options,
+  });
+}
+
 export function usePatient(patientId, options = {}) {
   return useQuery({
     queryKey: ['patients', patientId],
@@ -65,6 +74,25 @@ export function useCreatePatient() {
     },
     onError: (error) => {
       const message = error.response?.data?.message || 'Failed to create patient';
+      toast.error(message);
+    },
+  });
+}
+
+export function useAttachPatientToCurrentBranch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: patientsApi.attachToCurrentBranch,
+    onSuccess: (patient) => {
+      toast.success('Patient added to this branch');
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      if (patient?.id) {
+        queryClient.invalidateQueries({ queryKey: ['patients', patient.id] });
+      }
+    },
+    onError: (error) => {
+      const message =
+        error.response?.data?.message || 'Failed to add patient to this branch';
       toast.error(message);
     },
   });

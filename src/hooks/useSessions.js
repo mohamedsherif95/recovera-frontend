@@ -34,6 +34,15 @@ export function useSession(sessionId, options = {}) {
   });
 }
 
+export function useSessionProfileDetails(sessionId, options = {}) {
+  return useQuery({
+    queryKey: ['sessions', sessionId, 'profile-details'],
+    queryFn: () => sessionsApi.getProfileDetails(sessionId),
+    enabled: Boolean(sessionId),
+    ...options,
+  });
+}
+
 export function useCreateSession() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -75,6 +84,29 @@ export function useUpdateSession() {
           : backendMessage === ASSESSMENT_DOCTOR_RESTRICTION_BACKEND_MESSAGE
             ? t('validation.sessions.assessmentDoctorRestricted')
           : backendMessage || 'Failed to update session';
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateSessionProfileDetails() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, data }) =>
+      sessionsApi.updateProfileDetails(sessionId, data),
+    onSuccess: (_data, variables) => {
+      const { sessionId } = variables || {};
+      toast.success('Clinical details updated successfully');
+      if (sessionId) {
+        queryClient.invalidateQueries({
+          queryKey: ['sessions', sessionId, 'profile-details'],
+        });
+        queryClient.invalidateQueries({ queryKey: ['sessions', sessionId] });
+      }
+    },
+    onError: (error) => {
+      const message =
+        error.response?.data?.message || 'Failed to update clinical details';
       toast.error(message);
     },
   });

@@ -16,6 +16,7 @@ import { StatBox } from '@/components/common/StatBox';
 import { formatDate, formatDateTime } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { SessionForm } from './SessionForm';
+import { ProfileDetailsPanel } from './ProfileDetailsPanel';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { PageHeader } from '@/components/common/PageHeader';
 import {
@@ -784,6 +785,7 @@ export default function SessionDetailsPage() {
         <>
           {renderPatientCard()}
           {renderProgramNotesCard()}
+          <ProfileDetailsPanel session={session} canEdit={canEditProgramsAndNotes} />
           {renderSessionInfoCard()}
         </>
       ) : (
@@ -792,6 +794,7 @@ export default function SessionDetailsPage() {
             {renderPatientCard()}
             {renderSessionInfoCard()}
           </div>
+          <ProfileDetailsPanel session={session} canEdit={canEditProgramsAndNotes} />
           {renderProgramNotesCard()}
         </>
       )}

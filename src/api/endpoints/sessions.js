@@ -18,6 +18,14 @@ export const sessionsApi = {
   },
 
   /**
+   * Get profile-specific clinical details for a session
+   */
+  getProfileDetails: async (sessionId) => {
+    const response = await apiClient.get(`/sessions/${sessionId}/profile-details`);
+    return response.data;
+  },
+
+  /**
    * Create session
    */
   create: async (payload) => {
@@ -30,6 +38,14 @@ export const sessionsApi = {
    */
   update: async (sessionId, payload) => {
     const response = await apiClient.put(`/sessions/${sessionId}`, payload);
+    return response.data;
+  },
+
+  /**
+   * Update profile-specific clinical details for a session
+   */
+  updateProfileDetails: async (sessionId, payload) => {
+    const response = await apiClient.put(`/sessions/${sessionId}/profile-details`, payload);
     return response.data;
   },
 

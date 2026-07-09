@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useBranches } from '@/hooks/useBranches';
 import {
   canOverrideBranchScope,
+  getAssignedBranches,
   resolveEffectiveBranchId,
   resolveEffectiveClinicId,
 } from '@/lib/branchScope';
@@ -23,6 +24,7 @@ export function AppLayout() {
   const { user } = useAuthStore();
   const isRtl = i18n.language === 'ar';
   const canOverrideBranch = canOverrideBranchScope(user);
+  const assignedBranches = getAssignedBranches(user);
   const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
   const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
   const { data: branchesData } = useBranches({
@@ -34,13 +36,14 @@ export function AppLayout() {
   const hasScopedBranchData = Boolean(
     canOverrideBranch ? effectiveClinicId : effectiveBranchId,
   );
-  const branches = hasScopedBranchData
+  const fetchedBranches = hasScopedBranchData
     ? Array.isArray(branchesData)
       ? branchesData
       : Array.isArray(branchesData?.data)
         ? branchesData.data
         : []
     : [];
+  const branches = fetchedBranches.length > 0 ? fetchedBranches : assignedBranches;
   const currentBranch =
     canOverrideBranch && !effectiveClinicId
       ? null

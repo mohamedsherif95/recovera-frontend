@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -26,8 +27,10 @@ import {
 import { Menu, User, LogOut, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
+  canSwitchAssignedBranches,
   canOverrideBranchScope,
   canOverrideClinicScope,
+  getAssignedBranches,
   resolveEffectiveBranchId,
   resolveEffectiveClinicId,
 } from '@/lib/branchScope';
@@ -48,6 +51,8 @@ export function Header() {
   const queryClient = useQueryClient();
   const isSuperAdmin = canOverrideClinicScope(user);
   const canOverrideBranch = canOverrideBranchScope(user);
+  const canSwitchAssigned = canSwitchAssignedBranches(user);
+  const assignedBranches = getAssignedBranches(user);
   const { data: clinicsData } = useClinics(Boolean(isSuperAdmin));
   const clinics = Array.isArray(clinicsData)
     ? clinicsData
@@ -56,18 +61,34 @@ export function Header() {
       : [];
   const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
   const { data: branchesData } = useBranches(Boolean(canOverrideBranch && effectiveClinicId));
-  const branches = Array.isArray(branchesData)
+  const fetchedBranches = Array.isArray(branchesData)
     ? branchesData
     : Array.isArray(branchesData?.data)
       ? branchesData.data
       : [];
+  const branches = canOverrideBranch ? fetchedBranches : assignedBranches;
   const fallbackDefaultBranch = branches.find((branch) => branch.isDefault) || branches[0] || null;
   const effectiveBranchId =
     resolveEffectiveBranchId(user, branchOverrideId) ?? fallbackDefaultBranch?.id ?? null;
+  const selectedBranch = branches.find(
+    (branch) => Number(branch.id) === Number(effectiveBranchId),
+  );
   const fixedBranchName =
+    selectedBranch?.name ||
     user?.branch?.name ||
-    branches.find((branch) => Number(branch.id) === Number(user?.branchId))?.name ||
     null;
+
+  useEffect(() => {
+    if (!branchOverrideId || branches.length === 0) return;
+
+    const overrideIsValid = branches.some(
+      (branch) => Number(branch.id) === Number(branchOverrideId),
+    );
+    if (overrideIsValid) return;
+
+    clearBranchOverride();
+    queryClient.invalidateQueries();
+  }, [branchOverrideId, branches, clearBranchOverride, queryClient]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -130,7 +151,7 @@ export function Header() {
               </SelectContent>
             </Select>
           )}
-          {canOverrideBranch && effectiveClinicId && branches.length > 0 && (
+          {(canOverrideBranch || canSwitchAssigned) && effectiveClinicId && branches.length > 0 && (
             <Select
               value={effectiveBranchId ? String(effectiveBranchId) : 'auto'}
               onValueChange={(value) => {
@@ -145,7 +166,9 @@ export function Header() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="auto">
-                  {t('branches.autoBranch', { defaultValue: 'Default branch' })}
+                  {canOverrideBranch
+                    ? t('branches.autoBranch', { defaultValue: 'Default branch' })
+                    : t('branches.primaryBranch', { defaultValue: 'Primary branch' })}
                 </SelectItem>
                 {branches.map((branch) => (
                   <SelectItem key={branch.id} value={String(branch.id)}>

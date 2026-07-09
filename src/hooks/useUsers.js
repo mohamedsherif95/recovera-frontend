@@ -16,6 +16,8 @@ export function useUpdateUser() {
     mutationFn: ({ id, data }) => usersApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['auth'] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
     },
   });
 }
@@ -27,6 +29,8 @@ export function useCreateUser() {
     mutationFn: usersApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['auth'] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
     },
   });
 }

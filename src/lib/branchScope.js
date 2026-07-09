@@ -24,9 +24,50 @@ export function canOverrideBranchScope(user) {
   );
 }
 
+export function getAssignedBranches(user) {
+  if (Array.isArray(user?.assignedBranches) && user.assignedBranches.length > 0) {
+    return user.assignedBranches;
+  }
+
+  if (Array.isArray(user?.branchAssignments) && user.branchAssignments.length > 0) {
+    return user.branchAssignments
+      .map((assignment) => ({
+        ...assignment.branch,
+        isPrimary: assignment.isPrimary === true,
+      }))
+      .filter((branch) => branch?.id != null);
+  }
+
+  if (user?.branch?.id != null) {
+    return [
+      {
+        ...user.branch,
+        isPrimary: true,
+      },
+    ];
+  }
+
+  return [];
+}
+
+export function canSwitchAssignedBranches(user) {
+  return !canOverrideBranchScope(user) && getAssignedBranches(user).length > 1;
+}
+
 export function resolveEffectiveBranchId(user, branchOverrideId) {
-  if (canOverrideBranchScope(user) && branchOverrideId) {
+  if ((canOverrideBranchScope(user) || canSwitchAssignedBranches(user)) && branchOverrideId) {
     return Number(branchOverrideId);
+  }
+
+  if (user?.primaryBranchId != null) {
+    return Number(user.primaryBranchId);
+  }
+
+  const primaryAssignedBranch = getAssignedBranches(user).find(
+    (branch) => branch.isPrimary === true,
+  );
+  if (primaryAssignedBranch?.id != null) {
+    return Number(primaryAssignedBranch.id);
   }
 
   return user?.branchId ?? user?.branch?.id ?? null;

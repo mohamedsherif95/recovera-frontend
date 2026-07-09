@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/common/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +38,8 @@ import { resolveEffectiveClinicId } from '@/lib/branchScope';
 
 const emptyCreateForm = {
   clinicId: '',
-  branchId: '',
+  branchIds: [],
+  primaryBranchId: '',
   fullName: '',
   username: '',
   email: '',
@@ -69,6 +71,12 @@ export default function UsersPage() {
   const [branchFilter, setBranchFilter] = useState('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
+  const [assignmentUser, setAssignmentUser] = useState(null);
+  const [assignmentForm, setAssignmentForm] = useState({
+    branchIds: [],
+    primaryBranchId: '',
+  });
 
   const { data, isLoading, isError, refetch, isFetching } = useUsers({
     page,
@@ -177,6 +185,51 @@ export default function UsersPage() {
   const totalUsers = data?.total ?? data?.meta?.total ?? users.length;
   const totalPages = totalUsers ? Math.ceil(totalUsers / pageSize) : 1;
 
+  const getUserBranchIds = (user) => {
+    if (Array.isArray(user?.branchAssignments) && user.branchAssignments.length > 0) {
+      return user.branchAssignments
+        .map((assignment) => assignment.branchId ?? assignment.branch?.id)
+        .filter((branchId) => branchId != null)
+        .map((branchId) => Number(branchId));
+    }
+
+    if (Array.isArray(user?.assignedBranches) && user.assignedBranches.length > 0) {
+      return user.assignedBranches
+        .map((branch) => branch?.id)
+        .filter((branchId) => branchId != null)
+        .map((branchId) => Number(branchId));
+    }
+
+    if (user?.branchId != null) return [Number(user.branchId)];
+    if (user?.branch?.id != null) return [Number(user.branch.id)];
+    return [];
+  };
+
+  const getUserPrimaryBranchId = (user) => {
+    if (user?.primaryBranchId != null) return Number(user.primaryBranchId);
+
+    const primaryAssignment = user?.branchAssignments?.find(
+      (assignment) => assignment.isPrimary === true,
+    );
+    if (primaryAssignment?.branchId != null) return Number(primaryAssignment.branchId);
+    if (primaryAssignment?.branch?.id != null) return Number(primaryAssignment.branch.id);
+
+    const primaryAssignedBranch = user?.assignedBranches?.find(
+      (branch) => branch.isPrimary === true,
+    );
+    if (primaryAssignedBranch?.id != null) return Number(primaryAssignedBranch.id);
+
+    const branchIds = getUserBranchIds(user);
+    return branchIds[0] ?? null;
+  };
+
+  const getBranchName = (branchId, fallback = null) => {
+    const branch = currentBranches.find(
+      (item) => Number(item.id) === Number(branchId),
+    );
+    return branch?.name || fallback || `#${branchId}`;
+  };
+
   const handleToggleActive = (user) => {
     if (!canToggleStatus) return;
     const next = !user.isActive;
@@ -263,25 +316,53 @@ export default function UsersPage() {
 
     setCreateForm((current) => {
       if (!createBranches.length) {
-        if (!current.branchId) return current;
-        return { ...current, branchId: '' };
+        if (!current.branchIds.length && !current.primaryBranchId) return current;
+        return { ...current, branchIds: [], primaryBranchId: '' };
       }
 
-      const branchExists = createBranches.some(
-        (branch) => String(branch.id) === String(current.branchId),
+      const validBranchIds = current.branchIds.filter((branchId) =>
+        createBranches.some((branch) => String(branch.id) === String(branchId)),
       );
-      if (branchExists) {
-        return current;
+      const primaryBranchExists = validBranchIds.some(
+        (branchId) => String(branchId) === String(current.primaryBranchId),
+      );
+      if (validBranchIds.length > 0 && primaryBranchExists) {
+        if (validBranchIds.length === current.branchIds.length) return current;
+        return {
+          ...current,
+          branchIds: validBranchIds,
+        };
       }
 
       const defaultBranch =
         createBranches.find((branch) => branch.isDefault) || createBranches[0];
       return {
         ...current,
-        branchId: defaultBranch ? String(defaultBranch.id) : '',
+        branchIds: defaultBranch ? [String(defaultBranch.id)] : [],
+        primaryBranchId: defaultBranch ? String(defaultBranch.id) : '',
       };
     });
   }, [createBranches, createDialogOpen]);
+
+  const toggleCreateBranch = (branchId) => {
+    const normalizedBranchId = String(branchId);
+
+    setCreateForm((current) => {
+      const isAssigned = current.branchIds.includes(normalizedBranchId);
+      const branchIds = isAssigned
+        ? current.branchIds.filter((id) => id !== normalizedBranchId)
+        : [...current.branchIds, normalizedBranchId];
+      const primaryBranchId = branchIds.includes(current.primaryBranchId)
+        ? current.primaryBranchId
+        : branchIds[0] || '';
+
+      return {
+        ...current,
+        branchIds,
+        primaryBranchId,
+      };
+    });
+  };
 
   const toggleCreateShift = (shiftValue) => {
     setCreateForm((current) => ({
@@ -321,8 +402,11 @@ export default function UsersPage() {
     if (isSuperAdmin) {
       payload.clinicId = Number(createForm.clinicId);
     }
-    if (createForm.branchId) {
-      payload.branchId = Number(createForm.branchId);
+    if (createForm.branchIds.length > 0) {
+      payload.branchIds = createForm.branchIds.map((branchId) => Number(branchId));
+      payload.primaryBranchId = createForm.primaryBranchId
+        ? Number(createForm.primaryBranchId)
+        : payload.branchIds[0];
     }
 
     createUser
@@ -333,6 +417,67 @@ export default function UsersPage() {
       })
       .catch((error) => {
         toast.error(error?.response?.data?.message || 'Could not create user');
+      });
+  };
+
+  const openAssignmentDialog = (user) => {
+    const branchIds = getUserBranchIds(user).map((branchId) => String(branchId));
+    const primaryBranchId = getUserPrimaryBranchId(user);
+
+    setAssignmentUser(user);
+    setAssignmentForm({
+      branchIds,
+      primaryBranchId: primaryBranchId != null ? String(primaryBranchId) : branchIds[0] || '',
+    });
+    setAssignmentDialogOpen(true);
+  };
+
+  const toggleAssignmentBranch = (branchId) => {
+    const normalizedBranchId = String(branchId);
+
+    setAssignmentForm((current) => {
+      const isAssigned = current.branchIds.includes(normalizedBranchId);
+      const branchIds = isAssigned
+        ? current.branchIds.filter((id) => id !== normalizedBranchId)
+        : [...current.branchIds, normalizedBranchId];
+      const primaryBranchId = branchIds.includes(current.primaryBranchId)
+        ? current.primaryBranchId
+        : branchIds[0] || '';
+
+      return {
+        branchIds,
+        primaryBranchId,
+      };
+    });
+  };
+
+  const handleSaveAssignments = () => {
+    if (!assignmentUser) return;
+    if (!assignmentForm.branchIds.length) {
+      toast.error('Select at least one branch');
+      return;
+    }
+
+    const branchIds = assignmentForm.branchIds.map((branchId) => Number(branchId));
+    const primaryBranchId = assignmentForm.primaryBranchId
+      ? Number(assignmentForm.primaryBranchId)
+      : branchIds[0];
+
+    updateUser
+      .mutateAsync({
+        id: assignmentUser.id,
+        data: {
+          branchIds,
+          primaryBranchId,
+        },
+      })
+      .then(() => {
+        toast.success('Branch assignments updated');
+        setAssignmentDialogOpen(false);
+        setAssignmentUser(null);
+      })
+      .catch((error) => {
+        toast.error(error?.response?.data?.message || 'Could not update branch assignments');
       });
   };
 
@@ -355,48 +500,54 @@ export default function UsersPage() {
       },
       {
         key: 'branch',
-        header: t('users.branch', { defaultValue: 'Branch' }),
+        header: t('users.branches', { defaultValue: 'Branches' }),
         cell: (row) => {
-          if (!currentBranches.length) {
-            return row.branch?.name || '--';
-          }
-
-          const branchValue =
-            row.branchId != null
-              ? String(row.branchId)
-              : row.branch?.id != null
-                ? String(row.branch.id)
-                : '';
-          const canEditBranchAssignment = canToggleStatus && (isSuperAdmin || isDoctor(row));
-
-          if (!canEditBranchAssignment) {
-            return row.branch?.name || '--';
-          }
+          const assignedBranchIds = getUserBranchIds(row);
+          const primaryBranchId = getUserPrimaryBranchId(row);
+          const assignedBranchLabels = assignedBranchIds.map((branchId) =>
+            getBranchName(
+              branchId,
+              row.branchAssignments?.find(
+                (assignment) => Number(assignment.branchId) === Number(branchId),
+              )?.branch?.name,
+            ),
+          );
+          const summary = assignedBranchLabels.length
+            ? assignedBranchLabels.join(', ')
+            : row.branch?.name || '--';
+          const primaryLabel =
+            primaryBranchId != null
+              ? getBranchName(primaryBranchId, row.branch?.name)
+              : null;
+          const isSuperAdminUser =
+            row.isSuperAdmin ||
+            row.roles?.some((role) => role?.name === USER_ROLES.SUPER_ADMIN);
+          const canEditBranchAssignment = canToggleStatus && !isSuperAdminUser;
 
           return (
-            <Select
-              value={branchValue}
-              onValueChange={(value) => {
-                if (String(value) === String(branchValue)) return;
-                updateUser.mutate({
-                  id: row.id,
-                  data: { branchId: Number(value) },
-                });
-              }}
-            >
-              <SelectTrigger className="h-8 w-[170px]" onClick={(e) => e.stopPropagation()}>
-                <SelectValue
-                  placeholder={t('users.branch', { defaultValue: 'Branch' })}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {currentBranches.map((branch) => (
-                  <SelectItem key={branch.id} value={String(branch.id)}>
-                    {branch.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex min-w-[220px] items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{summary}</div>
+                {primaryLabel && assignedBranchLabels.length > 1 && (
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {t('branches.primaryBranch', { defaultValue: 'Primary branch' })}: {primaryLabel}
+                  </div>
+                )}
+              </div>
+              {canEditBranchAssignment && currentBranches.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="h-7 px-3 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAssignmentDialog(row);
+                  }}
+                >
+                  {t('common.manage', { defaultValue: 'Manage' })}
+                </Button>
+              )}
+            </div>
           );
         },
       },
@@ -566,7 +717,6 @@ export default function UsersPage() {
       canManageRoles,
       canToggleStatus,
       currentBranches,
-      isSuperAdmin,
       toggleActive.isPending,
       setUserShifts.isPending,
       updateUser.isPending,
@@ -725,7 +875,8 @@ export default function UsersPage() {
                       setCreateForm((current) => ({
                         ...current,
                         clinicId: value,
-                        branchId: '',
+                        branchIds: [],
+                        primaryBranchId: '',
                       }))
                     }
                   >
@@ -744,27 +895,53 @@ export default function UsersPage() {
               )}
 
               {createBranches.length > 0 && (
-                <div className="space-y-2">
-                  <Label>{t('users.branch', { defaultValue: 'Branch' })}</Label>
-                  <Select
-                    value={createForm.branchId}
-                    onValueChange={(value) =>
-                      setCreateForm((current) => ({ ...current, branchId: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={t('users.branch', { defaultValue: 'Branch' })}
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {createBranches.map((branch) => (
-                        <SelectItem key={branch.id} value={String(branch.id)}>
-                          {branch.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3 sm:col-span-2">
+                  <Label>{t('users.branches', { defaultValue: 'Branches' })}</Label>
+                  <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+                    {createBranches.map((branch) => {
+                      const branchId = String(branch.id);
+                      return (
+                        <label
+                          key={branch.id}
+                          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
+                        >
+                          <Checkbox
+                            checked={createForm.branchIds.includes(branchId)}
+                            onCheckedChange={() => toggleCreateBranch(branchId)}
+                          />
+                          <span>{branch.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {createForm.branchIds.length > 0 && (
+                    <Select
+                      value={createForm.primaryBranchId}
+                      onValueChange={(value) =>
+                        setCreateForm((current) => ({
+                          ...current,
+                          primaryBranchId: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={t('branches.primaryBranch', {
+                            defaultValue: 'Primary branch',
+                          })}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {createBranches
+                          .filter((branch) => createForm.branchIds.includes(String(branch.id)))
+                          .map((branch) => (
+                            <SelectItem key={branch.id} value={String(branch.id)}>
+                              {branch.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               )}
 
@@ -897,12 +1074,114 @@ export default function UsersPage() {
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={createUser.isPending || (isSuperAdmin && !createForm.clinicId)}>
+              <Button
+                type="submit"
+                disabled={
+                  createUser.isPending ||
+                  (isSuperAdmin && !createForm.clinicId) ||
+                  (createBranches.length > 0 && createForm.branchIds.length === 0)
+                }
+              >
                 {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('users.createUser')}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={assignmentDialogOpen}
+        onOpenChange={(open) => {
+          setAssignmentDialogOpen(open);
+          if (!open) {
+            setAssignmentUser(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {t('users.manageBranches', { defaultValue: 'Manage branches' })}
+            </DialogTitle>
+            <DialogDescription>
+              {assignmentUser?.fullName || assignmentUser?.username || ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-2 rounded-md border p-3">
+              {currentBranches.map((branch) => {
+                const branchId = String(branch.id);
+                return (
+                  <label
+                    key={branch.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm"
+                  >
+                    <Checkbox
+                      checked={assignmentForm.branchIds.includes(branchId)}
+                      onCheckedChange={() => toggleAssignmentBranch(branchId)}
+                    />
+                    <span>{branch.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {assignmentForm.branchIds.length > 0 && (
+              <div className="space-y-2">
+                <Label>
+                  {t('branches.primaryBranch', { defaultValue: 'Primary branch' })}
+                </Label>
+                <Select
+                  value={assignmentForm.primaryBranchId}
+                  onValueChange={(value) =>
+                    setAssignmentForm((current) => ({
+                      ...current,
+                      primaryBranchId: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t('branches.primaryBranch', {
+                        defaultValue: 'Primary branch',
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentBranches
+                      .filter((branch) =>
+                        assignmentForm.branchIds.includes(String(branch.id)),
+                      )
+                      .map((branch) => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setAssignmentDialogOpen(false)}
+            >
+              {t('common.cancel', { defaultValue: 'Cancel' })}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveAssignments}
+              disabled={updateUser.isPending || assignmentForm.branchIds.length === 0}
+            >
+              {updateUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {t('common.save', { defaultValue: 'Save' })}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

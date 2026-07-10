@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -36,28 +37,85 @@ const ROLE_ORDER = [
 ];
 
 const ROLE_LABELS = {
-  [USER_ROLES.ADMIN]: 'Admin',
-  [USER_ROLES.MANAGER]: 'Manager',
-  [USER_ROLES.BRANCH_MANAGER]: 'Branch manager',
-  [USER_ROLES.DOCTOR]: 'Doctor',
-  [USER_ROLES.SECRETARY]: 'Secretary',
+  [USER_ROLES.ADMIN]: {
+    key: 'users.admin',
+    defaultValue: 'Admin',
+  },
+  [USER_ROLES.MANAGER]: {
+    key: 'users.manager',
+    defaultValue: 'Manager',
+  },
+  [USER_ROLES.BRANCH_MANAGER]: {
+    key: 'users.branch_manager',
+    defaultValue: 'Branch manager',
+  },
+  [USER_ROLES.DOCTOR]: {
+    key: 'users.doctor',
+    defaultValue: 'Doctor',
+  },
+  [USER_ROLES.SECRETARY]: {
+    key: 'users.secretary',
+    defaultValue: 'Secretary',
+  },
 };
 
 const PERMISSION_GROUPS = [
-  'Platform',
-  'Tenant setup',
-  'Branch commercial',
-  'Clinic operations',
-  'Finance',
-  'Reporting',
-  'Other',
+  'platform',
+  'tenantSetup',
+  'branchCommercial',
+  'clinicOperations',
+  'finance',
+  'reporting',
+  'other',
 ];
 
-const formatRole = (roleName) =>
-  ROLE_LABELS[roleName] ||
-  String(roleName || '')
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (value) => value.toUpperCase());
+const PERMISSION_GROUP_LABELS = {
+  platform: {
+    key: 'platformGovernance.permissionGroups.platform',
+    defaultValue: 'Platform',
+  },
+  tenantSetup: {
+    key: 'platformGovernance.permissionGroups.tenantSetup',
+    defaultValue: 'Tenant setup',
+  },
+  branchCommercial: {
+    key: 'platformGovernance.permissionGroups.branchCommercial',
+    defaultValue: 'Branch commercial',
+  },
+  clinicOperations: {
+    key: 'platformGovernance.permissionGroups.clinicOperations',
+    defaultValue: 'Clinic operations',
+  },
+  finance: {
+    key: 'platformGovernance.permissionGroups.finance',
+    defaultValue: 'Finance',
+  },
+  reporting: {
+    key: 'platformGovernance.permissionGroups.reporting',
+    defaultValue: 'Reporting',
+  },
+  other: {
+    key: 'platformGovernance.permissionGroups.other',
+    defaultValue: 'Other',
+  },
+};
+
+const formatRole = (roleName, t) => {
+  const label = ROLE_LABELS[roleName];
+  if (label) return t(label.key, { defaultValue: label.defaultValue });
+
+  return (
+    String(roleName || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (value) => value.toUpperCase())
+  );
+};
+
+const formatPermissionGroup = (group, t) => {
+  const label = PERMISSION_GROUP_LABELS[group];
+  if (!label) return group;
+  return t(label.key, { defaultValue: label.defaultValue });
+};
 
 const getUsers = (response) => {
   if (Array.isArray(response)) return response;
@@ -81,7 +139,7 @@ const groupPermission = (permission) => {
     permission.startsWith('users:') ||
     permission.startsWith('access:')
   ) {
-    return 'Tenant setup';
+    return 'tenantSetup';
   }
 
   if (
@@ -89,7 +147,7 @@ const groupPermission = (permission) => {
     permission.startsWith('branchSubscriptions:') ||
     permission.startsWith('branchCredits:')
   ) {
-    return 'Branch commercial';
+    return 'branchCommercial';
   }
 
   if (
@@ -97,7 +155,7 @@ const groupPermission = (permission) => {
     permission.startsWith('sessions:') ||
     permission.startsWith('schedules:')
   ) {
-    return 'Clinic operations';
+    return 'clinicOperations';
   }
 
   if (
@@ -105,18 +163,18 @@ const groupPermission = (permission) => {
     permission.startsWith('payments:') ||
     permission.startsWith('invoices:')
   ) {
-    return 'Finance';
+    return 'finance';
   }
 
   if (permission.startsWith('reports:')) {
-    return 'Reporting';
+    return 'reporting';
   }
 
   if (permission.includes('manage') || permission.includes('override')) {
-    return 'Platform';
+    return 'platform';
   }
 
-  return 'Other';
+  return 'other';
 };
 
 function Metric({ label, value }) {
@@ -131,9 +189,11 @@ function Metric({ label, value }) {
 }
 
 function StatusBadge({ active }) {
+  const { t } = useTranslation();
+
   return (
     <Badge variant={active ? 'default' : 'outline'}>
-      {active ? 'Active' : 'Inactive'}
+      {active ? t('users.active') : t('users.inactive')}
     </Badge>
   );
 }
@@ -157,6 +217,7 @@ function RoleChangeDialog({
   onConfirm,
   isLoading,
 }) {
+  const { t } = useTranslation();
   const user = pendingChange?.user;
   const isGrant = pendingChange?.type === 'grant';
 
@@ -165,12 +226,24 @@ function RoleChangeDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isGrant ? 'Grant admin role' : 'Remove admin role'}
+            {isGrant
+              ? t('platformGovernance.dialog.grantTitle', {
+                  defaultValue: 'Grant admin role',
+                })
+              : t('platformGovernance.dialog.removeTitle', {
+                  defaultValue: 'Remove admin role',
+                })}
           </DialogTitle>
           <DialogDescription>
             {isGrant
-              ? 'This user will gain access to the platform admin console and cross-clinic administration.'
-              : 'This user will lose platform admin access. Existing non-admin roles will remain assigned.'}
+              ? t('platformGovernance.dialog.grantDescription', {
+                  defaultValue:
+                    'This user will gain access to the platform admin console and cross-clinic administration.',
+                })
+              : t('platformGovernance.dialog.removeDescription', {
+                  defaultValue:
+                    'This user will lose platform admin access. Existing non-admin roles will remain assigned.',
+                })}
           </DialogDescription>
         </DialogHeader>
 
@@ -180,7 +253,7 @@ function RoleChangeDialog({
             <div className="mt-3 flex flex-wrap gap-2">
               {(user.roles || []).map((role) => (
                 <Badge key={role.id || role.name} variant="secondary">
-                  {formatRole(role.name)}
+                  {formatRole(role.name, t)}
                 </Badge>
               ))}
             </div>
@@ -193,7 +266,7 @@ function RoleChangeDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -202,7 +275,13 @@ function RoleChangeDialog({
             disabled={isLoading}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isGrant ? 'Grant admin' : 'Remove admin'}
+            {isGrant
+              ? t('platformGovernance.actions.grantAdmin', {
+                  defaultValue: 'Grant admin',
+                })
+              : t('platformGovernance.actions.removeAdmin', {
+                  defaultValue: 'Remove admin',
+                })}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -211,6 +290,7 @@ function RoleChangeDialog({
 }
 
 export default function PlatformGovernancePage() {
+  const { t } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const [candidateSearch, setCandidateSearch] = useState('');
   const [selectedRoleName, setSelectedRoleName] = useState(USER_ROLES.ADMIN);
@@ -282,7 +362,7 @@ export default function PlatformGovernancePage() {
       new Set(
         roles
         .flatMap((role) => role.permissions || [])
-        .filter((permission) => groupPermission(permission) === 'Platform'),
+        .filter((permission) => groupPermission(permission) === 'platform'),
       ).size,
     [roles],
   );
@@ -317,14 +397,23 @@ export default function PlatformGovernancePage() {
         onSuccess: () => {
           toast.success(
             pendingChange.type === 'grant'
-              ? 'Admin role granted'
-              : 'Admin role removed',
+              ? t('platformGovernance.toasts.adminGranted', {
+                  defaultValue: 'Admin role granted',
+                })
+              : t('platformGovernance.toasts.adminRemoved', {
+                  defaultValue: 'Admin role removed',
+                }),
           );
           setPendingChange(null);
           refresh();
         },
         onError: (error) => {
-          toast.error(error?.response?.data?.message || 'Could not update roles');
+          toast.error(
+            error?.response?.data?.message ||
+              t('platformGovernance.toasts.updateFailed', {
+                defaultValue: 'Could not update roles',
+              }),
+          );
         },
       },
     );
@@ -337,8 +426,13 @@ export default function PlatformGovernancePage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Platform governance"
-        description="Audit role permissions and manage platform admin access outside clinic user operations."
+        title={t('platformGovernance.title', {
+          defaultValue: 'Platform governance',
+        })}
+        description={t('platformGovernance.description', {
+          defaultValue:
+            'Audit role permissions and manage platform admin access outside clinic user operations.',
+        })}
         actions={
           <Button
             variant="outline"
@@ -349,7 +443,9 @@ export default function PlatformGovernancePage() {
               usersQuery.isFetching ||
               candidatesQuery.isFetching
             }
-            aria-label="Refresh governance data"
+            aria-label={t('platformGovernance.refreshAria', {
+              defaultValue: 'Refresh governance data',
+            })}
           >
             <RefreshCcw
               className={`h-4 w-4 ${
@@ -365,10 +461,30 @@ export default function PlatformGovernancePage() {
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Metric label="Admin accounts" value={adminUsers.length} />
-        <Metric label="Roles" value={roles.length} />
-        <Metric label="Permissions" value={allPermissions} />
-        <Metric label="Platform controls" value={platformPermissions} />
+        <Metric
+          label={t('platformGovernance.metrics.adminAccounts', {
+            defaultValue: 'Admin accounts',
+          })}
+          value={adminUsers.length}
+        />
+        <Metric
+          label={t('platformGovernance.metrics.roles', {
+            defaultValue: 'Roles',
+          })}
+          value={roles.length}
+        />
+        <Metric
+          label={t('platformGovernance.metrics.permissions', {
+            defaultValue: 'Permissions',
+          })}
+          value={allPermissions}
+        />
+        <Metric
+          label={t('platformGovernance.metrics.platformControls', {
+            defaultValue: 'Platform controls',
+          })}
+          value={platformPermissions}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(360px,460px)]">
@@ -377,36 +493,67 @@ export default function PlatformGovernancePage() {
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShieldCheck className="h-4 w-4" />
-                Admin role custody
+                {t('platformGovernance.adminCustody.title', {
+                  defaultValue: 'Admin role custody',
+                })}
               </CardTitle>
-              <Badge variant="outline">{adminUsers.length} current</Badge>
+              <Badge variant="outline">
+                {t('platformGovernance.adminCustody.currentCount', {
+                  count: adminUsers.length,
+                  defaultValue: '{{count}} current',
+                })}
+              </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               {!canMutateAdminRole && (
                 <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>The admin role was not found in role metadata.</span>
+                  <span>
+                    {t('platformGovernance.adminCustody.missingRole', {
+                      defaultValue: 'The admin role was not found in role metadata.',
+                    })}
+                  </span>
                 </div>
               )}
 
               {usersQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading admin accounts...
+                  {t('platformGovernance.adminCustody.loading', {
+                    defaultValue: 'Loading admin accounts...',
+                  })}
                 </div>
               ) : adminUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No admin accounts were returned.
+                  {t('platformGovernance.adminCustody.empty', {
+                    defaultValue: 'No admin accounts were returned.',
+                  })}
                 </p>
               ) : (
                 <div className="overflow-x-auto rounded-md border">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/60 text-left">
                       <tr>
-                        <th className="px-3 py-2 font-medium">User</th>
-                        <th className="px-3 py-2 font-medium">Clinic</th>
-                        <th className="px-3 py-2 font-medium">Status</th>
-                        <th className="px-3 py-2 text-right font-medium">Action</th>
+                        <th className="px-3 py-2 font-medium">
+                          {t('platformGovernance.table.user', {
+                            defaultValue: 'User',
+                          })}
+                        </th>
+                        <th className="px-3 py-2 font-medium">
+                          {t('platformGovernance.table.clinic', {
+                            defaultValue: 'Clinic',
+                          })}
+                        </th>
+                        <th className="px-3 py-2 font-medium">
+                          {t('platformGovernance.table.status', {
+                            defaultValue: 'Status',
+                          })}
+                        </th>
+                        <th className="px-3 py-2 text-right font-medium">
+                          {t('platformGovernance.table.action', {
+                            defaultValue: 'Action',
+                          })}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -419,7 +566,10 @@ export default function PlatformGovernancePage() {
                               <UserIdentity user={user} />
                             </td>
                             <td className="px-3 py-2">
-                              {user.clinic?.name || 'Platform'}
+                              {user.clinic?.name ||
+                                t('platformGovernance.platformClinic', {
+                                  defaultValue: 'Platform',
+                                })}
                             </td>
                             <td className="px-3 py-2">
                               <StatusBadge active={user.isActive !== false} />
@@ -432,7 +582,9 @@ export default function PlatformGovernancePage() {
                                 disabled={isSelf || isLastAdmin || !canMutateAdminRole}
                                 onClick={() => openRevokeDialog(user)}
                               >
-                                Remove admin
+                                {t('platformGovernance.actions.removeAdmin', {
+                                  defaultValue: 'Remove admin',
+                                })}
                               </Button>
                             </td>
                           </tr>
@@ -449,25 +601,37 @@ export default function PlatformGovernancePage() {
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="flex items-center gap-2 text-base">
                 <UserCog className="h-4 w-4" />
-                Grant admin role
+                {t('platformGovernance.grant.title', {
+                  defaultValue: 'Grant admin role',
+                })}
               </CardTitle>
-              <Badge variant="secondary">Global access</Badge>
+              <Badge variant="secondary">
+                {t('platformGovernance.grant.badge', {
+                  defaultValue: 'Global access',
+                })}
+              </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <Input
                 value={candidateSearch}
                 onChange={(event) => setCandidateSearch(event.target.value)}
-                placeholder="Filter by name, email, username, or clinic"
+                placeholder={t('platformGovernance.grant.searchPlaceholder', {
+                  defaultValue: 'Filter by name, email, username, or clinic',
+                })}
               />
 
               {candidatesQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading candidate users...
+                  {t('platformGovernance.grant.loading', {
+                    defaultValue: 'Loading candidate users...',
+                  })}
                 </div>
               ) : candidateUsers.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No non-admin users match this filter.
+                  {t('platformGovernance.grant.empty', {
+                    defaultValue: 'No non-admin users match this filter.',
+                  })}
                 </p>
               ) : (
                 <div className="rounded-md border">
@@ -481,7 +645,7 @@ export default function PlatformGovernancePage() {
                         <div className="mt-2 flex flex-wrap gap-1">
                           {(user.roles || []).map((role) => (
                             <Badge key={role.id || role.name} variant="outline">
-                              {formatRole(role.name)}
+                              {formatRole(role.name, t)}
                             </Badge>
                           ))}
                           {user.clinic?.name && (
@@ -498,7 +662,9 @@ export default function PlatformGovernancePage() {
                         onClick={() => openGrantDialog(user)}
                       >
                         <KeyRound className="mr-2 h-4 w-4" />
-                        Grant admin
+                        {t('platformGovernance.actions.grantAdmin', {
+                          defaultValue: 'Grant admin',
+                        })}
                       </Button>
                     </div>
                   ))}
@@ -511,27 +677,41 @@ export default function PlatformGovernancePage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Role permission matrix</CardTitle>
+              <CardTitle className="text-base">
+                {t('platformGovernance.matrix.title', {
+                  defaultValue: 'Role permission matrix',
+                })}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {rolesQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading role permissions...
+                  {t('platformGovernance.matrix.loading', {
+                    defaultValue: 'Loading role permissions...',
+                  })}
                 </div>
               ) : (
                 <div className="overflow-x-auto rounded-md border">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/60 text-left">
                       <tr>
-                        <th className="px-3 py-2 font-medium">Role</th>
-                        <th className="px-3 py-2 text-right font-medium">Total</th>
+                        <th className="px-3 py-2 font-medium">
+                          {t('platformGovernance.table.role', {
+                            defaultValue: 'Role',
+                          })}
+                        </th>
+                        <th className="px-3 py-2 text-right font-medium">
+                          {t('platformGovernance.table.total', {
+                            defaultValue: 'Total',
+                          })}
+                        </th>
                         {PERMISSION_GROUPS.slice(0, 6).map((group) => (
                           <th
                             key={group}
                             className="px-3 py-2 text-right font-medium"
                           >
-                            {group}
+                            {formatPermissionGroup(group, t)}
                           </th>
                         ))}
                       </tr>
@@ -551,7 +731,7 @@ export default function PlatformGovernancePage() {
                             onClick={() => setSelectedRoleName(role.name)}
                           >
                             <td className="px-3 py-2 font-medium">
-                              {formatRole(role.name)}
+                              {formatRole(role.name, t)}
                             </td>
                             <td className="px-3 py-2 text-right">
                               {(role.permissions || []).length}
@@ -574,11 +754,18 @@ export default function PlatformGovernancePage() {
           <Card>
             <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">
-                {selectedRole ? formatRole(selectedRole.name) : 'Role detail'}
+                {selectedRole
+                  ? formatRole(selectedRole.name, t)
+                  : t('platformGovernance.detail.fallbackTitle', {
+                      defaultValue: 'Role detail',
+                    })}
               </CardTitle>
               {selectedRole && (
                 <Badge variant="outline">
-                  {(selectedRole.permissions || []).length} permissions
+                  {t('platformGovernance.detail.permissionsCount', {
+                    count: (selectedRole.permissions || []).length,
+                    defaultValue: '{{count}} permissions',
+                  })}
                 </Badge>
               )}
             </CardHeader>
@@ -594,7 +781,7 @@ export default function PlatformGovernancePage() {
                     }
                     onClick={() => setSelectedRoleName(role.name)}
                   >
-                    {formatRole(role.name)}
+                    {formatRole(role.name, t)}
                   </Button>
                 ))}
               </div>
@@ -606,7 +793,9 @@ export default function PlatformGovernancePage() {
                     if (!permissions.length) return null;
                     return (
                       <div key={group} className="space-y-2">
-                        <p className="text-sm font-semibold">{group}</p>
+                        <p className="text-sm font-semibold">
+                          {formatPermissionGroup(group, t)}
+                        </p>
                         <div className="flex flex-wrap gap-2">
                           {permissions.map((permission) => (
                             <Badge key={permission} variant="secondary">
@@ -620,7 +809,9 @@ export default function PlatformGovernancePage() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Select a role to inspect permissions.
+                  {t('platformGovernance.detail.selectRole', {
+                    defaultValue: 'Select a role to inspect permissions.',
+                  })}
                 </p>
               )}
             </CardContent>
@@ -639,7 +830,9 @@ export default function PlatformGovernancePage() {
 
       {isLoading && (
         <p className="text-xs text-muted-foreground">
-          Loading governance data...
+          {t('platformGovernance.loadingData', {
+            defaultValue: 'Loading governance data...',
+          })}
         </p>
       )}
     </div>

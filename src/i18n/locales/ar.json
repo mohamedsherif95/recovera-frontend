@@ -60,7 +60,9 @@
     "errorLoadingData": "حدث خطأ أثناء تحميل البيانات",
     "noData": "لا توجد بيانات",
     "unknown": "غير معروف",
-    "update": "تحديث"
+    "update": "تحديث",
+    "download": "تنزيل",
+    "manage": "إدارة"
   },
   "dateRange": {
     "today": "اليوم",
@@ -70,12 +72,13 @@
     "lastMonth": "الشهر الماضي",
     "thisYear": "هذا العام",
     "quickSelect": "اختيار سريع",
-    "selectRange": "اختر الفترة الزمنية"
+    "selectRange": "اختر الفترة الزمنية",
+    "confirmDelete": "تأكيد الحذف"
   },
   "auth": {
     "login": "تسجيل الدخول",
     "logout": "تسجيل الخروج",
-    "register": "إنشاء حساب",
+    "register": "يُنشأ بواسطة الإدارة",
     "forgotPassword": "نسيت كلمة المرور",
     "forgotPasswordDesc": "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
     "resetPassword": "إعادة تعيين كلمة المرور",
@@ -85,12 +88,12 @@
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
     "rememberMe": "تذكرني",
-    "dontHaveAccount": "ليس لديك حساب؟",
+    "dontHaveAccount": "تحتاج إلى صلاحية دخول؟",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
-    "requestAccess": "طلب الوصول",
+    "requestAccess": "اسأل مدير العيادة",
     "accessRequested": "تم طلب الوصول",
     "welcomeBack": "مرحباً بعودتك",
-    "signInToContinue": "سجل الدخول للمتابعة",
+    "signInToContinue": "سجّل الدخول إلى مساحة عمل Recovera",
     "sendResetLink": "إرسال رابط إعادة التعيين",
     "backToLogin": "العودة لتسجيل الدخول",
     "checkYourEmail": "تحقق من بريدك الإلكتروني",
@@ -101,7 +104,10 @@
     "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح!",
     "passwordResetComplete": "اكتملت إعادة تعيين كلمة المرور",
     "passwordResetCompleteDesc": "تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
-    "goToLogin": "الذهاب لتسجيل الدخول"
+    "goToLogin": "الذهاب لتسجيل الدخول",
+    "adminProvisionOnly": "يتم إنشاء الحسابات بواسطة مسؤول منصة Recovera أو مدير العيادة.",
+    "firstLoginTitle": "إعداد كلمة مرور Recovera",
+    "firstLoginDesc": "اختر كلمة مرور دائمة لإكمال إعداد الحساب."
   },
   "nav": {
     "dashboard": "لوحة التحكم",
@@ -117,7 +123,10 @@
     "profile": "الملف الشخصي",
     "clinics": "العيادات",
     "branches": "الفروع",
-    "branchSubscriptions": "اشتراكات الفروع"
+    "branchSubscriptions": "اشتراكات الفروع",
+    "invoices": "الفواتير",
+    "platformBilling": "فوترة المنصة",
+    "platformAdmin": "إدارة المنصة"
   },
   "settings": {
     "theme": "المظهر",
@@ -327,7 +336,8 @@
     "assessmentCategoryForcesAssessment": "الفئة {{categoryName}} تُعامل كجلسة كشف.",
     "reassessmentDoctorRestriction": "لا يمكن إنشاء جلسة إعادة التقييم إلا بواسطة الطبيب المحدد.",
     "reassessmentLockedDoctorHint": "إعادة التقييم مرتبطة بالطبيب: {{doctorName}}.",
-    "crossBranchContext": "تم تقديم هذه الجلسة في {{serviceBranch}} بينما الفرع الأساسي للمريض هو {{primaryBranch}}."
+    "crossBranchContext": "تم تقديم هذه الجلسة في {{serviceBranch}} بينما الفرع الأساسي للمريض هو {{primaryBranch}}.",
+    "profile": "ملف العيادة"
   },
   "payments": {
     "title": "المدفوعات",
@@ -436,7 +446,26 @@
     "packageIncome": "دخل الباقات",
     "patientPaymentsTitle": "تقرير مدفوعات المرضى",
     "secretaryIncomeScopeNote": "بطاقات الدخل تعرض اليوم المحدد من آخر 7 أيام. الرصيد المستحق والجداول تستخدم الفترة الزمنية المحددة.",
-    "toPlaceholder": "إلى تاريخ"
+    "toPlaceholder": "إلى تاريخ",
+    "createStatementInvoice": "إنشاء فاتورة كشف حساب",
+    "failedInvoiceDownload": "تعذر تنزيل الفاتورة.",
+    "filters": "الفلاتر",
+    "invoiceDetails": "تفاصيل الفاتورة",
+    "invoiceLines": "بنود الفاتورة",
+    "invoiceNotFound": "لم يتم العثور على الفاتورة.",
+    "invoiceNumber": "رقم الفاتورة",
+    "invoiceType": "نوع الفاتورة",
+    "invoicesDescription": "مراجعة فواتير المعاملات وكشوف الحساب لهذه المساحة.",
+    "noInvoicesFound": "لا توجد فواتير.",
+    "searchInvoiceNumber": "ابحث برقم الفاتورة",
+    "statementGenerator": "إنشاء كشف حساب",
+    "statementInvoice": "كشف حساب",
+    "statementPatientRequired": "اختر مريضاً قبل إنشاء فاتورة كشف الحساب.",
+    "status": "الحالة",
+    "transactionInvoice": "معاملة",
+    "voidInvoice": "إلغاء الفاتورة",
+    "voidInvoiceDescription": "سيتم وضع علامة إلغاء على هذه الفاتورة. ستبقى المدفوعات والجلسات المرتبطة بها دون تغيير.",
+    "voided": "ملغاة"
   },
   "doctors": {
     "title": "الأطباء",
@@ -463,7 +492,7 @@
     "status": "الحالة",
     "active": "نشط",
     "inactive": "غير نشط",
-    "admin": "مدير",
+    "admin": "مسؤول المنصة",
     "doctor": "طبيب",
     "secretary": "سكرتير",
     "noUsers": "لا يوجد مستخدمون",
@@ -472,11 +501,14 @@
     "assessmentPermission": "صلاحية جلسات الكشف",
     "assessmentAllowed": "مسموح",
     "assessmentNotAllowed": "غير مسموح",
-    "manager": "مدير",
+    "manager": "مدير العيادة",
     "branch_manager": "مدير فرع",
     "clinic": "العيادة",
     "branch": "الفرع",
-    "mustChangePassword": "يجب تغيير كلمة المرور"
+    "mustChangePassword": "يجب تغيير كلمة المرور",
+    "branches": "الفروع",
+    "manageBranches": "إدارة الفروع",
+    "temporaryPassword": "كلمة المرور المؤقتة"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -512,7 +544,8 @@
     "completed": "مكتملة",
     "cancelled": "ملغاة",
     "ongoing": "جارية",
-    "inProgress": "قيد التنفيذ"
+    "inProgress": "قيد التنفيذ",
+    "active": "نشط"
   },
   "messages": {
     "deleteConfirm": "هل أنت متأكد من حذف هذا العنصر؟",
@@ -813,6 +846,169 @@
       "pending": "معلق",
       "reconciled": "تمت التسوية"
     },
-    "selectClinicFirst": "اختر عيادة من الشريط العلوي لإدارة فروعها."
+    "selectClinicFirst": "اختر عيادة من الشريط العلوي لإدارة فروعها.",
+    "primaryBranch": "الفرع الأساسي"
+  },
+  "platformAdmin": {
+    "title": "إدارة المنصة",
+    "subtitle": "لوحة عمليات Recovera",
+    "overview": "نظرة عامة",
+    "overviewTitle": "لوحة إدارة المنصة",
+    "overviewDescription": "استخدم هذه المساحة لإعداد العملاء واشتراكات الفروع وعمليات الفوترة دون الدخول إلى مساحة عمل العيادة.",
+    "scopedOverview": "نطاق العيادة المحددة",
+    "modeLabel": "وضع المنصة",
+    "isolatedBadge": "لوحة معزولة",
+    "adminScope": "نطاق الإدارة",
+    "allClinics": "كل العيادات",
+    "workspace": "مساحة عمل العيادة",
+    "scopeHint": "أعمال المنصة معزولة هنا. يظل تجاوز مساحة العمل مخصصاً للدعم ومعالجة الحالات.",
+    "scopeRequired": "يستخدم نطاق الإدارة",
+    "selectScopeFirst": "حدد نطاق إدارة قبل المتابعة.",
+    "consoleNav": "لوحة التحكم",
+    "collapseSidebar": "طي الشريط الجانبي",
+    "expandSidebar": "توسيع الشريط الجانبي",
+    "governance": "الحوكمة",
+    "operations": {
+      "title": "عمليات المنصة",
+      "description": "حالة مباشرة لوصول الفروع والتسعير والفوترة.",
+      "updatedAt": "آخر تحديث {{value}}",
+      "refresh": "تحديث نظرة عامة المنصة",
+      "loadError": "تعذر تحميل نظرة عامة المنصة."
+    },
+    "metrics": {
+      "clinicGroups": "مجموعات العيادات",
+      "branches": "الفروع",
+      "readyToInvoice": "جاهزة للفوترة",
+      "outstandingBalance": "الرصيد المستحق",
+      "activeCount": "{{count}} نشط",
+      "billingMonth": "شهر الفوترة {{month}}",
+      "currentBillingMonth": "شهر الفوترة الحالي",
+      "openInvoices": "{{count}} فواتير مفتوحة"
+    },
+    "queues": {
+      "review": "مراجعة",
+      "readOnly": "قراءة فقط",
+      "missingPricingBranches": {
+        "title": "فروع تحتاج إلى تسعير",
+        "empty": "كل الفروع النشطة لديها تسعير قابل للاستخدام."
+      },
+      "suspendedBranches": {
+        "title": "الفروع المعلقة",
+        "empty": "لا توجد فروع في وضع القراءة فقط حالياً."
+      },
+      "openInvoices": {
+        "title": "فواتير مفتوحة",
+        "empty": "لا توجد فواتير صادرة ذات رصيد مستحق."
+      }
+    },
+    "collections": {
+      "recent": "التحصيلات الأخيرة",
+      "empty": "لم يتم تسجيل أي تحصيلات بعد."
+    },
+    "billingPosture": {
+      "title": "وضع الفوترة",
+      "missingPricing": "تسعير مفقود",
+      "partiallyPaid": "مدفوع جزئياً",
+      "collectedTotal": "إجمالي المحصل",
+      "openBilling": "فتح الفوترة"
+    },
+    "modules": {
+      "clinics": {
+        "title": "العيادات",
+        "description": "إنشاء مجموعات العيادات وتجهيز أول مستخدمي الإدارة."
+      },
+      "branches": {
+        "title": "الفروع",
+        "description": "مراجعة إعداد الفروع وقوائم التسوية بين الفروع."
+      },
+      "users": {
+        "title": "المستخدمون",
+        "description": "تجهيز المديرين وموظفي الفروع من لوحة الإدارة."
+      },
+      "governance": {
+        "title": "الحوكمة",
+        "description": "مراجعة صلاحيات الأدوار وإدارة وصول مسؤولي المنصة."
+      },
+      "branchSubscriptions": {
+        "title": "اشتراكات الفروع",
+        "description": "التحكم في وصول الفروع وملفات العيادة المفعلة وشروط التسعير."
+      },
+      "platformBilling": {
+        "title": "فوترة المنصة",
+        "description": "إنشاء فواتير الفروع وتنزيل المرفقات وتسجيل التحصيلات."
+      }
+    }
+  },
+  "platformGovernance": {
+    "title": "حوكمة المنصة",
+    "description": "مراجعة صلاحيات الأدوار وإدارة وصول مسؤولي المنصة بعيداً عن عمليات مستخدمي العيادة.",
+    "refreshAria": "تحديث بيانات الحوكمة",
+    "platformClinic": "المنصة",
+    "loadingData": "جاري تحميل بيانات الحوكمة...",
+    "metrics": {
+      "adminAccounts": "حسابات المسؤولين",
+      "roles": "الأدوار",
+      "permissions": "الصلاحيات",
+      "platformControls": "ضوابط المنصة"
+    },
+    "permissionGroups": {
+      "platform": "المنصة",
+      "tenantSetup": "إعداد العملاء",
+      "branchCommercial": "إدارة الفروع التجارية",
+      "clinicOperations": "عمليات العيادة",
+      "finance": "المالية",
+      "reporting": "التقارير",
+      "other": "أخرى"
+    },
+    "dialog": {
+      "grantTitle": "منح دور مسؤول المنصة",
+      "removeTitle": "إزالة دور مسؤول المنصة",
+      "grantDescription": "سيحصل هذا المستخدم على وصول إلى لوحة إدارة المنصة والإدارة العابرة للعيادات.",
+      "removeDescription": "سيفقد هذا المستخدم وصول مسؤول المنصة. ستبقى الأدوار الأخرى غير الإدارية كما هي."
+    },
+    "actions": {
+      "grantAdmin": "منح مسؤول المنصة",
+      "removeAdmin": "إزالة مسؤول المنصة"
+    },
+    "toasts": {
+      "adminGranted": "تم منح دور مسؤول المنصة",
+      "adminRemoved": "تمت إزالة دور مسؤول المنصة",
+      "updateFailed": "تعذر تحديث الأدوار"
+    },
+    "adminCustody": {
+      "title": "إدارة دور مسؤول المنصة",
+      "currentCount": "{{count}} حالياً",
+      "missingRole": "لم يتم العثور على دور مسؤول المنصة في بيانات الأدوار.",
+      "loading": "جاري تحميل حسابات المسؤولين...",
+      "empty": "لم يتم إرجاع أي حسابات مسؤولين."
+    },
+    "table": {
+      "user": "المستخدم",
+      "clinic": "العيادة",
+      "status": "الحالة",
+      "action": "الإجراء",
+      "role": "الدور",
+      "total": "الإجمالي"
+    },
+    "grant": {
+      "title": "منح دور مسؤول المنصة",
+      "badge": "وصول عام",
+      "searchPlaceholder": "تصفية بالاسم أو البريد أو اسم المستخدم أو العيادة",
+      "loading": "جاري تحميل المستخدمين المرشحين...",
+      "empty": "لا يوجد مستخدمون غير مسؤولين يطابقون هذا الفلتر."
+    },
+    "matrix": {
+      "title": "مصفوفة صلاحيات الأدوار",
+      "loading": "جاري تحميل صلاحيات الأدوار..."
+    },
+    "detail": {
+      "fallbackTitle": "تفاصيل الدور",
+      "permissionsCount": "{{count}} صلاحيات",
+      "selectRole": "اختر دوراً لمراجعة صلاحياته."
+    }
+  },
+  "profileDetails": {
+    "title": "تفاصيل الملف",
+    "empty": "اختر ملف عيادة لعرض تفاصيله."
   }
 }

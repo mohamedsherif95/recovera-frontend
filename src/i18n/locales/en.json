@@ -60,7 +60,9 @@
     "amount": "Amount",
     "loadMore": "Load more",
     "noData": "No data",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "download": "Download",
+    "manage": "Manage"
   },
   "dateRange": {
     "today": "Today",
@@ -123,7 +125,8 @@
     "branches": "Branches",
     "branchSubscriptions": "Branch subscriptions",
     "platformBilling": "Platform billing",
-    "platformAdmin": "Platform Admin"
+    "platformAdmin": "Platform Admin",
+    "invoices": "Invoices"
   },
   "platformAdmin": {
     "title": "Platform Admin",
@@ -141,7 +144,147 @@
     "selectScopeFirst": "Select an admin scope before continuing.",
     "consoleNav": "Console",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "scopedOverview": "Selected clinic scope",
+    "governance": "Governance",
+    "operations": {
+      "title": "Platform operations",
+      "description": "Live branch access, pricing, and billing status.",
+      "updatedAt": "Updated {{value}}",
+      "refresh": "Refresh platform overview",
+      "loadError": "Could not load the platform overview."
+    },
+    "metrics": {
+      "clinicGroups": "Clinic groups",
+      "branches": "Branches",
+      "readyToInvoice": "Ready to invoice",
+      "outstandingBalance": "Outstanding balance",
+      "activeCount": "{{count}} active",
+      "billingMonth": "Billing month {{month}}",
+      "currentBillingMonth": "Current billing month",
+      "openInvoices": "{{count}} open invoices"
+    },
+    "queues": {
+      "review": "Review",
+      "readOnly": "Read-only",
+      "missingPricingBranches": {
+        "title": "Branches needing pricing",
+        "empty": "All active branches have usable pricing."
+      },
+      "suspendedBranches": {
+        "title": "Suspended branches",
+        "empty": "No branches are currently read-only."
+      },
+      "openInvoices": {
+        "title": "Open invoices",
+        "empty": "No issued invoices have an outstanding balance."
+      }
+    },
+    "collections": {
+      "recent": "Recent collections",
+      "empty": "No collections recorded yet."
+    },
+    "billingPosture": {
+      "title": "Billing posture",
+      "missingPricing": "Missing pricing",
+      "partiallyPaid": "Partially paid",
+      "collectedTotal": "Collected total",
+      "openBilling": "Open billing"
+    },
+    "modules": {
+      "clinics": {
+        "title": "Clinics",
+        "description": "Create clinic groups and provision their first manager users."
+      },
+      "branches": {
+        "title": "Branches",
+        "description": "Review branch setup and cross-branch reconciliation queues."
+      },
+      "users": {
+        "title": "Users",
+        "description": "Provision managers and branch staff from the admin console."
+      },
+      "governance": {
+        "title": "Governance",
+        "description": "Audit role permissions and manage platform admin access."
+      },
+      "branchSubscriptions": {
+        "title": "Branch subscriptions",
+        "description": "Control branch access, enabled clinic profiles, and pricing terms."
+      },
+      "platformBilling": {
+        "title": "Platform billing",
+        "description": "Generate branch invoices, download artifacts, and record collections."
+      }
+    }
+  },
+  "platformGovernance": {
+    "title": "Platform governance",
+    "description": "Audit role permissions and manage platform admin access outside clinic user operations.",
+    "refreshAria": "Refresh governance data",
+    "platformClinic": "Platform",
+    "loadingData": "Loading governance data...",
+    "metrics": {
+      "adminAccounts": "Admin accounts",
+      "roles": "Roles",
+      "permissions": "Permissions",
+      "platformControls": "Platform controls"
+    },
+    "permissionGroups": {
+      "platform": "Platform",
+      "tenantSetup": "Tenant setup",
+      "branchCommercial": "Branch commercial",
+      "clinicOperations": "Clinic operations",
+      "finance": "Finance",
+      "reporting": "Reporting",
+      "other": "Other"
+    },
+    "dialog": {
+      "grantTitle": "Grant admin role",
+      "removeTitle": "Remove admin role",
+      "grantDescription": "This user will gain access to the platform admin console and cross-clinic administration.",
+      "removeDescription": "This user will lose platform admin access. Existing non-admin roles will remain assigned."
+    },
+    "actions": {
+      "grantAdmin": "Grant admin",
+      "removeAdmin": "Remove admin"
+    },
+    "toasts": {
+      "adminGranted": "Admin role granted",
+      "adminRemoved": "Admin role removed",
+      "updateFailed": "Could not update roles"
+    },
+    "adminCustody": {
+      "title": "Admin role custody",
+      "currentCount": "{{count}} current",
+      "missingRole": "The admin role was not found in role metadata.",
+      "loading": "Loading admin accounts...",
+      "empty": "No admin accounts were returned."
+    },
+    "table": {
+      "user": "User",
+      "clinic": "Clinic",
+      "status": "Status",
+      "action": "Action",
+      "role": "Role",
+      "total": "Total"
+    },
+    "grant": {
+      "title": "Grant admin role",
+      "badge": "Global access",
+      "searchPlaceholder": "Filter by name, email, username, or clinic",
+      "loading": "Loading candidate users...",
+      "empty": "No non-admin users match this filter."
+    },
+    "matrix": {
+      "title": "Role permission matrix",
+      "loading": "Loading role permissions..."
+    },
+    "detail": {
+      "fallbackTitle": "Role detail",
+      "permissionsCount": "{{count}} permissions",
+      "selectRole": "Select a role to inspect permissions."
+    }
   },
   "settings": {
     "theme": "Theme",
@@ -351,7 +494,8 @@
     "assessmentCategoryForcesAssessment": "Category {{categoryName}} is treated as an assessment session.",
     "reassessmentDoctorRestriction": "Only the assigned doctor can create this reassessment session.",
     "reassessmentLockedDoctorHint": "This reassessment is locked to Dr. {{doctorName}}.",
-    "crossBranchContext": "This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}."
+    "crossBranchContext": "This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",
+    "profile": "Clinic profile"
   },
   "payments": {
     "title": "Payments",
@@ -460,7 +604,26 @@
       "tableTitle": "Action History",
       "detailTitle": "Action Log Details",
       "noResults": "No logs found matching your criteria."
-    }
+    },
+    "createStatementInvoice": "Create statement invoice",
+    "failedInvoiceDownload": "Failed to download invoice.",
+    "filters": "Filters",
+    "invoiceDetails": "Invoice details",
+    "invoiceLines": "Line items",
+    "invoiceNotFound": "Invoice not found.",
+    "invoiceNumber": "Invoice number",
+    "invoiceType": "Invoice type",
+    "invoicesDescription": "Review transaction and statement invoices for this workspace.",
+    "noInvoicesFound": "No invoices found.",
+    "searchInvoiceNumber": "Search invoice number",
+    "statementGenerator": "Statement generator",
+    "statementInvoice": "Statement",
+    "statementPatientRequired": "Select a patient before creating a statement invoice.",
+    "status": "Status",
+    "transactionInvoice": "Transaction",
+    "voidInvoice": "Void invoice",
+    "voidInvoiceDescription": "This invoice will be marked void. The underlying payments and sessions remain unchanged.",
+    "voided": "Void"
   },
   "doctors": {
     "title": "Doctors",
@@ -501,7 +664,9 @@
     "temporaryPassword": "Temporary password",
     "clinic": "Clinic",
     "branch": "Branch",
-    "mustChangePassword": "Must change password"
+    "mustChangePassword": "Must change password",
+    "branches": "Branches",
+    "manageBranches": "Manage branches"
   },
   "clinics": {
     "title": "Clinics",
@@ -544,7 +709,8 @@
       "pending": "Pending",
       "reconciled": "Reconciled"
     },
-    "selectClinicFirst": "Select a clinic in the top bar to manage its branches."
+    "selectClinicFirst": "Select a clinic in the top bar to manage its branches.",
+    "primaryBranch": "Primary branch"
   },
   "profile": {
     "title": "Profile",
@@ -580,7 +746,8 @@
     "start": "Start",
     "completed": "Completed",
     "cancelled": "Cancelled",
-    "ongoing": "Ongoing"
+    "ongoing": "Ongoing",
+    "active": "Active"
   },
   "messages": {
     "deleteConfirm": "Are you sure you want to delete this item?",
@@ -839,5 +1006,9 @@
       "timeRange": "Session time must be a whole hour between 10:00 and 24:00",
       "slotConflict": "Cannot move this session. The doctor already has two sessions in this time slot."
     }
+  },
+  "profileDetails": {
+    "title": "Profile details",
+    "empty": "Select a clinic profile to review its details."
   }
 }

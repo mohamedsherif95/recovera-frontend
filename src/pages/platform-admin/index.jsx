@@ -5,6 +5,7 @@ import {
   Banknote,
   Building2,
   CheckCircle2,
+  ClipboardCheck,
   Clock3,
   CreditCard,
   Receipt,
@@ -23,6 +24,16 @@ import { useUIStore } from '@/store/uiStore';
 import { PERMISSIONS } from '@/lib/constants';
 
 const modules = [
+  {
+    titleKey: 'platformAdmin.modules.onboarding.title',
+    titleDefault: 'Branch onboarding',
+    descriptionKey: 'platformAdmin.modules.onboarding.description',
+    descriptionDefault:
+      'Launch a company, subscribed branch, manager account, profiles, and first pricing terms in one workflow.',
+    href: '/platform-admin/onboarding',
+    icon: ClipboardCheck,
+    permission: PERMISSIONS['clinics:create'],
+  },
   {
     titleKey: 'platformAdmin.modules.clinics.title',
     titleDefault: 'Clinics',

@@ -36,6 +36,7 @@ import BranchesPage from '@/pages/branches';
 import BranchSubscriptionsPage from '@/pages/branch-subscriptions';
 import PlatformBillingPage from '@/pages/platform-billing';
 import PlatformGovernancePage from '@/pages/platform-governance';
+import PlatformOnboardingPage from '@/pages/platform-onboarding';
 import PlatformAdminPage from '@/pages/platform-admin';
 import InvoicesPage from '@/pages/invoices';
 
@@ -129,6 +130,14 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <PlatformAdminPage />,
+      },
+      {
+        path: 'onboarding',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['clinics:create']}>
+            <PlatformOnboardingPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'clinics',

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
+  ClipboardCheck,
   CreditCard,
   Home,
   LayoutDashboard,
@@ -58,6 +59,13 @@ const platformNavigation = [
       PERMISSIONS['branchSubscriptions:view'],
       PERMISSIONS['platformBilling:view'],
     ],
+  },
+  {
+    name: 'platformOnboarding.nav',
+    label: 'Onboarding',
+    href: '/platform-admin/onboarding',
+    icon: ClipboardCheck,
+    permission: PERMISSIONS['clinics:create'],
   },
   {
     name: 'nav.clinics',

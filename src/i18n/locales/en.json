@@ -128,6 +128,76 @@
     "platformAdmin": "Platform Admin",
     "invoices": "Invoices"
   },
+  "platformOnboarding": {
+    "nav": "Onboarding",
+    "title": "Branch onboarding",
+    "description": "Create a company, configure its subscribed branch, provision the manager, and activate branch billing from one admin workflow.",
+    "submit": "Launch branch onboarding",
+    "status": {
+      "done": "Done",
+      "running": "Running",
+      "error": "Error",
+      "pending": "Pending"
+    },
+    "steps": {
+      "title": "Launch sequence",
+      "clinic": "Company",
+      "branch": "Branch",
+      "manager": "Manager",
+      "subscription": "Subscription"
+    },
+    "company": {
+      "title": "Company group",
+      "description": "Create the clinic group that owns patients, users, and branches.",
+      "name": "Company name",
+      "slug": "Workspace slug",
+      "billingNotes": "Platform billing notes"
+    },
+    "branch": {
+      "title": "Subscribed branch",
+      "description": "The first branch becomes the subscribed operating unit and invoice target.",
+      "name": "Branch name",
+      "namePlaceholder": "Main Branch",
+      "accessStatus": "Opening access state",
+      "accessNotes": "Access notes"
+    },
+    "manager": {
+      "title": "Manager account",
+      "description": "Provision the clinic manager and assign them to the subscribed branch.",
+      "passwordRule": "Temporary password must include uppercase, lowercase, and a number. The manager must change it on first login."
+    },
+    "commercial": {
+      "title": "Profiles and pricing",
+      "description": "Schedule the first commercial terms for the next billing month.",
+      "enabledProfiles": "Enabled clinic profiles"
+    },
+    "readiness": {
+      "company": "Company name and slug",
+      "branch": "Subscribed branch name",
+      "manager": "Manager identity and temporary password",
+      "profiles": "At least one enabled profile",
+      "pricing": "Complete pricing model",
+      "roles": "Manager role metadata loaded"
+    },
+    "review": {
+      "title": "Launch review",
+      "month": "Effective month",
+      "baseFee": "Base fee",
+      "incomplete": "Complete the readiness checklist before launching onboarding."
+    },
+    "result": {
+      "title": "Onboarding complete",
+      "openSubscription": "Open subscription",
+      "openUsers": "Open users"
+    },
+    "toasts": {
+      "success": "Branch onboarding completed",
+      "failed": "Could not complete onboarding"
+    },
+    "errors": {
+      "defaultBranchMissing": "The default branch was not created for this company."
+    }
+  },
   "platformAdmin": {
     "title": "Platform Admin",
     "subtitle": "Recovera operations console",
@@ -192,6 +262,10 @@
       "openBilling": "Open billing"
     },
     "modules": {
+      "onboarding": {
+        "title": "Branch onboarding",
+        "description": "Launch a company, subscribed branch, manager account, profiles, and first pricing terms in one workflow."
+      },
       "clinics": {
         "title": "Clinics",
         "description": "Create clinic groups and provision their first manager users."

@@ -31,7 +31,7 @@ const modules = [
   },
   {
     title: 'Users',
-    description: 'Provision clinic managers and branch staff from the admin console.',
+    description: 'Provision managers and branch staff from the admin console.',
     href: '/platform-admin/users',
     icon: Users,
     permission: PERMISSIONS['users:viewAll'],

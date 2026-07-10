@@ -12,11 +12,8 @@ export function ProtectedRoute({
   const { hasRole, can, canAny, permissions } = usePermissions();
   const location = useLocation();
 
-  console.log('ProtectedRoute check:', { isAuthenticated, hasToken: !!token, hasUser: !!user, path: location.pathname });
-
   // Check both isAuthenticated flag and token existence
   if (!isAuthenticated || !token) {
-    console.log('Not authenticated, redirecting to login');
     // Redirect to login, save the attempted location
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

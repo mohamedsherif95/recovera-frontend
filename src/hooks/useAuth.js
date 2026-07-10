@@ -22,7 +22,6 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
-      console.log('Login response:', data);
       if (data?.requiresPasswordChange && data?.setupToken) {
         sessionStorage.setItem(
           'recovera-first-login',
@@ -50,7 +49,6 @@ export function useAuth() {
 
       // Store auth data
       setAuth(user, accessToken, refreshToken);
-      console.log('Auth state updated');
 
       // Trigger permissions map refetch
       queryClient.invalidateQueries({ queryKey: ['access', 'roles-permissions'] });
@@ -59,7 +57,6 @@ export function useAuth() {
 
       // Delay navigation slightly to ensure state is persisted
       setTimeout(() => {
-        console.log('Navigating to daily ops...');
         navigate('/', { replace: true });
       }, 100);
     },

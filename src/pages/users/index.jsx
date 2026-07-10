@@ -51,6 +51,12 @@ const emptyCreateForm = {
   canPerformAssessments: false,
 };
 
+const MANAGER_CREATE_ROLE_NAMES = [
+  USER_ROLES.BRANCH_MANAGER,
+  USER_ROLES.DOCTOR,
+  USER_ROLES.SECRETARY,
+];
+
 export default function UsersPage() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -175,7 +181,7 @@ export default function UsersPage() {
           USER_ROLES.SECRETARY,
         ].includes(role.name);
       }
-      return role.name === USER_ROLES.DOCTOR;
+      return MANAGER_CREATE_ROLE_NAMES.includes(role.name);
     });
   }, [allRoles, isPlatformAdmin]);
 

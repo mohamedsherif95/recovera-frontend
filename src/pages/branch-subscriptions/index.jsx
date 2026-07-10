@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Building2, Loader2, RefreshCcw, Save } from 'lucide-react';
+import {
+  AlertTriangle,
+  Building2,
+  CalendarClock,
+  CreditCard,
+  Layers3,
+  Loader2,
+  RefreshCcw,
+  Save,
+  ShieldCheck,
+} from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +38,7 @@ import {
   CLINIC_PROFILES,
   PERMISSIONS,
 } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 const PROFILE_OPTIONS = [
   {
@@ -64,10 +74,12 @@ const PRICING_MODEL_OPTIONS = [
   {
     value: BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
     label: 'Flexible branch plan',
+    shortLabel: 'Base + allowance + overage',
   },
   {
     value: BRANCH_PRICING_MODELS.CAPACITY_PACKAGE,
     label: 'Capacity branch package',
+    shortLabel: 'Tiered package',
   },
 ];
 
@@ -85,6 +97,9 @@ const emptyForm = {
 
 const getPricingModelLabel = (model) =>
   PRICING_MODEL_OPTIONS.find((option) => option.value === model)?.label || model;
+
+const getProfileLabel = (profile) =>
+  PROFILE_OPTIONS.find((option) => option.value === profile)?.label || profile;
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -219,66 +234,78 @@ const formatMoney = (value) => {
   });
 };
 
-const PricingTermPanel = ({ title, term }) => {
+const formatProfiles = (profiles) => {
+  if (!profiles?.length) return 'No profiles enabled';
+  return profiles.map(getProfileLabel).join(', ');
+};
+
+const getFixedFeeMultiplier = (profileCount) => {
+  if (profileCount <= 0) return '0x';
+  return `${(1 + Math.max(0, profileCount - 1) * 0.5).toFixed(1)}x`;
+};
+
+const isReadOnlyStatus = (status) =>
+  status === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+
+const TermSummaryPanel = ({ title, term }) => {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        {!term ? (
-          <p className="text-muted-foreground">No pricing term available.</p>
-        ) : (
-          <>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Pricing model</p>
-                <p className="font-medium">
-                  {getPricingModelLabel(term.pricingModel)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Base monthly fee</p>
-                <p className="font-medium">{formatMoney(term.baseMonthlyFee)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Package label</p>
-                <p className="font-medium">{term.packageName || '--'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Effective month</p>
-                <p className="font-medium">
-                  {formatDate(
-                    term.effectiveMonth || term.effectiveFrom || term.startsAt,
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Included visits</p>
-                <p className="font-medium">
-                  {formatMoney(term.includedMonthlyVisits)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Overage block</p>
-                <p className="font-medium">
-                  {term.overageBlockSize
-                    ? `${formatMoney(term.overageBlockSize)} visits / ${formatMoney(
-                        term.overageBlockFee,
-                      )}`
-                    : '--'}
-                </p>
-              </div>
-            </div>
-          </>
+    <div className="rounded-md border bg-muted/20 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">{title}</h3>
+        {term?.pricingModel && (
+          <Badge variant="secondary">{getPricingModelLabel(term.pricingModel)}</Badge>
         )}
-      </CardContent>
-    </Card>
+      </div>
+      {!term ? (
+        <p className="text-sm text-muted-foreground">No pricing term available.</p>
+      ) : (
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
+          <div>
+            <dt className="text-xs text-muted-foreground">Effective month</dt>
+            <dd className="font-medium">
+              {formatDate(term.effectiveMonth || term.effectiveFrom || term.startsAt)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Base/package fee</dt>
+            <dd className="font-medium">{formatMoney(term.baseMonthlyFee)}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Package label</dt>
+            <dd className="font-medium">{term.packageName || '--'}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Included visits</dt>
+            <dd className="font-medium">
+              {formatMoney(term.includedMonthlyVisits)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Overage block</dt>
+            <dd className="font-medium">
+              {term.overageBlockSize
+                ? `${formatMoney(term.overageBlockSize)} visits`
+                : '--'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Overage fee</dt>
+            <dd className="font-medium">{formatMoney(term.overageBlockFee)}</dd>
+          </div>
+        </dl>
+      )}
+    </div>
   );
 };
 
+const SavingIcon = ({ isSaving }) =>
+  isSaving ? (
+    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+  ) : (
+    <Save className="mr-2 h-4 w-4" />
+  );
+
 export default function BranchSubscriptionsPage() {
-  const { t } = useTranslation();
   const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
   const canView = can(PERMISSIONS['branchSubscriptions:view']);
@@ -410,51 +437,52 @@ export default function BranchSubscriptionsPage() {
     });
   };
 
-  const buildPayload = () => {
-    const enabledProfiles = form.enabledProfiles;
-    const payload = {
-      enabledProfiles,
-      accessStatus: form.accessStatus,
-      accessNotes: form.accessNotes.trim() || null,
-      pricingModel: form.pricingModel,
-    };
-
-    if (form.baseMonthlyFee !== '') {
-      payload.baseMonthlyFee = toMoneyInteger(form.baseMonthlyFee);
-    }
-    if (form.packageName.trim()) {
-      payload.packageName = form.packageName.trim();
-    } else {
-      payload.packageName = null;
-    }
-    if (form.includedMonthlyVisits !== '') {
-      payload.includedMonthlyVisits = toMoneyInteger(form.includedMonthlyVisits);
-    }
-    if (form.overageBlockSize !== '') {
-      payload.overageBlockSize = Math.max(
-        1,
-        toMoneyInteger(form.overageBlockSize),
-      );
-    } else {
-      payload.overageBlockSize = null;
-    }
-    if (form.overageBlockFee !== '') {
-      payload.overageBlockFee = toMoneyInteger(form.overageBlockFee);
-    }
-
-    return payload;
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (needsClinicSelection || !selectedBranchId) return;
-    if (!form.enabledProfiles.length) return;
+  const submitSubscriptionPatch = (data) => {
+    if (needsClinicSelection || !selectedBranchId || !canManage) return;
 
     updateSubscription.mutate({
       branchId: selectedBranchId,
-      data: buildPayload(),
+      data,
       options: platformScopeOptions,
     });
+  };
+
+  const buildAccessPayload = () => ({
+    accessStatus: form.accessStatus,
+    accessNotes: form.accessNotes.trim() || null,
+  });
+
+  const buildProfilesPayload = () => ({
+    enabledProfiles: form.enabledProfiles,
+  });
+
+  const buildPricingPayload = () => ({
+    pricingModel: form.pricingModel,
+    baseMonthlyFee: toMoneyInteger(form.baseMonthlyFee),
+    packageName: form.packageName.trim() || null,
+    includedMonthlyVisits: toMoneyInteger(form.includedMonthlyVisits),
+    overageBlockSize:
+      form.overageBlockSize === ''
+        ? null
+        : Math.max(1, toMoneyInteger(form.overageBlockSize)),
+    overageBlockFee: toMoneyInteger(form.overageBlockFee),
+  });
+
+  const handleAccessSubmit = (event) => {
+    event.preventDefault();
+    submitSubscriptionPatch(buildAccessPayload());
+  };
+
+  const handleProfilesSubmit = (event) => {
+    event.preventDefault();
+    if (!form.enabledProfiles.length) return;
+    submitSubscriptionPatch(buildProfilesPayload());
+  };
+
+  const handlePricingSubmit = (event) => {
+    event.preventDefault();
+    if (!isPricingReady) return;
+    submitSubscriptionPatch(buildPricingPayload());
   };
 
   const statusLabel =
@@ -465,122 +493,386 @@ export default function BranchSubscriptionsPage() {
     form.pricingModel === BRANCH_PRICING_MODELS.FLEXIBLE_USAGE;
   const isCapacityPackage =
     form.pricingModel === BRANCH_PRICING_MODELS.CAPACITY_PACKAGE;
+  const flexiblePricingReady =
+    !isFlexibleUsage ||
+    (toMoneyInteger(form.overageBlockSize) > 0 &&
+      toMoneyInteger(form.overageBlockFee) > 0);
+  const capacityPricingReady =
+    !isCapacityPackage ||
+    (form.packageName.trim().length > 0 &&
+      toMoneyInteger(form.includedMonthlyVisits) > 0);
+  const packageOverageReady =
+    !isCapacityPackage ||
+    (form.overageBlockSize === '' && form.overageBlockFee === '') ||
+    (toMoneyInteger(form.overageBlockSize) > 0 &&
+      toMoneyInteger(form.overageBlockFee) > 0);
+  const isPricingReady =
+    flexiblePricingReady && capacityPricingReady && packageOverageReady;
+  const isSaving = updateSubscription.isPending;
+  const readOnlyAccess = isReadOnlyStatus(form.accessStatus);
+  const fixedFeeMultiplier = getFixedFeeMultiplier(form.enabledProfiles.length);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Branch subscriptions"
-        description="Manage branch access status, enabled clinic profiles, and default pricing terms."
+        description="Platform workbench for branch access, profile availability, and commercial terms."
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => {
-                refetchBranches();
-                if (selectedBranchId) refetchSubscription();
-              }}
-              disabled={
-                needsClinicSelection ||
-                isBranchesFetching ||
-                isSubscriptionFetching
-              }
-            >
-              <RefreshCcw
-                className={`h-4 w-4 ${
-                  isBranchesFetching || isSubscriptionFetching ? 'animate-spin' : ''
-                }`}
-              />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              refetchBranches();
+              if (selectedBranchId) refetchSubscription();
+            }}
+            disabled={
+              needsClinicSelection ||
+              isBranchesFetching ||
+              isSubscriptionFetching
+            }
+          >
+            <RefreshCcw
+              className={cn(
+                'h-4 w-4',
+                (isBranchesFetching || isSubscriptionFetching) && 'animate-spin',
+              )}
+            />
+          </Button>
         }
       />
 
       {needsClinicSelection && (
         <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30">
           <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-100">
-            Select a clinic in the top bar to manage its branch subscriptions.
+            Select a clinic in the platform admin top bar to manage its branch
+            subscriptions.
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="h-4 w-4" />
-            Branch
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isBranchesLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading branches...
-            </div>
-          ) : branches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {needsClinicSelection
-                ? 'Select a clinic first.'
-                : 'No branches are available.'}
-            </p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-[minmax(220px,360px)_1fr] md:items-end">
-              <div className="space-y-2">
-                <Label>Branch</Label>
-                <Select
-                  value={selectedBranchId}
-                  onValueChange={setSelectedBranchId}
-                  disabled={!canView}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {branches.map((branch) => (
-                      <SelectItem key={branch.id} value={String(branch.id)}>
-                        {branch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <div className="grid gap-4 xl:grid-cols-[minmax(280px,380px)_1fr]">
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Building2 className="h-4 w-4" />
+              Branch
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isBranchesLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading branches...
               </div>
-              {selectedBranch && (
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="font-medium">{selectedBranch.name}</span>
-                  {selectedBranch.isDefault && (
-                    <Badge variant="secondary">Default branch</Badge>
-                  )}
-                  <Badge
-                    variant={
-                      form.accessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.ACTIVE
-                        ? 'default'
-                        : 'outline'
-                    }
+            ) : branches.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {needsClinicSelection
+                  ? 'Select a clinic first.'
+                  : 'No branches are available.'}
+              </p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <Select
+                    value={selectedBranchId}
+                    onValueChange={setSelectedBranchId}
+                    disabled={!canView}
                   >
-                    {statusLabel}
-                  </Badge>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select branch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                {selectedBranch && (
+                  <div className="rounded-md border bg-muted/20 p-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{selectedBranch.name}</span>
+                      {selectedBranch.isDefault && (
+                        <Badge variant="secondary">Default branch</Badge>
+                      )}
+                      <Badge variant={readOnlyAccess ? 'destructive' : 'default'}>
+                        {statusLabel}
+                      </Badge>
+                    </div>
+                    <dl className="mt-3 grid gap-3 text-sm">
+                      <div>
+                        <dt className="text-xs text-muted-foreground">
+                          Enabled profiles
+                        </dt>
+                        <dd className="font-medium">
+                          {formatProfiles(form.enabledProfiles)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs text-muted-foreground">
+                          Fixed fee multiplier
+                        </dt>
+                        <dd className="font-medium">{fixedFeeMultiplier}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <CreditCard className="h-4 w-4" />
+              Commercial snapshot
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!selectedBranchId ? (
+              <p className="text-sm text-muted-foreground">
+                Select a branch to review pricing terms.
+              </p>
+            ) : isSubscriptionLoading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading subscription...
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                <TermSummaryPanel
+                  title="Current term"
+                  term={normalizedSubscription.currentPricingTerm}
+                />
+                <TermSummaryPanel
+                  title="Next billing month"
+                  term={normalizedSubscription.nextPricingTerm}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {!needsClinicSelection && selectedBranchId && (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader className="pb-4">
-              <CardTitle className="text-base">Access and profiles</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {isSubscriptionLoading ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading subscription...
+        <>
+          {!canManage && (
+            <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30">
+              <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-100">
+                You can view branch subscriptions, but you do not have permission to
+                change them.
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,440px)]">
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CalendarClock className="h-4 w-4" />
+                    Next-month pricing
+                  </CardTitle>
+                  <Badge variant="outline">Effective next billing month</Badge>
                 </div>
-              ) : (
-                <>
-                  <div className="grid gap-4 md:grid-cols-2">
+              </CardHeader>
+              <CardContent>
+                {isSubscriptionLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading subscription...
+                  </div>
+                ) : (
+                  <form className="space-y-5" onSubmit={handlePricingSubmit}>
+                    <div className="space-y-2">
+                      <Label>Pricing model</Label>
+                      <div
+                        className="grid gap-2 sm:grid-cols-2"
+                        role="radiogroup"
+                        aria-label="Pricing model"
+                      >
+                        {PRICING_MODEL_OPTIONS.map((model) => {
+                          const selected = form.pricingModel === model.value;
+                          return (
+                            <button
+                              key={model.value}
+                              type="button"
+                              aria-pressed={selected}
+                              disabled={!canManage}
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  pricingModel: model.value,
+                                }))
+                              }
+                              className={cn(
+                                'min-h-16 rounded-md border px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+                                selected
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'bg-background hover:bg-accent',
+                              )}
+                            >
+                              <span className="block font-semibold">
+                                {model.label}
+                              </span>
+                              <span className="mt-1 block text-xs text-muted-foreground">
+                                {model.shortLabel}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="base-monthly-fee">
+                          Base/package fee
+                        </Label>
+                        <Input
+                          id="base-monthly-fee"
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={form.baseMonthlyFee}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              baseMonthlyFee: event.target.value,
+                            }))
+                          }
+                          disabled={!canManage}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="included-monthly-visits">
+                          Included monthly visits
+                        </Label>
+                        <Input
+                          id="included-monthly-visits"
+                          type="number"
+                          min={isCapacityPackage ? '1' : '0'}
+                          step="1"
+                          value={form.includedMonthlyVisits}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              includedMonthlyVisits: event.target.value,
+                            }))
+                          }
+                          disabled={!canManage}
+                          required={isCapacityPackage}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="package-name">Package label</Label>
+                        <Input
+                          id="package-name"
+                          value={form.packageName}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              packageName: event.target.value,
+                            }))
+                          }
+                          placeholder="e.g. Growth, Scale"
+                          disabled={!canManage}
+                          required={isCapacityPackage}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="overage-block-size">
+                          Overage block size
+                        </Label>
+                        <Input
+                          id="overage-block-size"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={form.overageBlockSize}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              overageBlockSize: event.target.value,
+                            }))
+                          }
+                          disabled={!canManage}
+                          required={isFlexibleUsage}
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="overage-block-fee">
+                          Overage block fee
+                        </Label>
+                        <Input
+                          id="overage-block-fee"
+                          type="number"
+                          min={isFlexibleUsage ? '1' : '0'}
+                          step="1"
+                          value={form.overageBlockFee}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              overageBlockFee: event.target.value,
+                            }))
+                          }
+                          disabled={!canManage}
+                          required={isFlexibleUsage}
+                        />
+                      </div>
+                    </div>
+
+                    {!isPricingReady && (
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Complete the required fields for the selected pricing
+                          model before saving.
+                        </span>
+                      </div>
+                    )}
+
+                    {canManage && (
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          disabled={isSaving || !isPricingReady}
+                        >
+                          <SavingIcon isSaving={isSaving} />
+                          Save next-month pricing
+                        </Button>
+                      </div>
+                    )}
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
+              <Card
+                className={cn(
+                  readOnlyAccess &&
+                    'border-destructive/40 bg-destructive/[0.03]',
+                )}
+              >
+                <CardHeader className="pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <ShieldCheck className="h-4 w-4" />
+                      Access control
+                    </CardTitle>
+                    <Badge variant={readOnlyAccess ? 'destructive' : 'default'}>
+                      {statusLabel}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form className="space-y-4" onSubmit={handleAccessSubmit}>
                     <div className="space-y-2">
                       <Label>Access status</Label>
                       <Select
@@ -605,134 +897,60 @@ export default function BranchSubscriptionsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Pricing model</Label>
-                      <Select
-                        value={form.pricingModel}
-                        onValueChange={(value) =>
-                          setForm((current) => ({
-                            ...current,
-                            pricingModel: value,
-                          }))
-                        }
-                        disabled={!canManage}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PRICING_MODEL_OPTIONS.map((model) => (
-                            <SelectItem key={model.value} value={model.value}>
-                              {model.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="package-name">Package label</Label>
-                      <Input
-                        id="package-name"
-                        value={form.packageName}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            packageName: event.target.value,
-                          }))
-                        }
-                        placeholder="e.g. Flexible, Growth, Scale"
-                        disabled={!canManage}
-                        required={isCapacityPackage}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="base-monthly-fee">
-                        Next-month base/package fee
-                      </Label>
-                      <Input
-                        id="base-monthly-fee"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={form.baseMonthlyFee}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            baseMonthlyFee: event.target.value,
-                          }))
-                        }
-                        disabled={!canManage}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="included-monthly-visits">
-                        Included monthly visits
-                      </Label>
-                      <Input
-                        id="included-monthly-visits"
-                        type="number"
-                        min={isCapacityPackage ? '1' : '0'}
-                        step="1"
-                        value={form.includedMonthlyVisits}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            includedMonthlyVisits: event.target.value,
-                          }))
-                        }
-                        disabled={!canManage}
-                        required={isCapacityPackage}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="overage-block-size">
-                        Overage block size
-                      </Label>
-                      <Input
-                        id="overage-block-size"
-                        type="number"
-                        min="1"
-                        step="1"
-                        value={form.overageBlockSize}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            overageBlockSize: event.target.value,
-                          }))
-                        }
-                        disabled={!canManage}
-                        required={isFlexibleUsage}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="overage-block-fee">
-                        Overage block fee
-                      </Label>
-                      <Input
-                        id="overage-block-fee"
-                        type="number"
-                        min={isFlexibleUsage ? '1' : '0'}
-                        step="1"
-                        value={form.overageBlockFee}
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            overageBlockFee: event.target.value,
-                          }))
-                        }
-                        disabled={!canManage}
-                        required={isFlexibleUsage}
-                      />
-                    </div>
-                    {!hasEnabledProfiles && (
-                      <p className="text-sm font-medium text-destructive">
-                        Select at least one enabled profile before saving.
-                      </p>
-                    )}
-                  </div>
 
-                  <div className="space-y-3">
-                    <Label>Enabled profiles</Label>
+                    {readOnlyAccess && (
+                      <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Read-only blocks mutating clinic actions while preserving
+                          login and viewing access.
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="access-notes">Access notes</Label>
+                      <Textarea
+                        id="access-notes"
+                        value={form.accessNotes}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            accessNotes: event.target.value,
+                          }))
+                        }
+                        disabled={!canManage}
+                      />
+                    </div>
+
+                    {canManage && (
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          variant={readOnlyAccess ? 'destructive' : 'default'}
+                          disabled={isSaving}
+                        >
+                          <SavingIcon isSaving={isSaving} />
+                          Save access
+                        </Button>
+                      </div>
+                    )}
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Layers3 className="h-4 w-4" />
+                      Clinic profiles
+                    </CardTitle>
+                    <Badge variant="secondary">{fixedFeeMultiplier}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <form className="space-y-4" onSubmit={handleProfilesSubmit}>
                     <div className="rounded-md border">
                       {PROFILE_OPTIONS.map((profile) => {
                         const enabled = form.enabledProfiles.includes(profile.value);
@@ -753,59 +971,36 @@ export default function BranchSubscriptionsPage() {
                         );
                       })}
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="access-notes">Access notes</Label>
-                    <Textarea
-                      id="access-notes"
-                      value={form.accessNotes}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          accessNotes: event.target.value,
-                        }))
-                      }
-                      disabled={!canManage}
-                    />
-                  </div>
-
-                  {canManage && (
-                    <div className="flex justify-end">
-                      <Button
-                        type="submit"
-                        disabled={
-                          updateSubscription.isPending ||
-                          needsClinicSelection ||
-                          !selectedBranchId ||
-                          !hasEnabledProfiles
-                        }
-                      >
-                        {updateSubscription.isPending ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="mr-2 h-4 w-4" />
-                        )}
-                        {t('common.save', { defaultValue: 'Save' })}
-                      </Button>
+                    <div className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
+                      First profile is 1.0x fixed fee; each extra enabled profile
+                      adds 0.5x.
                     </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <PricingTermPanel
-              title="Current pricing term"
-              term={normalizedSubscription.currentPricingTerm}
-            />
-            <PricingTermPanel
-              title="Next pricing term"
-              term={normalizedSubscription.nextPricingTerm}
-            />
+                    {!hasEnabledProfiles && (
+                      <p className="text-sm font-medium text-destructive">
+                        Select at least one enabled profile before saving.
+                      </p>
+                    )}
+
+                    {canManage && (
+                      <div className="flex justify-end">
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          disabled={isSaving || !hasEnabledProfiles}
+                        >
+                          <SavingIcon isSaving={isSaving} />
+                          Save profiles
+                        </Button>
+                      </div>
+                    )}
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </form>
+        </>
       )}
     </div>
   );

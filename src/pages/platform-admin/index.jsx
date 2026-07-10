@@ -47,6 +47,13 @@ const modules = [
     requiresScope: true,
   },
   {
+    title: 'Governance',
+    description: 'Audit role permissions and manage platform admin access.',
+    href: '/platform-admin/governance',
+    icon: ShieldCheck,
+    permission: PERMISSIONS['users:manageRoles'],
+  },
+  {
     title: 'Branch subscriptions',
     description: 'Control branch access, enabled clinic profiles, and pricing terms.',
     href: '/platform-admin/branch-subscriptions',

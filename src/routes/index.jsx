@@ -35,6 +35,7 @@ import ClinicsPage from '@/pages/clinics';
 import BranchesPage from '@/pages/branches';
 import BranchSubscriptionsPage from '@/pages/branch-subscriptions';
 import PlatformBillingPage from '@/pages/platform-billing';
+import PlatformGovernancePage from '@/pages/platform-governance';
 import PlatformAdminPage from '@/pages/platform-admin';
 import InvoicesPage from '@/pages/invoices';
 
@@ -168,6 +169,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['platformBilling:view']}>
             <PlatformBillingPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'governance',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['users:manageRoles']}>
+            <PlatformGovernancePage />
           </ProtectedRoute>
         ),
       },

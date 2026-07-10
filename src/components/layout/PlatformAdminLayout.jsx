@@ -81,6 +81,13 @@ const platformNavigation = [
     permission: PERMISSIONS['users:viewAll'],
   },
   {
+    name: 'platformAdmin.governance',
+    label: 'Governance',
+    href: '/platform-admin/governance',
+    icon: ShieldCheck,
+    permission: PERMISSIONS['users:manageRoles'],
+  },
+  {
     name: 'nav.branchSubscriptions',
     label: 'Branch subscriptions',
     href: '/platform-admin/branch-subscriptions',

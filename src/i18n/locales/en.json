@@ -216,6 +216,68 @@
         "title": "Platform billing",
         "description": "Generate branch invoices, download artifacts, and record collections."
       }
+    },
+    "branchAdministration": {
+      "title": "Branch administration",
+      "description": "Manage the branch records that subscriptions, billing, and access controls attach to.",
+      "subscriptions": "Subscriptions",
+      "clientUnitTitle": "Branch is the subscribed client unit.",
+      "clientUnitDescription": "Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.",
+      "dialogDescription": "This changes the branch record only. Commercial terms and access status are managed from branch subscriptions."
+    },
+    "clinicGroups": {
+      "title": "Clinic groups",
+      "description": "Company-level tenants. Branch subscriptions, billing, and access controls are managed per branch.",
+      "createClinicGroup": "Create clinic group",
+      "editClinicGroup": "Edit clinic group",
+      "companySettings": "Company settings",
+      "provisionUser": "Provision user",
+      "provisionClinicUser": "Provision clinic user",
+      "directory": "Clinic group directory",
+      "totalCount": "{{count}} total",
+      "dialogDescription": "Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.",
+      "provisionDescription": "Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.",
+      "metrics": {
+        "clinicGroups": "Clinic groups",
+        "active": "Active",
+        "suspended": "Suspended",
+        "billingNotes": "Billing notes"
+      },
+      "toasts": {
+        "created": "Clinic created",
+        "updated": "Clinic updated",
+        "saveFailed": "Could not save clinic",
+        "selectRole": "Select a role before provisioning the user",
+        "userProvisioned": "User provisioned with forced first-login password change",
+        "provisionFailed": "Could not provision user"
+      }
+    },
+    "userAccess": {
+      "title": "User access administration",
+      "description": "Provision clinic managers and operational users for the selected clinic group.",
+      "provisionUser": "Provision user",
+      "noticeTitle": "Admin console user changes apply to the selected clinic group.",
+      "noticeDescription": "Platform admin accounts are shown here, but admin role assignment is kept out of the routine clinic user directory.",
+      "directory": "Clinic user directory",
+      "shownCount": "{{count}} shown",
+      "provisionClinicUser": "Provision clinic user",
+      "provisionDescription": "Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.",
+      "temporaryPasswordDescription": "Users start with a temporary password and must set a permanent password on first login.",
+      "metrics": {
+        "usersInScope": "Users in scope",
+        "activeUsers": "Active users",
+        "managers": "Managers",
+        "adminAccounts": "Admin accounts",
+        "clinicalLogistics": "Clinical/logistics"
+      },
+      "toasts": {
+        "selectValidRole": "Select a valid role",
+        "userProvisioned": "User provisioned with forced first-login password change",
+        "createUserFailed": "Could not create user",
+        "selectBranch": "Select at least one branch",
+        "branchAssignmentsUpdated": "Branch assignments updated",
+        "branchAssignmentsFailed": "Could not update branch assignments"
+      }
     }
   },
   "platformGovernance": {
@@ -284,6 +346,172 @@
       "fallbackTitle": "Role detail",
       "permissionsCount": "{{count}} permissions",
       "selectRole": "Select a role to inspect permissions."
+    }
+  },
+  "branchSubscriptions": {
+    "title": "Branch subscriptions",
+    "description": "Platform workbench for branch access, profile availability, and commercial terms.",
+    "refreshAria": "Refresh branch subscription data",
+    "selectClinicNotice": "Select a clinic in the platform admin top bar to manage its branch subscriptions.",
+    "branchCardTitle": "Branch",
+    "branchLabel": "Branch",
+    "loadingBranches": "Loading branches...",
+    "selectClinicFirst": "Select a clinic first.",
+    "noBranches": "No branches are available.",
+    "selectBranch": "Select branch",
+    "defaultBranch": "Default branch",
+    "enabledProfiles": "Enabled profiles",
+    "fixedFeeMultiplier": "Fixed fee multiplier",
+    "commercialSnapshot": "Commercial snapshot",
+    "selectBranchReviewPricing": "Select a branch to review pricing terms.",
+    "loadingSubscription": "Loading subscription...",
+    "currentTerm": "Current term",
+    "nextBillingMonth": "Next billing month",
+    "noPricingTerm": "No pricing term available.",
+    "effectiveMonth": "Effective month",
+    "basePackageFee": "Base/package fee",
+    "packageLabel": "Package label",
+    "includedVisits": "Included visits",
+    "includedMonthlyVisits": "Included monthly visits",
+    "overageBlock": "Overage block",
+    "overageBlockVisits": "{{count}} visits",
+    "overageFee": "Overage fee",
+    "noManagePermission": "You can view branch subscriptions, but you do not have permission to change them.",
+    "nextMonthPricing": "Next-month pricing",
+    "effectiveNextBillingMonth": "Effective next billing month",
+    "pricingModel": "Pricing model",
+    "packagePlaceholder": "e.g. Growth, Scale",
+    "overageBlockSize": "Overage block size",
+    "overageBlockFee": "Overage block fee",
+    "pricingRequiredNotice": "Complete the required fields for the selected pricing model before saving.",
+    "saveNextMonthPricing": "Save next-month pricing",
+    "accessControl": "Access control",
+    "accessStatus": "Access status",
+    "readOnlyNotice": "Read-only blocks mutating clinic actions while preserving login and viewing access.",
+    "accessNotes": "Access notes",
+    "saveAccess": "Save access",
+    "clinicProfiles": "Clinic profiles",
+    "fixedFeeRule": "First profile is 1.0x fixed fee; each extra enabled profile adds 0.5x.",
+    "selectProfileBeforeSaving": "Select at least one enabled profile before saving.",
+    "saveProfiles": "Save profiles",
+    "noProfilesEnabled": "No profiles enabled",
+    "profiles": {
+      "physiotherapy": "Physiotherapy",
+      "medicalDoctor": "Medical doctor clinic",
+      "dentist": "Dentist",
+      "laserDermatology": "Laser and dermatology"
+    },
+    "accessStatuses": {
+      "active": "Active",
+      "readOnly": "Read-only"
+    },
+    "pricingModels": {
+      "flexibleUsage": {
+        "label": "Flexible branch plan",
+        "shortLabel": "Base + allowance + overage"
+      },
+      "capacityPackage": {
+        "label": "Capacity branch package",
+        "shortLabel": "Tiered package"
+      }
+    }
+  },
+  "platformBilling": {
+    "title": "Platform billing",
+    "description": "Generate branch invoice packages, review usage, and record offline collections.",
+    "refreshAria": "Refresh platform billing data",
+    "selectClinicNotice": "Select a clinic in the top bar to manage platform billing.",
+    "billingContext": "Branch billing context",
+    "branch": "Branch",
+    "selectBranch": "Select branch",
+    "month": "Month",
+    "refreshPreview": "Refresh preview",
+    "invoicePackage": "Invoice package",
+    "activeInvoice": "Active invoice: {{invoiceNumber}}",
+    "readyToGenerate": "Ready to generate",
+    "loadingPreview": "Loading preview...",
+    "selectBranchMonthPreview": "Select a branch and month to preview billing.",
+    "activeInvoiceNotice": "This branch-month already has an active invoice package. Use invoice detail to download artifacts or record collections.",
+    "generationNotice": "Generation locks this branch-month and creates the invoice PDF plus the Excel data sheet.",
+    "generatePackage": "Generate PDF + data sheet",
+    "adjustment": "Adjustment",
+    "usageAudit": "Billable usage audit",
+    "visitsCount": "{{count}} visits",
+    "loadingUsage": "Loading usage...",
+    "invoiceLedger": "Invoice ledger",
+    "loadingInvoices": "Loading invoices...",
+    "noInvoices": "No platform invoices for this branch-month.",
+    "invoiceDetail": "Invoice detail",
+    "loadingInvoice": "Loading invoice...",
+    "selectInvoice": "Select an invoice to view details.",
+    "branchFallback": "Branch",
+    "collection": "Collection",
+    "void": "Void",
+    "usageLines": "Usage lines",
+    "noUsageLines": "No usage lines were captured on this invoice.",
+    "collections": "Collections",
+    "noCollections": "No collection records yet.",
+    "downloadFailed": "Failed to download artifact",
+    "noBillableVisits": "No billable visits are logged for this branch-month.",
+    "reason": "Reason",
+    "metrics": {
+      "fixedFee": "Fixed fee",
+      "includedVisits": "Included visits",
+      "billableVisits": "Billable visits",
+      "overageAmount": "Overage amount",
+      "adjustments": "Adjustments",
+      "total": "Total",
+      "profiles": "Profiles",
+      "overageBlocks": "Overage blocks",
+      "collected": "Collected",
+      "visits": "Visits"
+    },
+    "table": {
+      "patient": "Patient",
+      "completed": "Completed",
+      "profile": "Profile",
+      "visitType": "Visit type",
+      "completedBy": "Completed by",
+      "billing": "Billing",
+      "invoice": "Invoice",
+      "month": "Month",
+      "status": "Status",
+      "total": "Total",
+      "balance": "Balance"
+    },
+    "billingLabels": {
+      "allowance": "Allowance",
+      "overage": "Overage"
+    },
+    "profiles": {
+      "physiotherapy": "Physiotherapy",
+      "medicalDoctor": "Medical doctor",
+      "dentist": "Dentist",
+      "laserDermatology": "Laser and dermatology"
+    },
+    "invoiceStatuses": {
+      "issued": "Issued",
+      "partiallyPaid": "Partially paid",
+      "paid": "Paid",
+      "voided": "Voided"
+    },
+    "adjustmentDialog": {
+      "title": "Record adjustment",
+      "description": "Use positive amounts for extra charges and negative amounts for credits.",
+      "submit": "Save adjustment"
+    },
+    "collectionDialog": {
+      "title": "Record collection",
+      "description": "Track the offline payment after the money is collected.",
+      "collectedAt": "Collected at",
+      "method": "Method",
+      "reference": "Reference",
+      "submit": "Record collection"
+    },
+    "voidDialog": {
+      "title": "Void invoice",
+      "description": "Voiding releases the branch-month lock only when no collections exist.",
+      "submit": "Void invoice"
     }
   },
   "settings": {

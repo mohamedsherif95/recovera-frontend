@@ -937,6 +937,68 @@
         "title": "فوترة المنصة",
         "description": "إنشاء فواتير الفروع وتنزيل المرفقات وتسجيل التحصيلات."
       }
+    },
+    "branchAdministration": {
+      "title": "إدارة الفروع",
+      "description": "إدارة سجلات الفروع التي ترتبط بها الاشتراكات والفوترة وضوابط الوصول.",
+      "subscriptions": "الاشتراكات",
+      "clientUnitTitle": "الفرع هو وحدة العميل المشتركة.",
+      "clientUnitDescription": "التسعير والتعليق وإنشاء الفواتير والتحصيلات تتم في مساحات عمل الفروع المخصصة.",
+      "dialogDescription": "هذا يغير سجل الفرع فقط. الشروط التجارية وحالة الوصول تُدار من اشتراكات الفروع."
+    },
+    "clinicGroups": {
+      "title": "مجموعات العيادات",
+      "description": "عملاء على مستوى الشركة. اشتراكات الفروع والفوترة وضوابط الوصول تُدار لكل فرع.",
+      "createClinicGroup": "إنشاء مجموعة عيادات",
+      "editClinicGroup": "تعديل مجموعة العيادات",
+      "companySettings": "إعدادات الشركة",
+      "provisionUser": "تجهيز مستخدم",
+      "provisionClinicUser": "تجهيز مستخدم للعيادة",
+      "directory": "دليل مجموعات العيادات",
+      "totalCount": "{{count}} إجمالي",
+      "dialogDescription": "تفاصيل مستوى الشركة موجودة هنا. تسعير الفروع والوصول والفواتير تُدار من مساحات عمل الفروع.",
+      "provisionDescription": "أنشئ مديراً أو مدير فرع أو طبيباً أو سكرتيراً ضمن مجموعة العيادات المحددة. يجب تغيير كلمة المرور المؤقتة عند أول تسجيل دخول.",
+      "metrics": {
+        "clinicGroups": "مجموعات العيادات",
+        "active": "نشطة",
+        "suspended": "معلقة",
+        "billingNotes": "ملاحظات الفوترة"
+      },
+      "toasts": {
+        "created": "تم إنشاء العيادة",
+        "updated": "تم تحديث العيادة",
+        "saveFailed": "تعذر حفظ العيادة",
+        "selectRole": "اختر دوراً قبل تجهيز المستخدم",
+        "userProvisioned": "تم تجهيز المستخدم مع إلزام تغيير كلمة المرور عند أول دخول",
+        "provisionFailed": "تعذر تجهيز المستخدم"
+      }
+    },
+    "userAccess": {
+      "title": "إدارة وصول المستخدمين",
+      "description": "تجهيز مديري العيادات ومستخدمي التشغيل لمجموعة العيادات المحددة.",
+      "provisionUser": "تجهيز مستخدم",
+      "noticeTitle": "تغييرات المستخدمين من لوحة الإدارة تطبق على مجموعة العيادات المحددة.",
+      "noticeDescription": "تظهر حسابات مسؤولي المنصة هنا، لكن تعيين دور المسؤول يبقى خارج دليل مستخدمي العيادة المعتاد.",
+      "directory": "دليل مستخدمي العيادة",
+      "shownCount": "{{count}} معروض",
+      "provisionClinicUser": "تجهيز مستخدم للعيادة",
+      "provisionDescription": "أنشئ مديراً أو مدير فرع أو طبيباً أو سكرتيراً لهذه المجموعة. يجب تغيير كلمة المرور المؤقتة عند أول تسجيل دخول.",
+      "temporaryPasswordDescription": "يبدأ المستخدمون بكلمة مرور مؤقتة ويجب عليهم تعيين كلمة مرور دائمة عند أول تسجيل دخول.",
+      "metrics": {
+        "usersInScope": "المستخدمون ضمن النطاق",
+        "activeUsers": "المستخدمون النشطون",
+        "managers": "المديرون",
+        "adminAccounts": "حسابات المسؤولين",
+        "clinicalLogistics": "العيادة/التشغيل"
+      },
+      "toasts": {
+        "selectValidRole": "اختر دوراً صالحاً",
+        "userProvisioned": "تم تجهيز المستخدم مع إلزام تغيير كلمة المرور عند أول دخول",
+        "createUserFailed": "تعذر إنشاء المستخدم",
+        "selectBranch": "اختر فرعاً واحداً على الأقل",
+        "branchAssignmentsUpdated": "تم تحديث تعيينات الفروع",
+        "branchAssignmentsFailed": "تعذر تحديث تعيينات الفروع"
+      }
     }
   },
   "platformGovernance": {
@@ -1005,6 +1067,172 @@
       "fallbackTitle": "تفاصيل الدور",
       "permissionsCount": "{{count}} صلاحيات",
       "selectRole": "اختر دوراً لمراجعة صلاحياته."
+    }
+  },
+  "branchSubscriptions": {
+    "title": "اشتراكات الفروع",
+    "description": "مساحة عمل المنصة لإدارة وصول الفروع وتوفر ملفات العيادة والشروط التجارية.",
+    "refreshAria": "تحديث بيانات اشتراك الفرع",
+    "selectClinicNotice": "اختر عيادة من الشريط العلوي لإدارة المنصة لإدارة اشتراكات فروعها.",
+    "branchCardTitle": "الفرع",
+    "branchLabel": "الفرع",
+    "loadingBranches": "جاري تحميل الفروع...",
+    "selectClinicFirst": "اختر عيادة أولاً.",
+    "noBranches": "لا توجد فروع متاحة.",
+    "selectBranch": "اختر فرعاً",
+    "defaultBranch": "الفرع الافتراضي",
+    "enabledProfiles": "الملفات المفعلة",
+    "fixedFeeMultiplier": "معامل الرسوم الثابتة",
+    "commercialSnapshot": "لمحة تجارية",
+    "selectBranchReviewPricing": "اختر فرعاً لمراجعة شروط التسعير.",
+    "loadingSubscription": "جاري تحميل الاشتراك...",
+    "currentTerm": "الشرط الحالي",
+    "nextBillingMonth": "شهر الفوترة القادم",
+    "noPricingTerm": "لا يوجد شرط تسعير متاح.",
+    "effectiveMonth": "شهر السريان",
+    "basePackageFee": "رسوم الأساس/الباقة",
+    "packageLabel": "اسم الباقة",
+    "includedVisits": "الزيارات المشمولة",
+    "includedMonthlyVisits": "الزيارات الشهرية المشمولة",
+    "overageBlock": "شريحة الزيادة",
+    "overageBlockVisits": "{{count}} زيارات",
+    "overageFee": "رسوم الزيادة",
+    "noManagePermission": "يمكنك عرض اشتراكات الفروع، لكن لا تملك صلاحية تعديلها.",
+    "nextMonthPricing": "تسعير الشهر القادم",
+    "effectiveNextBillingMonth": "يسري من شهر الفوترة القادم",
+    "pricingModel": "نموذج التسعير",
+    "packagePlaceholder": "مثال: نمو، توسع",
+    "overageBlockSize": "حجم شريحة الزيادة",
+    "overageBlockFee": "رسوم شريحة الزيادة",
+    "pricingRequiredNotice": "أكمل الحقول المطلوبة لنموذج التسعير المحدد قبل الحفظ.",
+    "saveNextMonthPricing": "حفظ تسعير الشهر القادم",
+    "accessControl": "التحكم في الوصول",
+    "accessStatus": "حالة الوصول",
+    "readOnlyNotice": "وضع القراءة فقط يمنع إجراءات العيادة المعدّلة مع الحفاظ على تسجيل الدخول والعرض.",
+    "accessNotes": "ملاحظات الوصول",
+    "saveAccess": "حفظ الوصول",
+    "clinicProfiles": "ملفات العيادة",
+    "fixedFeeRule": "أول ملف يساوي 1.0x من الرسوم الثابتة؛ وكل ملف إضافي يضيف 0.5x.",
+    "selectProfileBeforeSaving": "اختر ملفاً واحداً مفعلاً على الأقل قبل الحفظ.",
+    "saveProfiles": "حفظ الملفات",
+    "noProfilesEnabled": "لا توجد ملفات مفعلة",
+    "profiles": {
+      "physiotherapy": "العلاج الطبيعي",
+      "medicalDoctor": "عيادة طبيب",
+      "dentist": "طبيب أسنان",
+      "laserDermatology": "الليزر والجلدية"
+    },
+    "accessStatuses": {
+      "active": "نشط",
+      "readOnly": "قراءة فقط"
+    },
+    "pricingModels": {
+      "flexibleUsage": {
+        "label": "خطة فرع مرنة",
+        "shortLabel": "أساس + سماحية + زيادة"
+      },
+      "capacityPackage": {
+        "label": "باقة فرع بسعة",
+        "shortLabel": "باقة متدرجة"
+      }
+    }
+  },
+  "platformBilling": {
+    "title": "فوترة المنصة",
+    "description": "إنشاء حزم فواتير الفروع ومراجعة الاستخدام وتسجيل التحصيلات خارج المنصة.",
+    "refreshAria": "تحديث بيانات فوترة المنصة",
+    "selectClinicNotice": "اختر عيادة من الشريط العلوي لإدارة فوترة المنصة.",
+    "billingContext": "سياق فوترة الفرع",
+    "branch": "الفرع",
+    "selectBranch": "اختر فرعاً",
+    "month": "الشهر",
+    "refreshPreview": "تحديث المعاينة",
+    "invoicePackage": "حزمة الفاتورة",
+    "activeInvoice": "الفاتورة النشطة: {{invoiceNumber}}",
+    "readyToGenerate": "جاهزة للإنشاء",
+    "loadingPreview": "جاري تحميل المعاينة...",
+    "selectBranchMonthPreview": "اختر فرعاً وشهراً لمعاينة الفوترة.",
+    "activeInvoiceNotice": "لدى هذا الفرع-الشهر حزمة فاتورة نشطة بالفعل. استخدم تفاصيل الفاتورة لتنزيل المرفقات أو تسجيل التحصيلات.",
+    "generationNotice": "إنشاء الفاتورة يقفل هذا الفرع-الشهر وينشئ PDF الفاتورة بالإضافة إلى ملف Excel للبيانات.",
+    "generatePackage": "إنشاء PDF + ملف البيانات",
+    "adjustment": "تعديل مالي",
+    "usageAudit": "مراجعة الاستخدام القابل للفوترة",
+    "visitsCount": "{{count}} زيارات",
+    "loadingUsage": "جاري تحميل الاستخدام...",
+    "invoiceLedger": "سجل الفواتير",
+    "loadingInvoices": "جاري تحميل الفواتير...",
+    "noInvoices": "لا توجد فواتير منصة لهذا الفرع-الشهر.",
+    "invoiceDetail": "تفاصيل الفاتورة",
+    "loadingInvoice": "جاري تحميل الفاتورة...",
+    "selectInvoice": "اختر فاتورة لعرض التفاصيل.",
+    "branchFallback": "فرع",
+    "collection": "تحصيل",
+    "void": "إلغاء",
+    "usageLines": "بنود الاستخدام",
+    "noUsageLines": "لم يتم تسجيل بنود استخدام في هذه الفاتورة.",
+    "collections": "التحصيلات",
+    "noCollections": "لا توجد سجلات تحصيل بعد.",
+    "downloadFailed": "تعذر تنزيل المرفق",
+    "noBillableVisits": "لا توجد زيارات قابلة للفوترة مسجلة لهذا الفرع-الشهر.",
+    "reason": "السبب",
+    "metrics": {
+      "fixedFee": "الرسوم الثابتة",
+      "includedVisits": "الزيارات المشمولة",
+      "billableVisits": "الزيارات القابلة للفوترة",
+      "overageAmount": "مبلغ الزيادة",
+      "adjustments": "التعديلات",
+      "total": "الإجمالي",
+      "profiles": "الملفات",
+      "overageBlocks": "شرائح الزيادة",
+      "collected": "المحصل",
+      "visits": "الزيارات"
+    },
+    "table": {
+      "patient": "المريض",
+      "completed": "مكتملة",
+      "profile": "الملف",
+      "visitType": "نوع الزيارة",
+      "completedBy": "أكملها",
+      "billing": "الفوترة",
+      "invoice": "الفاتورة",
+      "month": "الشهر",
+      "status": "الحالة",
+      "total": "الإجمالي",
+      "balance": "الرصيد"
+    },
+    "billingLabels": {
+      "allowance": "ضمن السماحية",
+      "overage": "زيادة"
+    },
+    "profiles": {
+      "physiotherapy": "العلاج الطبيعي",
+      "medicalDoctor": "طبيب",
+      "dentist": "طبيب أسنان",
+      "laserDermatology": "الليزر والجلدية"
+    },
+    "invoiceStatuses": {
+      "issued": "صادرة",
+      "partiallyPaid": "مدفوعة جزئياً",
+      "paid": "مدفوعة",
+      "voided": "ملغاة"
+    },
+    "adjustmentDialog": {
+      "title": "تسجيل تعديل مالي",
+      "description": "استخدم المبالغ الموجبة للرسوم الإضافية والمبالغ السالبة للخصومات.",
+      "submit": "حفظ التعديل"
+    },
+    "collectionDialog": {
+      "title": "تسجيل تحصيل",
+      "description": "تتبع الدفع خارج المنصة بعد تحصيل المبلغ.",
+      "collectedAt": "تاريخ التحصيل",
+      "method": "الطريقة",
+      "reference": "المرجع",
+      "submit": "تسجيل التحصيل"
+    },
+    "voidDialog": {
+      "title": "إلغاء الفاتورة",
+      "description": "إلغاء الفاتورة يحرر قفل الفرع-الشهر فقط عند عدم وجود تحصيلات.",
+      "submit": "إلغاء الفاتورة"
     }
   },
   "profileDetails": {

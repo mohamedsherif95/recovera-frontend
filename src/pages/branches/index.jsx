@@ -280,12 +280,17 @@ export default function BranchesPage() {
       <PageHeader
         title={
           isPlatformAdminRoute
-            ? 'Branch administration'
+            ? t('platformAdmin.branchAdministration.title', {
+                defaultValue: 'Branch administration',
+              })
             : t('nav.branches', { defaultValue: 'Branches' })
         }
         description={
           isPlatformAdminRoute
-            ? 'Manage the branch records that subscriptions, billing, and access controls attach to.'
+            ? t('platformAdmin.branchAdministration.description', {
+                defaultValue:
+                  'Manage the branch records that subscriptions, billing, and access controls attach to.',
+              })
             : t('branches.description', {
                 defaultValue:
                   'Manage clinic branches and review cross-branch balance credits.',
@@ -312,7 +317,9 @@ export default function BranchesPage() {
               <Button variant="outline" asChild>
                 <Link to="/platform-admin/branch-subscriptions">
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Subscriptions
+                  {t('platformAdmin.branchAdministration.subscriptions', {
+                    defaultValue: 'Subscriptions',
+                  })}
                 </Link>
               </Button>
             )}
@@ -339,9 +346,16 @@ export default function BranchesPage() {
       {isPlatformAdminRoute && !needsClinicSelection && (
         <Card className="border-primary/15 bg-muted/20">
           <CardContent className="flex flex-col gap-2 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-medium">Branch is the subscribed client unit.</span>
+            <span className="font-medium">
+              {t('platformAdmin.branchAdministration.clientUnitTitle', {
+                defaultValue: 'Branch is the subscribed client unit.',
+              })}
+            </span>
             <span className="text-muted-foreground">
-              Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.
+              {t('platformAdmin.branchAdministration.clientUnitDescription', {
+                defaultValue:
+                  'Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.',
+              })}
             </span>
           </CardContent>
         </Card>
@@ -591,7 +605,10 @@ export default function BranchesPage() {
             </DialogTitle>
             <DialogDescription>
               {isPlatformAdminRoute
-                ? 'This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.'
+                ? t('platformAdmin.branchAdministration.dialogDescription', {
+                    defaultValue:
+                      'This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.',
+                  })
                 : t('branches.dialogDescription', {
                     defaultValue:
                       'Every clinic starts with a default branch and can add more as operations grow.',

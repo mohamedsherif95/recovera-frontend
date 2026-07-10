@@ -451,7 +451,11 @@ export default function UsersPage() {
     event.preventDefault();
     const role = createRoleOptions.find((item) => item.name === createForm.roleName);
     if (!role) {
-      toast.error('Select a valid role');
+      toast.error(
+        t('platformAdmin.userAccess.toasts.selectValidRole', {
+          defaultValue: 'Select a valid role',
+        }),
+      );
       return;
     }
 
@@ -488,11 +492,20 @@ export default function UsersPage() {
     createUser
       .mutateAsync({ data: payload, options: platformScopeOptions })
       .then(() => {
-        toast.success('User provisioned with forced first-login password change');
+        toast.success(
+          t('platformAdmin.userAccess.toasts.userProvisioned', {
+            defaultValue: 'User provisioned with forced first-login password change',
+          }),
+        );
         setCreateDialogOpen(false);
       })
       .catch((error) => {
-        toast.error(error?.response?.data?.message || 'Could not create user');
+        toast.error(
+          error?.response?.data?.message ||
+            t('platformAdmin.userAccess.toasts.createUserFailed', {
+              defaultValue: 'Could not create user',
+            }),
+        );
       });
   };
 
@@ -530,7 +543,11 @@ export default function UsersPage() {
   const handleSaveAssignments = () => {
     if (!assignmentUser) return;
     if (!assignmentForm.branchIds.length) {
-      toast.error('Select at least one branch');
+      toast.error(
+        t('platformAdmin.userAccess.toasts.selectBranch', {
+          defaultValue: 'Select at least one branch',
+        }),
+      );
       return;
     }
 
@@ -549,12 +566,21 @@ export default function UsersPage() {
         options: platformScopeOptions,
       })
       .then(() => {
-        toast.success('Branch assignments updated');
+        toast.success(
+          t('platformAdmin.userAccess.toasts.branchAssignmentsUpdated', {
+            defaultValue: 'Branch assignments updated',
+          }),
+        );
         setAssignmentDialogOpen(false);
         setAssignmentUser(null);
       })
       .catch((error) => {
-        toast.error(error?.response?.data?.message || 'Could not update branch assignments');
+        toast.error(
+          error?.response?.data?.message ||
+            t('platformAdmin.userAccess.toasts.branchAssignmentsFailed', {
+              defaultValue: 'Could not update branch assignments',
+            }),
+        );
       });
   };
 
@@ -648,7 +674,7 @@ export default function UsersPage() {
               {isAdminAccount(row) && (
                 <Badge variant="destructive" className="rounded-full px-3 py-1">
                   <ShieldCheck className="mr-1 h-3 w-3" />
-                  Admin
+                  {t('users.admin', { defaultValue: 'Admin' })}
                 </Badge>
               )}
               {allRoles
@@ -811,12 +837,17 @@ export default function UsersPage() {
       <PageHeader
         title={
           isPlatformAdminRoute
-            ? 'User access administration'
+            ? t('platformAdmin.userAccess.title', {
+                defaultValue: 'User access administration',
+              })
             : t('users.title')
         }
         description={
           isPlatformAdminRoute
-            ? 'Provision clinic managers and operational users for the selected clinic group.'
+            ? t('platformAdmin.userAccess.description', {
+                defaultValue:
+                  'Provision clinic managers and operational users for the selected clinic group.',
+              })
             : undefined
         }
         actions={
@@ -832,7 +863,11 @@ export default function UsersPage() {
             {canCreateUser && (
               <Button onClick={openCreateDialog}>
                 <UserPlus className="mr-2 h-4 w-4" />
-                {isPlatformAdminRoute ? 'Provision user' : t('users.createUser')}
+                {isPlatformAdminRoute
+                  ? t('platformAdmin.userAccess.provisionUser', {
+                      defaultValue: 'Provision user',
+                    })
+                  : t('users.createUser')}
               </Button>
             )}
           </>
@@ -842,20 +877,51 @@ export default function UsersPage() {
       {isPlatformAdminRoute && !needsClinicSelection && (
         <Card className="border-primary/15 bg-muted/20">
           <CardContent className="flex flex-col gap-2 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-medium">Admin console user changes apply to the selected clinic group.</span>
+            <span className="font-medium">
+              {t('platformAdmin.userAccess.noticeTitle', {
+                defaultValue:
+                  'Admin console user changes apply to the selected clinic group.',
+              })}
+            </span>
             <span className="text-muted-foreground">
-              Platform admin accounts are shown here, but admin role assignment is kept out of the routine clinic user directory.
+              {t('platformAdmin.userAccess.noticeDescription', {
+                defaultValue:
+                  'Platform admin accounts are shown here, but admin role assignment is kept out of the routine clinic user directory.',
+              })}
             </span>
           </CardContent>
         </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <AdminMetric label="Users in scope" value={userSummary.total} />
-        <AdminMetric label="Active users" value={userSummary.active} />
-        <AdminMetric label="Managers" value={userSummary.managers} />
         <AdminMetric
-          label={isPlatformAdminRoute ? 'Admin accounts' : 'Clinical/logistics'}
+          label={t('platformAdmin.userAccess.metrics.usersInScope', {
+            defaultValue: 'Users in scope',
+          })}
+          value={userSummary.total}
+        />
+        <AdminMetric
+          label={t('platformAdmin.userAccess.metrics.activeUsers', {
+            defaultValue: 'Active users',
+          })}
+          value={userSummary.active}
+        />
+        <AdminMetric
+          label={t('platformAdmin.userAccess.metrics.managers', {
+            defaultValue: 'Managers',
+          })}
+          value={userSummary.managers}
+        />
+        <AdminMetric
+          label={
+            isPlatformAdminRoute
+              ? t('platformAdmin.userAccess.metrics.adminAccounts', {
+                  defaultValue: 'Admin accounts',
+                })
+              : t('platformAdmin.userAccess.metrics.clinicalLogistics', {
+                  defaultValue: 'Clinical/logistics',
+                })
+          }
           value={isPlatformAdminRoute ? userSummary.admins : userSummary.logisticsUsers}
         />
       </div>
@@ -863,10 +929,17 @@ export default function UsersPage() {
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">
-            {isPlatformAdminRoute ? 'Clinic user directory' : t('users.title')}
+            {isPlatformAdminRoute
+              ? t('platformAdmin.userAccess.directory', {
+                  defaultValue: 'Clinic user directory',
+                })
+              : t('users.title')}
           </CardTitle>
           <Badge variant="outline">
-            {filteredUsers.length} shown
+            {t('platformAdmin.userAccess.shownCount', {
+              count: filteredUsers.length,
+              defaultValue: '{{count}} shown',
+            })}
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
@@ -987,12 +1060,22 @@ export default function UsersPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {isPlatformAdminRoute ? 'Provision clinic user' : t('users.createUser')}
+              {isPlatformAdminRoute
+                ? t('platformAdmin.userAccess.provisionClinicUser', {
+                    defaultValue: 'Provision clinic user',
+                  })
+                : t('users.createUser')}
             </DialogTitle>
             <DialogDescription>
               {isPlatformAdminRoute
-                ? 'Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.'
-                : 'Users start with a temporary password and must set a permanent password on first login.'}
+                ? t('platformAdmin.userAccess.provisionDescription', {
+                    defaultValue:
+                      'Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.',
+                  })
+                : t('platformAdmin.userAccess.temporaryPasswordDescription', {
+                    defaultValue:
+                      'Users start with a temporary password and must set a permanent password on first login.',
+                  })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">

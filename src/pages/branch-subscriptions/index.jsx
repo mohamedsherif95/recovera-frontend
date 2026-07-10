@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   Building2,
@@ -43,43 +44,53 @@ import { cn } from '@/lib/utils';
 const PROFILE_OPTIONS = [
   {
     value: CLINIC_PROFILES.PHYSIOTHERAPY,
-    label: 'Physiotherapy',
+    labelKey: 'branchSubscriptions.profiles.physiotherapy',
+    labelDefault: 'Physiotherapy',
   },
   {
     value: CLINIC_PROFILES.MEDICAL_DOCTOR,
-    label: 'Medical doctor clinic',
+    labelKey: 'branchSubscriptions.profiles.medicalDoctor',
+    labelDefault: 'Medical doctor clinic',
   },
   {
     value: CLINIC_PROFILES.DENTIST,
-    label: 'Dentist',
+    labelKey: 'branchSubscriptions.profiles.dentist',
+    labelDefault: 'Dentist',
   },
   {
     value: CLINIC_PROFILES.LASER_DERMATOLOGY,
-    label: 'Laser and dermatology',
+    labelKey: 'branchSubscriptions.profiles.laserDermatology',
+    labelDefault: 'Laser and dermatology',
   },
 ];
 
 const STATUS_OPTIONS = [
   {
     value: BRANCH_SUBSCRIPTION_ACCESS_STATUS.ACTIVE,
-    label: 'Active',
+    labelKey: 'branchSubscriptions.accessStatuses.active',
+    labelDefault: 'Active',
   },
   {
     value: BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED,
-    label: 'Read-only',
+    labelKey: 'branchSubscriptions.accessStatuses.readOnly',
+    labelDefault: 'Read-only',
   },
 ];
 
 const PRICING_MODEL_OPTIONS = [
   {
     value: BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
-    label: 'Flexible branch plan',
-    shortLabel: 'Base + allowance + overage',
+    labelKey: 'branchSubscriptions.pricingModels.flexibleUsage.label',
+    labelDefault: 'Flexible branch plan',
+    shortLabelKey: 'branchSubscriptions.pricingModels.flexibleUsage.shortLabel',
+    shortLabelDefault: 'Base + allowance + overage',
   },
   {
     value: BRANCH_PRICING_MODELS.CAPACITY_PACKAGE,
-    label: 'Capacity branch package',
-    shortLabel: 'Tiered package',
+    labelKey: 'branchSubscriptions.pricingModels.capacityPackage.label',
+    labelDefault: 'Capacity branch package',
+    shortLabelKey: 'branchSubscriptions.pricingModels.capacityPackage.shortLabel',
+    shortLabelDefault: 'Tiered package',
   },
 ];
 
@@ -95,11 +106,20 @@ const emptyForm = {
   overageBlockFee: '',
 };
 
-const getPricingModelLabel = (model) =>
-  PRICING_MODEL_OPTIONS.find((option) => option.value === model)?.label || model;
+const getOptionLabel = (option, t) =>
+  option ? t(option.labelKey, { defaultValue: option.labelDefault }) : null;
 
-const getProfileLabel = (profile) =>
-  PROFILE_OPTIONS.find((option) => option.value === profile)?.label || profile;
+const getPricingModelLabel = (model, t) =>
+  getOptionLabel(
+    PRICING_MODEL_OPTIONS.find((option) => option.value === model),
+    t,
+  ) || model;
+
+const getProfileLabel = (profile, t) =>
+  getOptionLabel(
+    PROFILE_OPTIONS.find((option) => option.value === profile),
+    t,
+  ) || profile;
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -234,9 +254,13 @@ const formatMoney = (value) => {
   });
 };
 
-const formatProfiles = (profiles) => {
-  if (!profiles?.length) return 'No profiles enabled';
-  return profiles.map(getProfileLabel).join(', ');
+const formatProfiles = (profiles, t) => {
+  if (!profiles?.length) {
+    return t('branchSubscriptions.noProfilesEnabled', {
+      defaultValue: 'No profiles enabled',
+    });
+  }
+  return profiles.map((profile) => getProfileLabel(profile, t)).join(', ');
 };
 
 const getFixedFeeMultiplier = (profileCount) => {
@@ -247,49 +271,82 @@ const getFixedFeeMultiplier = (profileCount) => {
 const isReadOnlyStatus = (status) =>
   status === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
 
-const TermSummaryPanel = ({ title, term }) => {
+const TermSummaryPanel = ({ title, term, t }) => {
   return (
     <div className="rounded-md border bg-muted/20 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">{title}</h3>
         {term?.pricingModel && (
-          <Badge variant="secondary">{getPricingModelLabel(term.pricingModel)}</Badge>
+          <Badge variant="secondary">
+            {getPricingModelLabel(term.pricingModel, t)}
+          </Badge>
         )}
       </div>
       {!term ? (
-        <p className="text-sm text-muted-foreground">No pricing term available.</p>
+        <p className="text-sm text-muted-foreground">
+          {t('branchSubscriptions.noPricingTerm', {
+            defaultValue: 'No pricing term available.',
+          })}
+        </p>
       ) : (
         <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
           <div>
-            <dt className="text-xs text-muted-foreground">Effective month</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.effectiveMonth', {
+                defaultValue: 'Effective month',
+              })}
+            </dt>
             <dd className="font-medium">
               {formatDate(term.effectiveMonth || term.effectiveFrom || term.startsAt)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Base/package fee</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.basePackageFee', {
+                defaultValue: 'Base/package fee',
+              })}
+            </dt>
             <dd className="font-medium">{formatMoney(term.baseMonthlyFee)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Package label</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.packageLabel', {
+                defaultValue: 'Package label',
+              })}
+            </dt>
             <dd className="font-medium">{term.packageName || '--'}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Included visits</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.includedVisits', {
+                defaultValue: 'Included visits',
+              })}
+            </dt>
             <dd className="font-medium">
               {formatMoney(term.includedMonthlyVisits)}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Overage block</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.overageBlock', {
+                defaultValue: 'Overage block',
+              })}
+            </dt>
             <dd className="font-medium">
               {term.overageBlockSize
-                ? `${formatMoney(term.overageBlockSize)} visits`
+                ? t('branchSubscriptions.overageBlockVisits', {
+                    count: formatMoney(term.overageBlockSize),
+                    defaultValue: '{{count}} visits',
+                  })
                 : '--'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-muted-foreground">Overage fee</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t('branchSubscriptions.overageFee', {
+                defaultValue: 'Overage fee',
+              })}
+            </dt>
             <dd className="font-medium">{formatMoney(term.overageBlockFee)}</dd>
           </div>
         </dl>
@@ -306,6 +363,7 @@ const SavingIcon = ({ isSaving }) =>
   );
 
 export default function BranchSubscriptionsPage() {
+  const { t } = useTranslation();
   const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
   const canView = can(PERMISSIONS['branchSubscriptions:view']);
@@ -486,7 +544,10 @@ export default function BranchSubscriptionsPage() {
   };
 
   const statusLabel =
-    STATUS_OPTIONS.find((status) => status.value === form.accessStatus)?.label ||
+    getOptionLabel(
+      STATUS_OPTIONS.find((status) => status.value === form.accessStatus),
+      t,
+    ) ||
     form.accessStatus;
   const hasEnabledProfiles = form.enabledProfiles.length > 0;
   const isFlexibleUsage =
@@ -515,8 +576,13 @@ export default function BranchSubscriptionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Branch subscriptions"
-        description="Platform workbench for branch access, profile availability, and commercial terms."
+        title={t('branchSubscriptions.title', {
+          defaultValue: 'Branch subscriptions',
+        })}
+        description={t('branchSubscriptions.description', {
+          defaultValue:
+            'Platform workbench for branch access, profile availability, and commercial terms.',
+        })}
         actions={
           <Button
             variant="outline"
@@ -530,6 +596,9 @@ export default function BranchSubscriptionsPage() {
               isBranchesFetching ||
               isSubscriptionFetching
             }
+            aria-label={t('branchSubscriptions.refreshAria', {
+              defaultValue: 'Refresh branch subscription data',
+            })}
           >
             <RefreshCcw
               className={cn(
@@ -544,8 +613,10 @@ export default function BranchSubscriptionsPage() {
       {needsClinicSelection && (
         <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30">
           <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-100">
-            Select a clinic in the platform admin top bar to manage its branch
-            subscriptions.
+            {t('branchSubscriptions.selectClinicNotice', {
+              defaultValue:
+                'Select a clinic in the platform admin top bar to manage its branch subscriptions.',
+            })}
           </CardContent>
         </Card>
       )}
@@ -555,32 +626,44 @@ export default function BranchSubscriptionsPage() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
               <Building2 className="h-4 w-4" />
-              Branch
+              {t('branchSubscriptions.branchCardTitle', {
+                defaultValue: 'Branch',
+              })}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {isBranchesLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading branches...
+                {t('branchSubscriptions.loadingBranches', {
+                  defaultValue: 'Loading branches...',
+                })}
               </div>
             ) : branches.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 {needsClinicSelection
-                  ? 'Select a clinic first.'
-                  : 'No branches are available.'}
+                  ? t('branchSubscriptions.selectClinicFirst', {
+                      defaultValue: 'Select a clinic first.',
+                    })
+                  : t('branchSubscriptions.noBranches', {
+                      defaultValue: 'No branches are available.',
+                    })}
               </p>
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label>Branch</Label>
+                  <Label>{t('branchSubscriptions.branchLabel')}</Label>
                   <Select
                     value={selectedBranchId}
                     onValueChange={setSelectedBranchId}
                     disabled={!canView}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
+                      <SelectValue
+                        placeholder={t('branchSubscriptions.selectBranch', {
+                          defaultValue: 'Select branch',
+                        })}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {branches.map((branch) => (
@@ -597,7 +680,11 @@ export default function BranchSubscriptionsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{selectedBranch.name}</span>
                       {selectedBranch.isDefault && (
-                        <Badge variant="secondary">Default branch</Badge>
+                        <Badge variant="secondary">
+                          {t('branchSubscriptions.defaultBranch', {
+                            defaultValue: 'Default branch',
+                          })}
+                        </Badge>
                       )}
                       <Badge variant={readOnlyAccess ? 'destructive' : 'default'}>
                         {statusLabel}
@@ -606,15 +693,19 @@ export default function BranchSubscriptionsPage() {
                     <dl className="mt-3 grid gap-3 text-sm">
                       <div>
                         <dt className="text-xs text-muted-foreground">
-                          Enabled profiles
+                          {t('branchSubscriptions.enabledProfiles', {
+                            defaultValue: 'Enabled profiles',
+                          })}
                         </dt>
                         <dd className="font-medium">
-                          {formatProfiles(form.enabledProfiles)}
+                          {formatProfiles(form.enabledProfiles, t)}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-xs text-muted-foreground">
-                          Fixed fee multiplier
+                          {t('branchSubscriptions.fixedFeeMultiplier', {
+                            defaultValue: 'Fixed fee multiplier',
+                          })}
                         </dt>
                         <dd className="font-medium">{fixedFeeMultiplier}</dd>
                       </div>
@@ -630,28 +721,40 @@ export default function BranchSubscriptionsPage() {
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-base">
               <CreditCard className="h-4 w-4" />
-              Commercial snapshot
+              {t('branchSubscriptions.commercialSnapshot', {
+                defaultValue: 'Commercial snapshot',
+              })}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {!selectedBranchId ? (
               <p className="text-sm text-muted-foreground">
-                Select a branch to review pricing terms.
+                {t('branchSubscriptions.selectBranchReviewPricing', {
+                  defaultValue: 'Select a branch to review pricing terms.',
+                })}
               </p>
             ) : isSubscriptionLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading subscription...
+                {t('branchSubscriptions.loadingSubscription', {
+                  defaultValue: 'Loading subscription...',
+                })}
               </div>
             ) : (
               <div className="grid gap-4">
                 <TermSummaryPanel
-                  title="Current term"
+                  title={t('branchSubscriptions.currentTerm', {
+                    defaultValue: 'Current term',
+                  })}
                   term={normalizedSubscription.currentPricingTerm}
+                  t={t}
                 />
                 <TermSummaryPanel
-                  title="Next billing month"
+                  title={t('branchSubscriptions.nextBillingMonth', {
+                    defaultValue: 'Next billing month',
+                  })}
                   term={normalizedSubscription.nextPricingTerm}
+                  t={t}
                 />
               </div>
             )}
@@ -664,8 +767,10 @@ export default function BranchSubscriptionsPage() {
           {!canManage && (
             <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30">
               <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-100">
-                You can view branch subscriptions, but you do not have permission to
-                change them.
+                {t('branchSubscriptions.noManagePermission', {
+                  defaultValue:
+                    'You can view branch subscriptions, but you do not have permission to change them.',
+                })}
               </CardContent>
             </Card>
           )}
@@ -676,25 +781,39 @@ export default function BranchSubscriptionsPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <CalendarClock className="h-4 w-4" />
-                    Next-month pricing
+                    {t('branchSubscriptions.nextMonthPricing', {
+                      defaultValue: 'Next-month pricing',
+                    })}
                   </CardTitle>
-                  <Badge variant="outline">Effective next billing month</Badge>
+                  <Badge variant="outline">
+                    {t('branchSubscriptions.effectiveNextBillingMonth', {
+                      defaultValue: 'Effective next billing month',
+                    })}
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 {isSubscriptionLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Loading subscription...
+                    {t('branchSubscriptions.loadingSubscription', {
+                      defaultValue: 'Loading subscription...',
+                    })}
                   </div>
                 ) : (
                   <form className="space-y-5" onSubmit={handlePricingSubmit}>
                     <div className="space-y-2">
-                      <Label>Pricing model</Label>
+                      <Label>
+                        {t('branchSubscriptions.pricingModel', {
+                          defaultValue: 'Pricing model',
+                        })}
+                      </Label>
                       <div
                         className="grid gap-2 sm:grid-cols-2"
                         role="radiogroup"
-                        aria-label="Pricing model"
+                        aria-label={t('branchSubscriptions.pricingModel', {
+                          defaultValue: 'Pricing model',
+                        })}
                       >
                         {PRICING_MODEL_OPTIONS.map((model) => {
                           const selected = form.pricingModel === model.value;
@@ -718,10 +837,14 @@ export default function BranchSubscriptionsPage() {
                               )}
                             >
                               <span className="block font-semibold">
-                                {model.label}
+                                {t(model.labelKey, {
+                                  defaultValue: model.labelDefault,
+                                })}
                               </span>
                               <span className="mt-1 block text-xs text-muted-foreground">
-                                {model.shortLabel}
+                                {t(model.shortLabelKey, {
+                                  defaultValue: model.shortLabelDefault,
+                                })}
                               </span>
                             </button>
                           );
@@ -732,7 +855,9 @@ export default function BranchSubscriptionsPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label htmlFor="base-monthly-fee">
-                          Base/package fee
+                          {t('branchSubscriptions.basePackageFee', {
+                            defaultValue: 'Base/package fee',
+                          })}
                         </Label>
                         <Input
                           id="base-monthly-fee"
@@ -751,7 +876,9 @@ export default function BranchSubscriptionsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="included-monthly-visits">
-                          Included monthly visits
+                          {t('branchSubscriptions.includedMonthlyVisits', {
+                            defaultValue: 'Included monthly visits',
+                          })}
                         </Label>
                         <Input
                           id="included-monthly-visits"
@@ -770,7 +897,11 @@ export default function BranchSubscriptionsPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="package-name">Package label</Label>
+                        <Label htmlFor="package-name">
+                          {t('branchSubscriptions.packageLabel', {
+                            defaultValue: 'Package label',
+                          })}
+                        </Label>
                         <Input
                           id="package-name"
                           value={form.packageName}
@@ -780,14 +911,18 @@ export default function BranchSubscriptionsPage() {
                               packageName: event.target.value,
                             }))
                           }
-                          placeholder="e.g. Growth, Scale"
+                          placeholder={t('branchSubscriptions.packagePlaceholder', {
+                            defaultValue: 'e.g. Growth, Scale',
+                          })}
                           disabled={!canManage}
                           required={isCapacityPackage}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="overage-block-size">
-                          Overage block size
+                          {t('branchSubscriptions.overageBlockSize', {
+                            defaultValue: 'Overage block size',
+                          })}
                         </Label>
                         <Input
                           id="overage-block-size"
@@ -807,7 +942,9 @@ export default function BranchSubscriptionsPage() {
                       </div>
                       <div className="space-y-2 md:col-span-2">
                         <Label htmlFor="overage-block-fee">
-                          Overage block fee
+                          {t('branchSubscriptions.overageBlockFee', {
+                            defaultValue: 'Overage block fee',
+                          })}
                         </Label>
                         <Input
                           id="overage-block-fee"
@@ -831,8 +968,10 @@ export default function BranchSubscriptionsPage() {
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>
-                          Complete the required fields for the selected pricing
-                          model before saving.
+                          {t('branchSubscriptions.pricingRequiredNotice', {
+                            defaultValue:
+                              'Complete the required fields for the selected pricing model before saving.',
+                          })}
                         </span>
                       </div>
                     )}
@@ -844,7 +983,9 @@ export default function BranchSubscriptionsPage() {
                           disabled={isSaving || !isPricingReady}
                         >
                           <SavingIcon isSaving={isSaving} />
-                          Save next-month pricing
+                          {t('branchSubscriptions.saveNextMonthPricing', {
+                            defaultValue: 'Save next-month pricing',
+                          })}
                         </Button>
                       </div>
                     )}
@@ -864,7 +1005,9 @@ export default function BranchSubscriptionsPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <ShieldCheck className="h-4 w-4" />
-                      Access control
+                      {t('branchSubscriptions.accessControl', {
+                        defaultValue: 'Access control',
+                      })}
                     </CardTitle>
                     <Badge variant={readOnlyAccess ? 'destructive' : 'default'}>
                       {statusLabel}
@@ -874,7 +1017,11 @@ export default function BranchSubscriptionsPage() {
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleAccessSubmit}>
                     <div className="space-y-2">
-                      <Label>Access status</Label>
+                      <Label>
+                        {t('branchSubscriptions.accessStatus', {
+                          defaultValue: 'Access status',
+                        })}
+                      </Label>
                       <Select
                         value={form.accessStatus}
                         onValueChange={(value) =>
@@ -891,7 +1038,9 @@ export default function BranchSubscriptionsPage() {
                         <SelectContent>
                           {STATUS_OPTIONS.map((status) => (
                             <SelectItem key={status.value} value={status.value}>
-                              {status.label}
+                              {t(status.labelKey, {
+                                defaultValue: status.labelDefault,
+                              })}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -902,14 +1051,20 @@ export default function BranchSubscriptionsPage() {
                       <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>
-                          Read-only blocks mutating clinic actions while preserving
-                          login and viewing access.
+                          {t('branchSubscriptions.readOnlyNotice', {
+                            defaultValue:
+                              'Read-only blocks mutating clinic actions while preserving login and viewing access.',
+                          })}
                         </span>
                       </div>
                     )}
 
                     <div className="space-y-2">
-                      <Label htmlFor="access-notes">Access notes</Label>
+                      <Label htmlFor="access-notes">
+                        {t('branchSubscriptions.accessNotes', {
+                          defaultValue: 'Access notes',
+                        })}
+                      </Label>
                       <Textarea
                         id="access-notes"
                         value={form.accessNotes}
@@ -931,7 +1086,9 @@ export default function BranchSubscriptionsPage() {
                           disabled={isSaving}
                         >
                           <SavingIcon isSaving={isSaving} />
-                          Save access
+                          {t('branchSubscriptions.saveAccess', {
+                            defaultValue: 'Save access',
+                          })}
                         </Button>
                       </div>
                     )}
@@ -944,7 +1101,9 @@ export default function BranchSubscriptionsPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Layers3 className="h-4 w-4" />
-                      Clinic profiles
+                      {t('branchSubscriptions.clinicProfiles', {
+                        defaultValue: 'Clinic profiles',
+                      })}
                     </CardTitle>
                     <Badge variant="secondary">{fixedFeeMultiplier}</Badge>
                   </div>
@@ -965,7 +1124,11 @@ export default function BranchSubscriptionsPage() {
                                 onCheckedChange={() => toggleProfile(profile.value)}
                                 disabled={!canManage}
                               />
-                              <span>{profile.label}</span>
+                              <span>
+                                {t(profile.labelKey, {
+                                  defaultValue: profile.labelDefault,
+                                })}
+                              </span>
                             </label>
                           </div>
                         );
@@ -973,13 +1136,18 @@ export default function BranchSubscriptionsPage() {
                     </div>
 
                     <div className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
-                      First profile is 1.0x fixed fee; each extra enabled profile
-                      adds 0.5x.
+                      {t('branchSubscriptions.fixedFeeRule', {
+                        defaultValue:
+                          'First profile is 1.0x fixed fee; each extra enabled profile adds 0.5x.',
+                      })}
                     </div>
 
                     {!hasEnabledProfiles && (
                       <p className="text-sm font-medium text-destructive">
-                        Select at least one enabled profile before saving.
+                        {t('branchSubscriptions.selectProfileBeforeSaving', {
+                          defaultValue:
+                            'Select at least one enabled profile before saving.',
+                        })}
                       </p>
                     )}
 
@@ -991,7 +1159,9 @@ export default function BranchSubscriptionsPage() {
                           disabled={isSaving || !hasEnabledProfiles}
                         >
                           <SavingIcon isSaving={isSaving} />
-                          Save profiles
+                          {t('branchSubscriptions.saveProfiles', {
+                            defaultValue: 'Save profiles',
+                          })}
                         </Button>
                       </div>
                     )}

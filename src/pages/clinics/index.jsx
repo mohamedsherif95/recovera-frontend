@@ -203,11 +203,24 @@ export default function ClinicsPage() {
 
     mutation
       .then(() => {
-        toast.success(editingClinic ? 'Clinic updated' : 'Clinic created');
+        toast.success(
+          editingClinic
+            ? t('platformAdmin.clinicGroups.toasts.updated', {
+                defaultValue: 'Clinic updated',
+              })
+            : t('platformAdmin.clinicGroups.toasts.created', {
+                defaultValue: 'Clinic created',
+              }),
+        );
         setClinicDialogOpen(false);
       })
       .catch((error) => {
-        toast.error(error?.response?.data?.message || 'Could not save clinic');
+        toast.error(
+          error?.response?.data?.message ||
+            t('platformAdmin.clinicGroups.toasts.saveFailed', {
+              defaultValue: 'Could not save clinic',
+            }),
+        );
       });
   };
 
@@ -231,7 +244,11 @@ export default function ClinicsPage() {
   const handleUserSubmit = (event) => {
     event.preventDefault();
     if (!selectedRole) {
-      toast.error('Select a role before provisioning the user');
+      toast.error(
+        t('platformAdmin.clinicGroups.toasts.selectRole', {
+          defaultValue: 'Select a role before provisioning the user',
+        }),
+      );
       return;
     }
 
@@ -258,11 +275,20 @@ export default function ClinicsPage() {
     createUser
       .mutateAsync(payload)
       .then(() => {
-        toast.success('User provisioned with forced first-login password change');
+        toast.success(
+          t('platformAdmin.clinicGroups.toasts.userProvisioned', {
+            defaultValue: 'User provisioned with forced first-login password change',
+          }),
+        );
         setUserDialogOpen(false);
       })
       .catch((error) => {
-        toast.error(error?.response?.data?.message || 'Could not provision user');
+        toast.error(
+          error?.response?.data?.message ||
+            t('platformAdmin.clinicGroups.toasts.provisionFailed', {
+              defaultValue: 'Could not provision user',
+            }),
+        );
       });
   };
 
@@ -312,7 +338,9 @@ export default function ClinicsPage() {
                 openEditClinic(clinic);
               }}
             >
-              Company settings
+              {t('platformAdmin.clinicGroups.companySettings', {
+                defaultValue: 'Company settings',
+              })}
             </Button>
             <Button
               size="sm"
@@ -322,7 +350,9 @@ export default function ClinicsPage() {
               }}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Provision user
+              {t('platformAdmin.clinicGroups.provisionUser', {
+                defaultValue: 'Provision user',
+              })}
             </Button>
           </div>
         ),
@@ -334,8 +364,13 @@ export default function ClinicsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Clinic groups"
-        description="Company-level tenants. Branch subscriptions, billing, and access controls are managed per branch."
+        title={t('platformAdmin.clinicGroups.title', {
+          defaultValue: 'Clinic groups',
+        })}
+        description={t('platformAdmin.clinicGroups.description', {
+          defaultValue:
+            'Company-level tenants. Branch subscriptions, billing, and access controls are managed per branch.',
+        })}
         actions={
           <>
             <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
@@ -343,23 +378,54 @@ export default function ClinicsPage() {
             </Button>
             <Button onClick={openCreateClinic}>
               <Plus className="mr-2 h-4 w-4" />
-              Create clinic group
+              {t('platformAdmin.clinicGroups.createClinicGroup', {
+                defaultValue: 'Create clinic group',
+              })}
             </Button>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <AdminMetric label="Clinic groups" value={clinicSummary.total} />
-        <AdminMetric label="Active" value={clinicSummary.active} />
-        <AdminMetric label="Suspended" value={clinicSummary.suspended} />
-        <AdminMetric label="Billing notes" value={clinicSummary.withBillingNotes} />
+        <AdminMetric
+          label={t('platformAdmin.clinicGroups.metrics.clinicGroups', {
+            defaultValue: 'Clinic groups',
+          })}
+          value={clinicSummary.total}
+        />
+        <AdminMetric
+          label={t('platformAdmin.clinicGroups.metrics.active', {
+            defaultValue: 'Active',
+          })}
+          value={clinicSummary.active}
+        />
+        <AdminMetric
+          label={t('platformAdmin.clinicGroups.metrics.suspended', {
+            defaultValue: 'Suspended',
+          })}
+          value={clinicSummary.suspended}
+        />
+        <AdminMetric
+          label={t('platformAdmin.clinicGroups.metrics.billingNotes', {
+            defaultValue: 'Billing notes',
+          })}
+          value={clinicSummary.withBillingNotes}
+        />
       </div>
 
       <Card className="border-primary/15 shadow-sm">
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base">Clinic group directory</CardTitle>
-          <Badge variant="outline">{clinicSummary.total} total</Badge>
+          <CardTitle className="text-base">
+            {t('platformAdmin.clinicGroups.directory', {
+              defaultValue: 'Clinic group directory',
+            })}
+          </CardTitle>
+          <Badge variant="outline">
+            {t('platformAdmin.clinicGroups.totalCount', {
+              count: clinicSummary.total,
+              defaultValue: '{{count}} total',
+            })}
+          </Badge>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -385,10 +451,19 @@ export default function ClinicsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingClinic ? 'Edit clinic group' : 'Create clinic group'}
+              {editingClinic
+                ? t('platformAdmin.clinicGroups.editClinicGroup', {
+                    defaultValue: 'Edit clinic group',
+                  })
+                : t('platformAdmin.clinicGroups.createClinicGroup', {
+                    defaultValue: 'Create clinic group',
+                  })}
             </DialogTitle>
             <DialogDescription>
-              Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.
+              {t('platformAdmin.clinicGroups.dialogDescription', {
+                defaultValue:
+                  'Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.',
+              })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleClinicSubmit} className="space-y-4">
@@ -450,9 +525,16 @@ export default function ClinicsPage() {
       <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Provision clinic user</DialogTitle>
+            <DialogTitle>
+              {t('platformAdmin.clinicGroups.provisionClinicUser', {
+                defaultValue: 'Provision clinic user',
+              })}
+            </DialogTitle>
             <DialogDescription>
-              Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.
+              {t('platformAdmin.clinicGroups.provisionDescription', {
+                defaultValue:
+                  'Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.',
+              })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUserSubmit} className="space-y-4">

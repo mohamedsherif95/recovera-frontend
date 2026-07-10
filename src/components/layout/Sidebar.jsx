@@ -9,11 +9,10 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  ListChecks,
-  DollarSign,
   BarChart3,
   UserCog,
   Activity,
+  ShieldCheck,
   X,
   UserCheck,
   Receipt,
@@ -25,10 +24,16 @@ import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 
 const navigationItems = [
   {
-    name: 'nav.clinics',
-    href: '/clinics',
-    icon: Building2,
-    permission: PERMISSIONS['clinics:viewAll'],
+    name: 'nav.platformAdmin',
+    label: 'Platform Admin',
+    href: '/platform-admin',
+    icon: ShieldCheck,
+    anyPermissions: [
+      PERMISSIONS['clinics:viewAll'],
+      PERMISSIONS['branches:view'],
+      PERMISSIONS['branchSubscriptions:view'],
+      PERMISSIONS['platformBilling:view'],
+    ],
   },
   {
     name: 'nav.dailyOperations',
@@ -101,22 +106,6 @@ const navigationItems = [
     href: '/branches',
     icon: Building2,
     permission: PERMISSIONS['branches:view'],
-    hideForRoles: [USER_ROLES.BRANCH_MANAGER],
-  },
-  {
-    name: 'nav.branchSubscriptions',
-    label: 'Branch subscriptions',
-    href: '/branch-subscriptions',
-    icon: Building2,
-    permission: PERMISSIONS['branchSubscriptions:view'],
-    hideForRoles: [USER_ROLES.BRANCH_MANAGER],
-  },
-  {
-    name: 'nav.platformBilling',
-    label: 'Platform billing',
-    href: '/platform-billing',
-    icon: Receipt,
-    permission: PERMISSIONS['platformBilling:view'],
     hideForRoles: [USER_ROLES.BRANCH_MANAGER],
   },
   {

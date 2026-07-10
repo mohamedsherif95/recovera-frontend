@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { PlatformAdminLayout } from '@/components/layout/PlatformAdminLayout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Header } from '@/components/layout/Header';
@@ -34,6 +35,7 @@ import ClinicsPage from '@/pages/clinics';
 import BranchesPage from '@/pages/branches';
 import BranchSubscriptionsPage from '@/pages/branch-subscriptions';
 import PlatformBillingPage from '@/pages/platform-billing';
+import PlatformAdminPage from '@/pages/platform-admin';
 import InvoicesPage from '@/pages/invoices';
 
 const UnauthorizedPage = () => {
@@ -114,6 +116,61 @@ export const router = createBrowserRouter([
   {
     path: '/unauthorized',
     element: <UnauthorizedPage />,
+  },
+  {
+    path: '/platform-admin',
+    element: (
+      <ProtectedRoute
+        anyPermissions={[
+          PERMISSIONS['clinics:viewAll'],
+          PERMISSIONS['branches:view'],
+          PERMISSIONS['branchSubscriptions:view'],
+          PERMISSIONS['platformBilling:view'],
+        ]}
+      >
+        <PlatformAdminLayout />
+      </ProtectedRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: <PlatformAdminPage />,
+      },
+      {
+        path: 'clinics',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['clinics:viewAll']}>
+            <ClinicsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'branches',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['branches:view']}>
+            <BranchesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'branch-subscriptions',
+        element: (
+          <ProtectedRoute
+            requiredPermission={PERMISSIONS['branchSubscriptions:view']}
+          >
+            <BranchSubscriptionsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'billing',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['platformBilling:view']}>
+            <PlatformBillingPage />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
   {
     element: (
@@ -268,11 +325,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'clinics',
-        element: (
-          <ProtectedRoute requiredPermission={PERMISSIONS['clinics:viewAll']}>
-            <ClinicsPage />
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/platform-admin/clinics" replace />,
       },
       {
         path: 'users',
@@ -292,21 +345,11 @@ export const router = createBrowserRouter([
       },
       {
         path: 'branch-subscriptions',
-        element: (
-          <ProtectedRoute
-            requiredPermission={PERMISSIONS['branchSubscriptions:view']}
-          >
-            <BranchSubscriptionsPage />
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/platform-admin/branch-subscriptions" replace />,
       },
       {
         path: 'platform-billing',
-        element: (
-          <ProtectedRoute requiredPermission={PERMISSIONS['platformBilling:view']}>
-            <PlatformBillingPage />
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/platform-admin/billing" replace />,
       },
       {
         path: 'invoices',

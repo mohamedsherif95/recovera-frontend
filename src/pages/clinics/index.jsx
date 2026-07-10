@@ -273,7 +273,7 @@ export default function ClinicsPage() {
             variant={clinic.status === 'active' ? 'default' : 'outline'}
             className={
               clinic.status === 'active'
-                ? 'bg-sky-500 text-white hover:bg-sky-500/90'
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'border-slate-300 text-slate-600'
             }
           >
@@ -346,7 +346,7 @@ export default function ClinicsPage() {
         }
       />
 
-      <Card className="border-primary/15 shadow-sm shadow-sky-100">
+      <Card className="border-primary/15 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base text-primary">Recovera service tenants</CardTitle>
         </CardHeader>

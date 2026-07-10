@@ -17,7 +17,12 @@ import { BRANCH_SUBSCRIPTION_ACCESS_STATUS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 export function AppLayout() {
-  const { sidebarOpen, clinicOverrideId, branchOverrideId } = useUIStore();
+  const {
+    sidebarOpen,
+    clinicOverrideId,
+    branchOverrideId,
+    clearClinicOverride,
+  } = useUIStore();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -57,6 +62,10 @@ export function AppLayout() {
     null;
   const isReadOnlyBranch =
     branchAccessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+
+  useEffect(() => {
+    clearClinicOverride();
+  }, [clearClinicOverride]);
 
   useEffect(() => {
     const appName = t('app.name');

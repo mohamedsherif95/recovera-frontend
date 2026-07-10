@@ -122,7 +122,22 @@
     "clinics": "Clinics",
     "branches": "Branches",
     "branchSubscriptions": "Branch subscriptions",
-    "platformBilling": "Platform billing"
+    "platformBilling": "Platform billing",
+    "platformAdmin": "Platform Admin"
+  },
+  "platformAdmin": {
+    "title": "Platform Admin",
+    "subtitle": "Recovera operations console",
+    "overview": "Overview",
+    "overviewTitle": "Platform admin console",
+    "overviewDescription": "Use this area for tenant setup, branch subscriptions, and billing operations without entering a clinic workspace.",
+    "modeLabel": "Platform mode",
+    "isolatedBadge": "Isolated console",
+    "adminScope": "Admin scope",
+    "allClinics": "All clinics",
+    "workspace": "Clinic workspace",
+    "scopeHint": "Platform work is isolated here. Workspace override remains for support and incident handling.",
+    "scopeRequired": "Uses admin scope"
   },
   "settings": {
     "theme": "Theme",

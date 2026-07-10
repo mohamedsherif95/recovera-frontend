@@ -75,6 +75,7 @@ export const QUERY_KEYS = {
   BRANCHES: 'branches',
   BRANCH_SUBSCRIPTIONS: 'branchSubscriptions',
   PLATFORM_BILLING: 'platformBilling',
+  PLATFORM_ADMIN: 'platformAdmin',
   INVOICES: 'invoices',
 };
 

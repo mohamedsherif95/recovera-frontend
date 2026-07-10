@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/common/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/components/common/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import {
   useUsers,
   useToggleUserActive,
@@ -33,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, RefreshCcw, UserPlus } from 'lucide-react';
+import { Loader2, RefreshCcw, ShieldCheck, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
 
@@ -57,6 +58,23 @@ const MANAGER_CREATE_ROLE_NAMES = [
   USER_ROLES.SECRETARY,
 ];
 
+const hasRoleName = (user, roleName) =>
+  user?.roles?.some((role) => role?.name === roleName);
+
+const isAdminAccount = (user) =>
+  user?.isPlatformAdmin || hasRoleName(user, USER_ROLES.ADMIN);
+
+function AdminMetric({ label, value }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent className="text-2xl font-semibold">{value}</CardContent>
+    </Card>
+  );
+}
+
 export default function UsersPage() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
@@ -66,7 +84,7 @@ export default function UsersPage() {
 
   const isPlatformAdmin =
     currentUser?.isPlatformAdmin ||
-    currentUser?.roles?.some((role) => role?.name === USER_ROLES.ADMIN);
+    hasRoleName(currentUser, USER_ROLES.ADMIN);
   const isPlatformAdminRoute = location.pathname.startsWith('/platform-admin');
   const canCreateUser = can(PERMISSIONS['users:create']);
   const canManageRoles = isPlatformAdmin && can(PERMISSIONS['users:manageRoles']);
@@ -209,6 +227,28 @@ export default function UsersPage() {
 
   const totalUsers = data?.total ?? data?.meta?.total ?? users.length;
   const totalPages = totalUsers ? Math.ceil(totalUsers / pageSize) : 1;
+  const userSummary = useMemo(() => {
+    const active = users.filter((user) => user.isActive !== false).length;
+    const managers = users.filter(
+      (user) =>
+        hasRoleName(user, USER_ROLES.MANAGER) ||
+        hasRoleName(user, USER_ROLES.BRANCH_MANAGER),
+    ).length;
+    const logisticsUsers = users.filter(
+      (user) =>
+        hasRoleName(user, USER_ROLES.SECRETARY) ||
+        hasRoleName(user, USER_ROLES.DOCTOR),
+    ).length;
+    const admins = users.filter(isAdminAccount).length;
+
+    return {
+      total: totalUsers,
+      active,
+      managers,
+      logisticsUsers,
+      admins,
+    };
+  }, [totalUsers, users]);
 
   const getUserBranchIds = (user) => {
     if (Array.isArray(user?.branchAssignments) && user.branchAssignments.length > 0) {
@@ -556,9 +596,7 @@ export default function UsersPage() {
             primaryBranchId != null
               ? getBranchName(primaryBranchId, row.branch?.name)
               : null;
-          const isPlatformAdminUser =
-            row.isPlatformAdmin ||
-            row.roles?.some((role) => role?.name === USER_ROLES.ADMIN);
+          const isPlatformAdminUser = isAdminAccount(row);
           const canEditBranchAssignment = canToggleStatus && !isPlatformAdminUser;
 
           return (
@@ -607,7 +645,15 @@ export default function UsersPage() {
 
           return (
             <div className="flex flex-wrap gap-1">
-              {allRoles.map((role) => {
+              {isAdminAccount(row) && (
+                <Badge variant="destructive" className="rounded-full px-3 py-1">
+                  <ShieldCheck className="mr-1 h-3 w-3" />
+                  Admin
+                </Badge>
+              )}
+              {allRoles
+                .filter((role) => role.name !== USER_ROLES.ADMIN)
+                .map((role) => {
                 const isAssigned = names.includes(role.name);
                 return (
                   <Button
@@ -763,15 +809,18 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('users.title')}
+        title={
+          isPlatformAdminRoute
+            ? 'User access administration'
+            : t('users.title')
+        }
+        description={
+          isPlatformAdminRoute
+            ? 'Provision clinic managers and operational users for the selected clinic group.'
+            : undefined
+        }
         actions={
           <>
-            {canCreateUser && (
-              <Button onClick={openCreateDialog}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                {t('users.createUser')}
-              </Button>
-            )}
             <Button
               variant="outline"
               size="icon"
@@ -780,14 +829,49 @@ export default function UsersPage() {
             >
               <RefreshCcw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
+            {canCreateUser && (
+              <Button onClick={openCreateDialog}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                {isPlatformAdminRoute ? 'Provision user' : t('users.createUser')}
+              </Button>
+            )}
           </>
         }
       />
 
+      {isPlatformAdminRoute && !needsClinicSelection && (
+        <Card className="border-primary/15 bg-muted/20">
+          <CardContent className="flex flex-col gap-2 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-medium">Admin console user changes apply to the selected clinic group.</span>
+            <span className="text-muted-foreground">
+              Platform admin accounts are shown here, but admin role assignment is kept out of the routine clinic user directory.
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <AdminMetric label="Users in scope" value={userSummary.total} />
+        <AdminMetric label="Active users" value={userSummary.active} />
+        <AdminMetric label="Managers" value={userSummary.managers} />
+        <AdminMetric
+          label={isPlatformAdminRoute ? 'Admin accounts' : 'Clinical/logistics'}
+          value={isPlatformAdminRoute ? userSummary.admins : userSummary.logisticsUsers}
+        />
+      </div>
+
       <Card>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base">
+            {isPlatformAdminRoute ? 'Clinic user directory' : t('users.title')}
+          </CardTitle>
+          <Badge variant="outline">
+            {filteredUsers.length} shown
+          </Badge>
+        </CardHeader>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-col gap-2 border-y bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span>{t('users.role')}</span>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -902,9 +986,13 @@ export default function UsersPage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('users.createUser')}</DialogTitle>
+            <DialogTitle>
+              {isPlatformAdminRoute ? 'Provision clinic user' : t('users.createUser')}
+            </DialogTitle>
             <DialogDescription>
-              Users start with a temporary password and must set a permanent password on first login.
+              {isPlatformAdminRoute
+                ? 'Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.'
+                : 'Users start with a temporary password and must set a permanent password on first login.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Plus, RefreshCcw } from 'lucide-react';
+import { CreditCard, Loader2, Plus, RefreshCcw } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/common/DataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +36,7 @@ import { PERMISSIONS } from '@/lib/constants';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
+import { formatCurrency } from '@/lib/utils';
 
 const emptyBranchForm = {
   name: '',
@@ -277,11 +278,19 @@ export default function BranchesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('nav.branches', { defaultValue: 'Branches' })}
-        description={t('branches.description', {
-          defaultValue:
-            'Manage clinic branches and review cross-branch balance credits.',
-        })}
+        title={
+          isPlatformAdminRoute
+            ? 'Branch administration'
+            : t('nav.branches', { defaultValue: 'Branches' })
+        }
+        description={
+          isPlatformAdminRoute
+            ? 'Manage the branch records that subscriptions, billing, and access controls attach to.'
+            : t('branches.description', {
+                defaultValue:
+                  'Manage clinic branches and review cross-branch balance credits.',
+              })
+        }
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -299,6 +308,14 @@ export default function BranchesPage() {
                 }`}
               />
             </Button>
+            {isPlatformAdminRoute && !needsClinicSelection && (
+              <Button variant="outline" asChild>
+                <Link to="/platform-admin/branch-subscriptions">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Subscriptions
+                </Link>
+              </Button>
+            )}
             {canCreateBranches && !needsClinicSelection && (
               <Button onClick={openCreateDialog}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -315,6 +332,17 @@ export default function BranchesPage() {
             {t('branches.selectClinicFirst', {
               defaultValue: 'Select a clinic in the top bar to manage its branches.',
             })}
+          </CardContent>
+        </Card>
+      )}
+
+      {isPlatformAdminRoute && !needsClinicSelection && (
+        <Card className="border-primary/15 bg-muted/20">
+          <CardContent className="flex flex-col gap-2 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-medium">Branch is the subscribed client unit.</span>
+            <span className="text-muted-foreground">
+              Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.
+            </span>
           </CardContent>
         </Card>
       )}
@@ -359,7 +387,7 @@ export default function BranchesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-2xl font-semibold">
-            {summary.pendingCreditTotal}
+            {formatCurrency(summary.pendingCreditTotal)}
           </CardContent>
         </Card>
       </div>
@@ -562,10 +590,12 @@ export default function BranchesPage() {
                 : t('branches.createBranch', { defaultValue: 'Create branch' })}
             </DialogTitle>
             <DialogDescription>
-              {t('branches.dialogDescription', {
-                defaultValue:
-                  'Every clinic starts with a default branch and can add more as operations grow.',
-              })}
+              {isPlatformAdminRoute
+                ? 'This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.'
+                : t('branches.dialogDescription', {
+                    defaultValue:
+                      'Every clinic starts with a default branch and can add more as operations grow.',
+                  })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBranchSubmit} className="space-y-4">

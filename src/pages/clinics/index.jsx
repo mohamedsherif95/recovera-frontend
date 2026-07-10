@@ -59,6 +59,17 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+function AdminMetric({ label, value }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+      </CardHeader>
+      <CardContent className="text-2xl font-semibold">{value}</CardContent>
+    </Card>
+  );
+}
+
 export default function ClinicsPage() {
   const { t, i18n } = useTranslation();
   const [clinicDialogOpen, setClinicDialogOpen] = useState(false);
@@ -88,6 +99,22 @@ export default function ClinicsPage() {
     if (Array.isArray(data?.data)) return data.data;
     return [];
   }, [data]);
+  const clinicSummary = useMemo(() => {
+    const active = clinics.filter((clinic) => clinic.status === 'active').length;
+    const suspended = clinics.filter(
+      (clinic) => clinic.status === 'suspended',
+    ).length;
+    const withBillingNotes = clinics.filter((clinic) =>
+      Boolean(clinic.billingNotes?.trim()),
+    ).length;
+
+    return {
+      total: clinics.length,
+      active,
+      suspended,
+      withBillingNotes,
+    };
+  }, [clinics]);
 
   const provisionableRoles = useMemo(() => {
     if (!Array.isArray(rolesPermissions)) return [];
@@ -285,7 +312,7 @@ export default function ClinicsPage() {
                 openEditClinic(clinic);
               }}
             >
-              {t('common.edit')}
+              Company settings
             </Button>
             <Button
               size="sm"
@@ -295,7 +322,7 @@ export default function ClinicsPage() {
               }}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              {t('users.createUser')}
+              Provision user
             </Button>
           </div>
         ),
@@ -307,8 +334,8 @@ export default function ClinicsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('clinics.title')}
-        description={t('clinics.description')}
+        title="Clinic groups"
+        description="Company-level tenants. Branch subscriptions, billing, and access controls are managed per branch."
         actions={
           <>
             <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
@@ -316,15 +343,23 @@ export default function ClinicsPage() {
             </Button>
             <Button onClick={openCreateClinic}>
               <Plus className="mr-2 h-4 w-4" />
-              {t('clinics.createClinic')}
+              Create clinic group
             </Button>
           </>
         }
       />
 
+      <div className="grid gap-4 md:grid-cols-4">
+        <AdminMetric label="Clinic groups" value={clinicSummary.total} />
+        <AdminMetric label="Active" value={clinicSummary.active} />
+        <AdminMetric label="Suspended" value={clinicSummary.suspended} />
+        <AdminMetric label="Billing notes" value={clinicSummary.withBillingNotes} />
+      </div>
+
       <Card className="border-primary/15 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base text-primary">Recovera service tenants</CardTitle>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base">Clinic group directory</CardTitle>
+          <Badge variant="outline">{clinicSummary.total} total</Badge>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -350,10 +385,10 @@ export default function ClinicsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {editingClinic ? t('clinics.editClinic') : t('clinics.createClinic')}
+              {editingClinic ? 'Edit clinic group' : 'Create clinic group'}
             </DialogTitle>
             <DialogDescription>
-              Company-level details live here. Branch pricing and access are managed per branch.
+              Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleClinicSubmit} className="space-y-4">
@@ -415,9 +450,9 @@ export default function ClinicsPage() {
       <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{t('users.createUser')}</DialogTitle>
+            <DialogTitle>Provision clinic user</DialogTitle>
             <DialogDescription>
-              New users receive this temporary password and must set a permanent password on first login.
+              Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUserSubmit} className="space-y-4">

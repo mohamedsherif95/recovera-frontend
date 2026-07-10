@@ -30,7 +30,6 @@ const navigationItems = [
     icon: ShieldCheck,
     anyPermissions: [
       PERMISSIONS['clinics:viewAll'],
-      PERMISSIONS['branches:view'],
       PERMISSIONS['branchSubscriptions:view'],
       PERMISSIONS['platformBilling:view'],
     ],

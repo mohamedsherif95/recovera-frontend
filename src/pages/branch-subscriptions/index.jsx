@@ -22,12 +22,7 @@ import {
   useUpdateBranchSubscription,
 } from '@/hooks/useBranchSubscriptions';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import {
-  canOverrideClinicScope,
-  resolveEffectiveClinicId,
-} from '@/lib/branchScope';
 import {
   BRANCH_SUBSCRIPTION_ACCESS_STATUS,
   BRANCH_PRICING_MODELS,
@@ -284,14 +279,14 @@ const PricingTermPanel = ({ title, term }) => {
 
 export default function BranchSubscriptionsPage() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
-  const { clinicOverrideId } = useUIStore();
+  const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
   const canView = can(PERMISSIONS['branchSubscriptions:view']);
   const canManage = can(PERMISSIONS['branchSubscriptions:manage']);
-  const canOverrideClinic = canOverrideClinicScope(user);
-  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const needsClinicSelection = Boolean(canOverrideClinic && !effectiveClinicId);
+  const needsClinicSelection = !platformAdminClinicId;
+  const platformScopeOptions = platformAdminClinicId
+    ? { platformClinicId: platformAdminClinicId }
+    : {};
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [form, setForm] = useState(emptyForm);
 
@@ -300,7 +295,10 @@ export default function BranchSubscriptionsPage() {
     isLoading: isBranchesLoading,
     refetch: refetchBranches,
     isFetching: isBranchesFetching,
-  } = useBranches(Boolean(canView && !needsClinicSelection));
+  } = useBranches({
+    enabled: Boolean(canView && !needsClinicSelection),
+    ...platformScopeOptions,
+  });
 
   const branches = useMemo(() => {
     if (needsClinicSelection) return [];
@@ -321,6 +319,7 @@ export default function BranchSubscriptionsPage() {
     refetch: refetchSubscription,
   } = useBranchSubscription(selectedBranchId, {
     enabled: Boolean(canView && selectedBranchId && !needsClinicSelection),
+    ...platformScopeOptions,
   });
   const updateSubscription = useUpdateBranchSubscription();
 
@@ -353,7 +352,7 @@ export default function BranchSubscriptionsPage() {
 
     const defaultBranch = branches.find((branch) => branch.isDefault) || branches[0];
     setSelectedBranchId(defaultBranch ? String(defaultBranch.id) : '');
-  }, [branches, effectiveClinicId, needsClinicSelection, selectedBranchId]);
+  }, [branches, platformAdminClinicId, needsClinicSelection, selectedBranchId]);
 
   useEffect(() => {
     if (!selectedBranchId) return;
@@ -454,6 +453,7 @@ export default function BranchSubscriptionsPage() {
     updateSubscription.mutate({
       branchId: selectedBranchId,
       data: buildPayload(),
+      options: platformScopeOptions,
     });
   };
 

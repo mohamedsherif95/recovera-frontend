@@ -10,7 +10,7 @@ function getRoleNames(user) {
 
 export function canOverrideClinicScope(user) {
   return Boolean(
-    user?.isSuperAdmin || getRoleNames(user).includes(USER_ROLES.SUPER_ADMIN),
+    user?.isPlatformAdmin || getRoleNames(user).includes(USER_ROLES.ADMIN),
   );
 }
 
@@ -18,9 +18,9 @@ export function canOverrideBranchScope(user) {
   const roleNames = getRoleNames(user);
 
   return Boolean(
-    user?.isSuperAdmin ||
-      roleNames.includes(USER_ROLES.SUPER_ADMIN) ||
-      roleNames.includes(USER_ROLES.ADMIN),
+    user?.isPlatformAdmin ||
+      roleNames.includes(USER_ROLES.ADMIN) ||
+      roleNames.includes(USER_ROLES.MANAGER),
   );
 }
 

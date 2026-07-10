@@ -472,8 +472,8 @@
     "assessmentPermission": "صلاحية جلسات الكشف",
     "assessmentAllowed": "مسموح",
     "assessmentNotAllowed": "غير مسموح",
+    "manager": "مدير",
     "branch_manager": "مدير فرع",
-    "super_admin": "مدير النظام",
     "clinic": "العيادة",
     "branch": "الفرع",
     "mustChangePassword": "يجب تغيير كلمة المرور"

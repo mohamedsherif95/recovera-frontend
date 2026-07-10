@@ -49,7 +49,7 @@ const emptyUserForm = {
   username: '',
   email: '',
   password: '',
-  roleName: USER_ROLES.ADMIN,
+  roleName: USER_ROLES.MANAGER,
   shifts: [],
   dailyOpnsOrder: '',
   canPerformAssessments: false,
@@ -83,7 +83,7 @@ export default function ClinicsPage() {
   const selectedProvisionClinicId = Number(userForm.clinicId || 0) || null;
   const { data: branchOptionsData } = useBranches({
     enabled: Boolean(userDialogOpen && selectedProvisionClinicId),
-    clinicOverrideId: selectedProvisionClinicId ?? undefined,
+    platformClinicId: selectedProvisionClinicId ?? undefined,
   });
 
   const clinics = useMemo(() => {
@@ -97,7 +97,7 @@ export default function ClinicsPage() {
     return rolesPermissions
       .filter((role) =>
         [
-          USER_ROLES.ADMIN,
+          USER_ROLES.MANAGER,
           USER_ROLES.BRANCH_MANAGER,
           USER_ROLES.DOCTOR,
           USER_ROLES.SECRETARY,

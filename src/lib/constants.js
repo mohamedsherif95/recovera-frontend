@@ -48,8 +48,8 @@ export const BRANCH_PRICING_MODELS = {
 
 // User roles
 export const USER_ROLES = {
-  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
+  MANAGER: 'manager',
   BRANCH_MANAGER: 'branch_manager',
   DOCTOR: 'doctor',
   SECRETARY: 'secretary',

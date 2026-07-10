@@ -44,12 +44,7 @@ import {
   useVoidPlatformInvoice,
 } from '@/hooks/usePlatformBilling';
 import { usePermissions } from '@/hooks/usePermissions';
-import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import {
-  canOverrideClinicScope,
-  resolveEffectiveClinicId,
-} from '@/lib/branchScope';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { PERMISSIONS, PLATFORM_INVOICE_STATUS_LABELS } from '@/lib/constants';
 
@@ -292,14 +287,14 @@ function VoidDialog({ open, onOpenChange, onSubmit, isLoading }) {
 }
 
 export default function PlatformBillingPage() {
-  const { user } = useAuthStore();
-  const { clinicOverrideId } = useUIStore();
+  const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
   const canView = can(PERMISSIONS['platformBilling:view']);
   const canManage = can(PERMISSIONS['platformBilling:manage']);
-  const canOverrideClinic = canOverrideClinicScope(user);
-  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const needsClinicSelection = Boolean(canOverrideClinic && !effectiveClinicId);
+  const needsClinicSelection = !platformAdminClinicId;
+  const platformScopeOptions = platformAdminClinicId
+    ? { platformClinicId: platformAdminClinicId }
+    : {};
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [month, setMonth] = useState(currentMonthInput);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
@@ -309,7 +304,10 @@ export default function PlatformBillingPage() {
   const billingMonth = toBillingMonth(month);
 
   const { data: branchesData, isLoading: branchesLoading } = useBranches(
-    Boolean(canView && !needsClinicSelection),
+    {
+      enabled: Boolean(canView && !needsClinicSelection),
+      ...platformScopeOptions,
+    },
   );
   const branches = useMemo(() => {
     if (needsClinicSelection) return [];
@@ -336,15 +334,32 @@ export default function PlatformBillingPage() {
   const previewQuery = usePlatformBillingPreview(
     selectedBranchId,
     billingMonth,
-    { enabled: Boolean(canView && selectedBranchId && billingMonth) },
+    {
+      enabled: Boolean(
+        canView &&
+          selectedBranchId &&
+          billingMonth &&
+          !needsClinicSelection,
+      ),
+      ...platformScopeOptions,
+    },
   );
   const invoicesQuery = usePlatformInvoices(
     { branchId: selectedBranchId || undefined, billingMonth },
-    { enabled: Boolean(canView && selectedBranchId && billingMonth) },
+    {
+      enabled: Boolean(
+        canView &&
+          selectedBranchId &&
+          billingMonth &&
+          !needsClinicSelection,
+      ),
+      ...platformScopeOptions,
+    },
   );
   const invoices = Array.isArray(invoicesQuery.data) ? invoicesQuery.data : [];
   const selectedInvoiceQuery = usePlatformInvoice(selectedInvoiceId, {
-    enabled: Boolean(canView && selectedInvoiceId),
+    enabled: Boolean(canView && selectedInvoiceId && !needsClinicSelection),
+    ...platformScopeOptions,
   });
   const selectedInvoicePackage = selectedInvoiceQuery.data;
   const selectedInvoice = getInvoiceFromPackage(selectedInvoicePackage);
@@ -384,7 +399,11 @@ export default function PlatformBillingPage() {
     if (!selectedInvoice?.id) return;
 
     try {
-      await platformBillingApi.downloadArtifact(selectedInvoice.id, artifactType);
+      await platformBillingApi.downloadArtifact(
+        selectedInvoice.id,
+        artifactType,
+        platformScopeOptions,
+      );
     } catch (error) {
       toast.error(error?.response?.data?.message || 'Failed to download artifact');
     }
@@ -397,6 +416,7 @@ export default function PlatformBillingPage() {
           branchId: Number(selectedBranchId),
           billingMonth,
         },
+        options: platformScopeOptions,
       },
       {
         onSuccess: (data) => {
@@ -416,6 +436,7 @@ export default function PlatformBillingPage() {
           amount,
           reason,
         },
+        options: platformScopeOptions,
       },
       {
         onSuccess: () => {
@@ -432,6 +453,7 @@ export default function PlatformBillingPage() {
       {
         invoiceId: selectedInvoice.id,
         data: payload,
+        options: platformScopeOptions,
       },
       {
         onSuccess: () => {
@@ -448,6 +470,7 @@ export default function PlatformBillingPage() {
       {
         invoiceId: selectedInvoice.id,
         data: payload,
+        options: platformScopeOptions,
       },
       {
         onSuccess: () => {

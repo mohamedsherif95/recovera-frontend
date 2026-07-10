@@ -37,7 +37,7 @@ export default function SessionDetailsPage() {
   const { canAny, can, isOwnSession } = usePermissions();
   const { hasAnyRole, user } = useAuthStore();
   const [isDeletingSession, setIsDeletingSession] = useState(false);
-  const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
+  const isAdmin = hasAnyRole([USER_ROLES.MANAGER]);
 
   const {
     data: session,
@@ -74,7 +74,7 @@ export default function SessionDetailsPage() {
   ]);
 
   const canViewCostCard = hasAnyRole([
-    USER_ROLES.ADMIN,
+    USER_ROLES.MANAGER,
     USER_ROLES.SECRETARY,
   ]);
   

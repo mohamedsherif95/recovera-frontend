@@ -8,6 +8,7 @@ export function useBranchSubscription(branchId, options = {}) {
     enabled = true,
     clinicOverrideId,
     branchOverrideId,
+    platformClinicId,
     ...queryOptions
   } = options;
 
@@ -17,11 +18,13 @@ export function useBranchSubscription(branchId, options = {}) {
       branchId ?? '__none__',
       clinicOverrideId ?? '__active__',
       branchOverrideId ?? '__active__',
+      platformClinicId ?? '__platform-active__',
     ],
     queryFn: () =>
       branchSubscriptionsApi.getByBranch(branchId, {
         clinicOverrideId,
         branchOverrideId,
+        platformClinicId,
       }),
     enabled: Boolean(enabled && branchId),
     staleTime: 60 * 1000,

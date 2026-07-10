@@ -94,9 +94,8 @@ export function PlatformAdminLayout() {
   const { logout } = useAuth();
   const { can, canAny } = usePermissions();
   const {
-    clinicOverrideId,
-    setClinicOverrideId,
-    clearBranchOverride,
+    platformAdminClinicId,
+    setPlatformAdminClinicId,
   } = useUIStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isRtl = i18n.language === 'ar';
@@ -129,8 +128,7 @@ export function PlatformAdminLayout() {
   }, [t, location.pathname]);
 
   const handleClinicChange = (value) => {
-    setClinicOverrideId(value === 'none' ? null : Number(value));
-    clearBranchOverride();
+    setPlatformAdminClinicId(value === 'none' ? null : Number(value));
     queryClient.invalidateQueries();
   };
 
@@ -193,7 +191,7 @@ export function PlatformAdminLayout() {
           <div className="ms-auto flex items-center gap-2">
             {canSelectClinic && (
               <Select
-                value={clinicOverrideId ? String(clinicOverrideId) : 'none'}
+                value={platformAdminClinicId ? String(platformAdminClinicId) : 'none'}
                 onValueChange={handleClinicChange}
               >
                 <SelectTrigger className="hidden h-9 w-[240px] md:flex">
@@ -303,7 +301,7 @@ export function PlatformAdminLayout() {
             </div>
             {canSelectClinic && (
               <Select
-                value={clinicOverrideId ? String(clinicOverrideId) : 'none'}
+                value={platformAdminClinicId ? String(platformAdminClinicId) : 'none'}
                 onValueChange={handleClinicChange}
               >
                 <SelectTrigger className="mb-4 h-9 w-full">

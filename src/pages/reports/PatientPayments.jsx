@@ -67,7 +67,7 @@ export default function IncomeReportPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { can } = usePermissions();
   const { hasAnyRole } = useAuthStore();
-  const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
+  const isAdmin = hasAnyRole([USER_ROLES.MANAGER]);
   const isSecretary = hasAnyRole([USER_ROLES.SECRETARY]);
   const canViewInvoices = can(PERMISSIONS['invoices:view']);
   const canCreateInvoices = can(PERMISSIONS['invoices:create']);

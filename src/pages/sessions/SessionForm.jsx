@@ -140,7 +140,7 @@ export function SessionForm({
   const categoriesQuery = useSessionCategories();
 
   const canManageCategories = hasAnyRole([
-    USER_ROLES.ADMIN,
+    USER_ROLES.MANAGER,
     USER_ROLES.SECRETARY,
   ]);
 

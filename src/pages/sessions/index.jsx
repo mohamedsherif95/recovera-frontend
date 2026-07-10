@@ -58,7 +58,7 @@ export default function SessionsPage() {
   }, [fromDate, toDate, statusFilter, categoryFilter, debouncedSearch]);
 
   const canSeeFinancialAndCategory = hasAnyRole([
-    USER_ROLES.ADMIN,
+    USER_ROLES.MANAGER,
     USER_ROLES.SECRETARY,
   ]);
 
@@ -135,7 +135,7 @@ export default function SessionsPage() {
   }, []);
 
   const deleteSession = useDeleteSession();
-  const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
+  const isAdmin = hasAnyRole([USER_ROLES.MANAGER]);
   const [sessionPendingDelete, setSessionPendingDelete] = useState(null);
 
   const handleConfirmDelete = () => {

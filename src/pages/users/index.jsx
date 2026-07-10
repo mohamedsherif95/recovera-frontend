@@ -56,11 +56,11 @@ export default function UsersPage() {
   const { user: currentUser } = useAuthStore();
   const { clinicOverrideId } = useUIStore();
 
-  const isSuperAdmin =
-    currentUser?.isSuperAdmin ||
-    currentUser?.roles?.some((role) => role?.name === USER_ROLES.SUPER_ADMIN);
+  const isPlatformAdmin =
+    currentUser?.isPlatformAdmin ||
+    currentUser?.roles?.some((role) => role?.name === USER_ROLES.ADMIN);
   const canCreateUser = can(PERMISSIONS['users:create']);
-  const canManageRoles = isSuperAdmin && can(PERMISSIONS['users:manageRoles']);
+  const canManageRoles = isPlatformAdmin && can(PERMISSIONS['users:manageRoles']);
   const canToggleStatus = can(PERMISSIONS['users:update']);
   const effectiveClinicId = resolveEffectiveClinicId(currentUser, clinicOverrideId);
 
@@ -89,7 +89,7 @@ export default function UsersPage() {
   const setUserShifts = useSetUserShifts();
   const updateUser = useUpdateUser();
   const createUser = useCreateUser();
-  const { data: clinicsData } = useClinics(Boolean(isSuperAdmin && canCreateUser));
+  const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin && canCreateUser));
   const { data: currentBranchesData } = useBranches({
     enabled: Boolean(effectiveClinicId),
   });
@@ -128,29 +128,29 @@ export default function UsersPage() {
     if (Array.isArray(currentBranchesData?.data)) return currentBranchesData.data;
     return [];
   }, [currentBranchesData]);
-  const selectedCreateClinicId = isSuperAdmin
+  const selectedCreateClinicId = isPlatformAdmin
     ? Number(createForm.clinicId || 0) || null
     : effectiveClinicId;
   const { data: createBranchesData } = useBranches({
     enabled: Boolean(canCreateUser && createDialogOpen && selectedCreateClinicId),
-    clinicOverrideId: isSuperAdmin ? selectedCreateClinicId ?? undefined : undefined,
+    platformClinicId: isPlatformAdmin ? selectedCreateClinicId ?? undefined : undefined,
   });
   const createBranches = useMemo(() => {
-    if (!isSuperAdmin) {
+    if (!isPlatformAdmin) {
       return currentBranches;
     }
 
     if (Array.isArray(createBranchesData)) return createBranchesData;
     if (Array.isArray(createBranchesData?.data)) return createBranchesData.data;
     return [];
-  }, [createBranchesData, currentBranches, isSuperAdmin]);
+  }, [createBranchesData, currentBranches, isPlatformAdmin]);
 
   const createRoleOptions = useMemo(() => {
     return allRoles.filter((role) => {
-      if (role.name === USER_ROLES.SUPER_ADMIN) return false;
-      if (isSuperAdmin) {
+      if (role.name === USER_ROLES.ADMIN) return false;
+      if (isPlatformAdmin) {
         return [
-          USER_ROLES.ADMIN,
+          USER_ROLES.MANAGER,
           USER_ROLES.BRANCH_MANAGER,
           USER_ROLES.DOCTOR,
           USER_ROLES.SECRETARY,
@@ -158,7 +158,7 @@ export default function UsersPage() {
       }
       return role.name === USER_ROLES.DOCTOR;
     });
-  }, [allRoles, isSuperAdmin]);
+  }, [allRoles, isPlatformAdmin]);
 
   const users = useMemo(() => {
     if (!data) return [];
@@ -294,8 +294,8 @@ export default function UsersPage() {
   const openCreateDialog = () => {
     setCreateForm({
       ...emptyCreateForm,
-      clinicId: isSuperAdmin ? '' : String(effectiveClinicId ?? ''),
-      roleName: isSuperAdmin ? USER_ROLES.ADMIN : USER_ROLES.DOCTOR,
+      clinicId: isPlatformAdmin ? '' : String(effectiveClinicId ?? ''),
+      roleName: isPlatformAdmin ? USER_ROLES.MANAGER : USER_ROLES.DOCTOR,
     });
     setCreateDialogOpen(true);
   };
@@ -399,7 +399,7 @@ export default function UsersPage() {
           : undefined,
     };
 
-    if (isSuperAdmin) {
+    if (isPlatformAdmin) {
       payload.clinicId = Number(createForm.clinicId);
     }
     if (createForm.branchIds.length > 0) {
@@ -519,10 +519,10 @@ export default function UsersPage() {
             primaryBranchId != null
               ? getBranchName(primaryBranchId, row.branch?.name)
               : null;
-          const isSuperAdminUser =
-            row.isSuperAdmin ||
-            row.roles?.some((role) => role?.name === USER_ROLES.SUPER_ADMIN);
-          const canEditBranchAssignment = canToggleStatus && !isSuperAdminUser;
+          const isPlatformAdminUser =
+            row.isPlatformAdmin ||
+            row.roles?.some((role) => role?.name === USER_ROLES.ADMIN);
+          const canEditBranchAssignment = canToggleStatus && !isPlatformAdminUser;
 
           return (
             <div className="flex min-w-[220px] items-center gap-2">
@@ -866,7 +866,7 @@ export default function UsersPage() {
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              {isSuperAdmin && (
+              {isPlatformAdmin && (
                 <div className="space-y-2">
                   <Label>{t('users.clinic')}</Label>
                   <Select
@@ -1078,7 +1078,7 @@ export default function UsersPage() {
                 type="submit"
                 disabled={
                   createUser.isPending ||
-                  (isSuperAdmin && !createForm.clinicId) ||
+                  (isPlatformAdmin && !createForm.clinicId) ||
                   (createBranches.length > 0 && createForm.branchIds.length === 0)
                 }
               >

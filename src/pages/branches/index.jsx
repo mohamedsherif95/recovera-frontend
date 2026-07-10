@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2, Plus, RefreshCcw } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -43,17 +44,25 @@ const emptyBranchForm = {
 
 export default function BranchesPage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const { can } = usePermissions();
   const { user } = useAuthStore();
-  const { clinicOverrideId } = useUIStore();
+  const { clinicOverrideId, platformAdminClinicId } = useUIStore();
   const canViewBranches = can(PERMISSIONS['branches:view']);
   const canCreateBranches = can(PERMISSIONS['branches:create']);
   const canUpdateBranches = can(PERMISSIONS['branches:update']);
   const canViewCredits = can(PERMISSIONS['branchCredits:view']);
   const canReconcileCredits = can(PERMISSIONS['branchCredits:reconcile']);
-  const isSuperAdmin = Boolean(user?.isSuperAdmin);
-  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const needsClinicSelection = Boolean(isSuperAdmin && !effectiveClinicId);
+  const isPlatformAdmin = Boolean(user?.isPlatformAdmin);
+  const isPlatformAdminRoute = location.pathname.startsWith('/platform-admin');
+  const effectiveClinicId = isPlatformAdminRoute
+    ? platformAdminClinicId
+    : resolveEffectiveClinicId(user, clinicOverrideId);
+  const needsClinicSelection = Boolean(isPlatformAdmin && !effectiveClinicId);
+  const platformScopeOptions =
+    isPlatformAdminRoute && effectiveClinicId
+      ? { platformClinicId: effectiveClinicId }
+      : {};
 
   const [branchDialogOpen, setBranchDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
@@ -69,7 +78,10 @@ export default function BranchesPage() {
     isError: isBranchesError,
     refetch: refetchBranches,
     isFetching: isBranchesFetching,
-  } = useBranches(Boolean(canViewBranches && !needsClinicSelection));
+  } = useBranches({
+    enabled: Boolean(canViewBranches && !needsClinicSelection),
+    ...platformScopeOptions,
+  });
   const {
     data: branchCreditsData,
     isLoading: isCreditsLoading,
@@ -85,6 +97,7 @@ export default function BranchesPage() {
       toBranchId: creditToBranchId === 'all' ? undefined : Number(creditToBranchId),
     },
     Boolean(canViewCredits && !needsClinicSelection),
+    platformScopeOptions,
   );
 
   const createBranch = useCreateBranch();
@@ -145,8 +158,15 @@ export default function BranchesPage() {
     };
 
     const mutation = editingBranch
-      ? updateBranch.mutateAsync({ id: editingBranch.id, data: payload })
-      : createBranch.mutateAsync(payload);
+      ? updateBranch.mutateAsync({
+          id: editingBranch.id,
+          data: payload,
+          options: platformScopeOptions,
+        })
+      : createBranch.mutateAsync({
+          data: payload,
+          options: platformScopeOptions,
+        });
 
     mutation.then(() => {
       setBranchDialogOpen(false);
@@ -240,6 +260,7 @@ export default function BranchesPage() {
                 reconcileBranchCredit.mutate({
                   id: row.id,
                   data: {},
+                  options: platformScopeOptions,
                 })
               }
             >

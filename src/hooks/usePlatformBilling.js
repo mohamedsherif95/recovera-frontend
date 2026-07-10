@@ -4,7 +4,7 @@ import { platformBillingApi } from '@/api/endpoints/platformBilling';
 import { QUERY_KEYS } from '@/lib/constants';
 
 export function usePlatformBillingPreview(branchId, billingMonth, options = {}) {
-  const { enabled = true, ...queryOptions } = options;
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
 
   return useQuery({
     queryKey: [
@@ -12,8 +12,13 @@ export function usePlatformBillingPreview(branchId, billingMonth, options = {}) 
       'preview',
       branchId ?? '__none__',
       billingMonth ?? '__none__',
+      platformClinicId ?? '__platform-active__',
     ],
-    queryFn: () => platformBillingApi.preview({ branchId, billingMonth }),
+    queryFn: () =>
+      platformBillingApi.preview(
+        { branchId, billingMonth },
+        { platformClinicId },
+      ),
     enabled: Boolean(enabled && branchId && billingMonth),
     staleTime: 30 * 1000,
     ...queryOptions,
@@ -21,11 +26,16 @@ export function usePlatformBillingPreview(branchId, billingMonth, options = {}) 
 }
 
 export function usePlatformInvoices(params = {}, options = {}) {
-  const { enabled = true, ...queryOptions } = options;
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
 
   return useQuery({
-    queryKey: [QUERY_KEYS.PLATFORM_BILLING, 'invoices', params],
-    queryFn: () => platformBillingApi.listInvoices(params),
+    queryKey: [
+      QUERY_KEYS.PLATFORM_BILLING,
+      'invoices',
+      params,
+      platformClinicId ?? '__platform-active__',
+    ],
+    queryFn: () => platformBillingApi.listInvoices(params, { platformClinicId }),
     enabled,
     staleTime: 30 * 1000,
     ...queryOptions,
@@ -33,11 +43,16 @@ export function usePlatformInvoices(params = {}, options = {}) {
 }
 
 export function usePlatformInvoice(id, options = {}) {
-  const { enabled = true, ...queryOptions } = options;
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
 
   return useQuery({
-    queryKey: [QUERY_KEYS.PLATFORM_BILLING, 'invoice', id ?? '__none__'],
-    queryFn: () => platformBillingApi.getInvoice(id),
+    queryKey: [
+      QUERY_KEYS.PLATFORM_BILLING,
+      'invoice',
+      id ?? '__none__',
+      platformClinicId ?? '__platform-active__',
+    ],
+    queryFn: () => platformBillingApi.getInvoice(id, { platformClinicId }),
     enabled: Boolean(enabled && id),
     staleTime: 30 * 1000,
     ...queryOptions,

@@ -11,6 +11,13 @@ const buildScopeConfig = (options = {}) => {
     config.branchOverrideId = options.branchOverrideId;
   }
 
+  if (options.platformClinicId !== undefined && options.platformClinicId !== null) {
+    config.headers = {
+      ...config.headers,
+      'X-Platform-Clinic-Scope': String(options.platformClinicId),
+    };
+  }
+
   return config;
 };
 
@@ -46,15 +53,19 @@ export const branchesApi = {
     return response.data;
   },
 
-  getCredits: async (params = {}) => {
-    const response = await apiClient.get('/branch-credits', { params });
+  getCredits: async (params = {}, options = {}) => {
+    const response = await apiClient.get('/branch-credits', {
+      ...buildScopeConfig(options),
+      params,
+    });
     return response.data;
   },
 
-  reconcileCredit: async (creditId, payload = {}) => {
+  reconcileCredit: async (creditId, payload = {}, options = {}) => {
     const response = await apiClient.post(
       `/branch-credits/${creditId}/reconcile`,
       payload,
+      buildScopeConfig(options),
     );
     return response.data;
   },

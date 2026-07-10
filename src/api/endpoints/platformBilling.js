@@ -11,6 +11,13 @@ const buildScopeConfig = (options = {}) => {
     config.branchOverrideId = options.branchOverrideId;
   }
 
+  if (options.platformClinicId !== undefined && options.platformClinicId !== null) {
+    config.headers = {
+      ...config.headers,
+      'X-Platform-Clinic-Scope': String(options.platformClinicId),
+    };
+  }
+
   return config;
 };
 

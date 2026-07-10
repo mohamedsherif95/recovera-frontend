@@ -123,7 +123,6 @@ export const router = createBrowserRouter([
       <ProtectedRoute
         anyPermissions={[
           PERMISSIONS['clinics:viewAll'],
-          PERMISSIONS['branches:view'],
           PERMISSIONS['branchSubscriptions:view'],
           PERMISSIONS['platformBilling:view'],
         ]}

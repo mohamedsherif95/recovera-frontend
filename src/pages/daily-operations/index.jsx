@@ -86,8 +86,8 @@ export default function DailyOperationsPage() {
   });
 
   const { hasAnyRole } = useAuthStore();
-  const canFilterShift = hasAnyRole([USER_ROLES.ADMIN, USER_ROLES.SECRETARY]);
-  const isAdmin = hasAnyRole([USER_ROLES.ADMIN]);
+  const canFilterShift = hasAnyRole([USER_ROLES.MANAGER, USER_ROLES.SECRETARY]);
+  const isAdmin = hasAnyRole([USER_ROLES.MANAGER]);
 
   const updateFiltersInUrl = (nextDate, nextShift) => {
     const params = {};

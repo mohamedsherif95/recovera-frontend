@@ -49,11 +49,11 @@ export function Header() {
   } = useUIStore();
   const { logout } = useAuth();
   const queryClient = useQueryClient();
-  const isSuperAdmin = canOverrideClinicScope(user);
+  const isPlatformAdmin = canOverrideClinicScope(user);
   const canOverrideBranch = canOverrideBranchScope(user);
   const canSwitchAssigned = canSwitchAssignedBranches(user);
   const assignedBranches = getAssignedBranches(user);
-  const { data: clinicsData } = useClinics(Boolean(isSuperAdmin));
+  const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin));
   const clinics = Array.isArray(clinicsData)
     ? clinicsData
     : Array.isArray(clinicsData?.data)
@@ -129,7 +129,7 @@ export function Header() {
 
         {/* Push items to the far right */}
         <div className="flex items-center gap-2 ms-auto">
-          {isSuperAdmin && (
+          {isPlatformAdmin && (
             <Select
               value={clinicOverrideId ? String(clinicOverrideId) : 'none'}
               onValueChange={(value) => {

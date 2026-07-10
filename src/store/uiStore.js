@@ -40,6 +40,7 @@ export const useUIStore = create(
 
       clinicOverrideId: null,
       branchOverrideId: null,
+      platformAdminClinicId: null,
       setClinicOverrideId: (clinicOverrideId) =>
         set((state) => ({
           clinicOverrideId,
@@ -47,6 +48,8 @@ export const useUIStore = create(
             state.clinicOverrideId === clinicOverrideId ? state.branchOverrideId : null,
         })),
       setBranchOverrideId: (branchOverrideId) => set({ branchOverrideId }),
+      setPlatformAdminClinicId: (platformAdminClinicId) =>
+        set({ platformAdminClinicId }),
       clearClinicOverride: () => set({ clinicOverrideId: null, branchOverrideId: null }),
       clearBranchOverride: () => set({ branchOverrideId: null }),
     }),
@@ -56,6 +59,7 @@ export const useUIStore = create(
         theme: state.theme,
         clinicOverrideId: state.clinicOverrideId,
         branchOverrideId: state.branchOverrideId,
+        platformAdminClinicId: state.platformAdminClinicId,
       }),
     }
   )

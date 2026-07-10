@@ -12,6 +12,7 @@ export function useBranches(optionsOrEnabled = true) {
     enabled = true,
     clinicOverrideId,
     branchOverrideId,
+    platformClinicId,
     ...queryOptions
   } = options;
 
@@ -20,11 +21,13 @@ export function useBranches(optionsOrEnabled = true) {
       QUERY_KEYS.BRANCHES,
       clinicOverrideId ?? '__active__',
       branchOverrideId ?? '__active__',
+      platformClinicId ?? '__platform-active__',
     ],
     queryFn: () =>
       branchesApi.getAll({
         clinicOverrideId,
         branchOverrideId,
+        platformClinicId,
       }),
     enabled,
     staleTime: 60 * 1000,
@@ -32,10 +35,15 @@ export function useBranches(optionsOrEnabled = true) {
   });
 }
 
-export function useBranchCredits(params = {}, enabled = true) {
+export function useBranchCredits(params = {}, enabled = true, options = {}) {
   return useQuery({
-    queryKey: [QUERY_KEYS.BRANCHES, 'credits', params],
-    queryFn: () => branchesApi.getCredits(params),
+    queryKey: [
+      QUERY_KEYS.BRANCHES,
+      'credits',
+      params,
+      options.platformClinicId ?? '__platform-active__',
+    ],
+    queryFn: () => branchesApi.getCredits(params, options),
     enabled,
     keepPreviousData: true,
     staleTime: 60 * 1000,
@@ -46,7 +54,10 @@ export function useCreateBranch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: branchesApi.create,
+    mutationFn: (variables) =>
+      variables?.data !== undefined
+        ? branchesApi.create(variables.data, variables.options)
+        : branchesApi.create(variables),
     onSuccess: () => {
       toast.success('Branch created successfully');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BRANCHES] });
@@ -61,7 +72,7 @@ export function useUpdateBranch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }) => branchesApi.update(id, data),
+    mutationFn: ({ id, data, options }) => branchesApi.update(id, data, options),
     onSuccess: () => {
       toast.success('Branch updated successfully');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BRANCHES] });
@@ -76,7 +87,8 @@ export function useReconcileBranchCredit() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }) => branchesApi.reconcileCredit(id, data),
+    mutationFn: ({ id, data, options }) =>
+      branchesApi.reconcileCredit(id, data, options),
     onSuccess: () => {
       toast.success('Branch credit reconciled successfully');
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.BRANCHES, 'credits'] });

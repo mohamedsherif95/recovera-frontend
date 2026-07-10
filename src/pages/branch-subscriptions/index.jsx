@@ -461,6 +461,10 @@ export default function BranchSubscriptionsPage() {
     STATUS_OPTIONS.find((status) => status.value === form.accessStatus)?.label ||
     form.accessStatus;
   const hasEnabledProfiles = form.enabledProfiles.length > 0;
+  const isFlexibleUsage =
+    form.pricingModel === BRANCH_PRICING_MODELS.FLEXIBLE_USAGE;
+  const isCapacityPackage =
+    form.pricingModel === BRANCH_PRICING_MODELS.CAPACITY_PACKAGE;
 
   return (
     <div className="space-y-6">
@@ -638,6 +642,7 @@ export default function BranchSubscriptionsPage() {
                         }
                         placeholder="e.g. Flexible, Growth, Scale"
                         disabled={!canManage}
+                        required={isCapacityPackage}
                       />
                     </div>
                     <div className="space-y-2">
@@ -666,7 +671,7 @@ export default function BranchSubscriptionsPage() {
                       <Input
                         id="included-monthly-visits"
                         type="number"
-                        min="0"
+                        min={isCapacityPackage ? '1' : '0'}
                         step="1"
                         value={form.includedMonthlyVisits}
                         onChange={(event) =>
@@ -676,6 +681,7 @@ export default function BranchSubscriptionsPage() {
                           }))
                         }
                         disabled={!canManage}
+                        required={isCapacityPackage}
                       />
                     </div>
                     <div className="space-y-2">
@@ -695,6 +701,7 @@ export default function BranchSubscriptionsPage() {
                           }))
                         }
                         disabled={!canManage}
+                        required={isFlexibleUsage}
                       />
                     </div>
                     <div className="space-y-2">
@@ -704,7 +711,7 @@ export default function BranchSubscriptionsPage() {
                       <Input
                         id="overage-block-fee"
                         type="number"
-                        min="0"
+                        min={isFlexibleUsage ? '1' : '0'}
                         step="1"
                         value={form.overageBlockFee}
                         onChange={(event) =>
@@ -714,6 +721,7 @@ export default function BranchSubscriptionsPage() {
                           }))
                         }
                         disabled={!canManage}
+                        required={isFlexibleUsage}
                       />
                     </div>
                     {!hasEnabledProfiles && (

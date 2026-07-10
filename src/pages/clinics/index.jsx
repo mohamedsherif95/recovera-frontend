@@ -36,9 +36,6 @@ const emptyClinicForm = {
   name: '',
   slug: '',
   status: 'active',
-  planName: '',
-  seatLimit: '',
-  renewalDate: '',
   billingNotes: '',
 };
 
@@ -151,9 +148,6 @@ export default function ClinicsPage() {
       name: clinic.name || '',
       slug: clinic.slug || '',
       status: clinic.status || 'active',
-      planName: clinic.planName || '',
-      seatLimit: clinic.seatLimit || '',
-      renewalDate: clinic.renewalDate ? clinic.renewalDate.slice(0, 10) : '',
       billingNotes: clinic.billingNotes || '',
     });
     setClinicDialogOpen(true);
@@ -173,9 +167,6 @@ export default function ClinicsPage() {
       name: clinicForm.name.trim(),
       slug: slugify(clinicForm.slug),
       status: clinicForm.status,
-      planName: clinicForm.planName.trim() || null,
-      seatLimit: clinicForm.seatLimit ? Number(clinicForm.seatLimit) : null,
-      renewalDate: clinicForm.renewalDate || null,
       billingNotes: clinicForm.billingNotes.trim() || null,
     };
 
@@ -282,21 +273,6 @@ export default function ClinicsPage() {
         ),
       },
       {
-        key: 'planName',
-        header: t('clinics.planName'),
-        cell: (clinic) => clinic.planName || '--',
-      },
-      {
-        key: 'seatLimit',
-        header: t('clinics.seatLimit'),
-        cell: (clinic) => clinic.seatLimit || '--',
-      },
-      {
-        key: 'renewalDate',
-        header: t('clinics.renewalDate'),
-        cell: (clinic) => (clinic.renewalDate ? clinic.renewalDate.slice(0, 10) : '--'),
-      },
-      {
         key: 'actions',
         header: t('common.actions'),
         cell: (clinic) => (
@@ -377,7 +353,7 @@ export default function ClinicsPage() {
               {editingClinic ? t('clinics.editClinic') : t('clinics.createClinic')}
             </DialogTitle>
             <DialogDescription>
-              Subscription metadata is managed manually here and enforced by clinic status.
+              Company-level details live here. Branch pricing and access are managed per branch.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleClinicSubmit} className="space-y-4">
@@ -414,33 +390,6 @@ export default function ClinicsPage() {
                     <SelectItem value="suspended">{t('clinics.suspended')}</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="plan-name">{t('clinics.planName')}</Label>
-                <Input
-                  id="plan-name"
-                  value={clinicForm.planName}
-                  onChange={(event) => updateClinicField('planName', event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="seat-limit">{t('clinics.seatLimit')}</Label>
-                <Input
-                  id="seat-limit"
-                  type="number"
-                  min="1"
-                  value={clinicForm.seatLimit}
-                  onChange={(event) => updateClinicField('seatLimit', event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="renewal-date">{t('clinics.renewalDate')}</Label>
-                <Input
-                  id="renewal-date"
-                  type="date"
-                  value={clinicForm.renewalDate}
-                  onChange={(event) => updateClinicField('renewalDate', event.target.value)}
-                />
               </div>
             </div>
             <div className="space-y-2">

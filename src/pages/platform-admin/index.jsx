@@ -4,6 +4,7 @@ import {
   CreditCard,
   Receipt,
   ShieldCheck,
+  Users,
   Workflow,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,14 @@ const modules = [
     href: '/platform-admin/branches',
     icon: Workflow,
     permission: PERMISSIONS['branches:view'],
+    requiresScope: true,
+  },
+  {
+    title: 'Users',
+    description: 'Provision clinic managers and branch staff from the admin console.',
+    href: '/platform-admin/users',
+    icon: Users,
+    permission: PERMISSIONS['users:viewAll'],
     requiresScope: true,
   },
   {

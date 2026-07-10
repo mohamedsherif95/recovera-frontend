@@ -28,11 +28,7 @@ const navigationItems = [
     label: 'Platform Admin',
     href: '/platform-admin',
     icon: ShieldCheck,
-    anyPermissions: [
-      PERMISSIONS['clinics:viewAll'],
-      PERMISSIONS['branchSubscriptions:view'],
-      PERMISSIONS['platformBilling:view'],
-    ],
+    role: USER_ROLES.ADMIN,
   },
   {
     name: 'nav.dailyOperations',
@@ -137,6 +133,9 @@ export function Sidebar() {
       return false;
     }
     if (item.hideForRoles?.length && hasAnyRole(item.hideForRoles)) {
+      return false;
+    }
+    if (item.role && !hasAnyRole([item.role])) {
       return false;
     }
     if (item.anyPermissions) return canAny(item.anyPermissions);

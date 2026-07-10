@@ -32,6 +32,13 @@ export const useUIStore = create(
       sidebarOpen: true,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      platformAdminSidebarCollapsed: false,
+      setPlatformAdminSidebarCollapsed: (collapsed) =>
+        set({ platformAdminSidebarCollapsed: collapsed }),
+      togglePlatformAdminSidebar: () =>
+        set((state) => ({
+          platformAdminSidebarCollapsed: !state.platformAdminSidebarCollapsed,
+        })),
 
       // Mobile menu state
       mobileMenuOpen: false,
@@ -60,6 +67,7 @@ export const useUIStore = create(
         clinicOverrideId: state.clinicOverrideId,
         branchOverrideId: state.branchOverrideId,
         platformAdminClinicId: state.platformAdminClinicId,
+        platformAdminSidebarCollapsed: state.platformAdminSidebarCollapsed,
       }),
     }
   )

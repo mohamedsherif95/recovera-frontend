@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '@/api/endpoints/users';
 
-export function useUsers(filters = {}) {
+export function useUsers(filters = {}, options = {}) {
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
+
   return useQuery({
-    queryKey: ['users', filters],
-    queryFn: () => usersApi.getAll(filters),
+    queryKey: [
+      'users',
+      filters,
+      platformClinicId ?? '__platform-active__',
+    ],
+    queryFn: () => usersApi.getAll(filters, { platformClinicId }),
     staleTime: 60 * 1000,
+    enabled,
+    ...queryOptions,
   });
 }
 
@@ -13,7 +21,7 @@ export function useUpdateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }) => usersApi.update(id, data),
+    mutationFn: ({ id, data, options }) => usersApi.update(id, data, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] });
@@ -26,7 +34,13 @@ export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: usersApi.create,
+    mutationFn: (payload) => {
+      if (payload?.data) {
+        return usersApi.create(payload.data, payload.options);
+      }
+
+      return usersApi.create(payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] });
@@ -39,8 +53,8 @@ export function useToggleUserActive() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, isActive }) =>
-      isActive ? usersApi.activate(id) : usersApi.deactivate(id),
+    mutationFn: ({ id, isActive, options }) =>
+      isActive ? usersApi.activate(id, options) : usersApi.deactivate(id, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -51,7 +65,7 @@ export function useSetUserRoles() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, roleIds }) => usersApi.setRoles(id, roleIds),
+    mutationFn: ({ id, roleIds, options }) => usersApi.setRoles(id, roleIds, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -62,7 +76,7 @@ export function useSetUserShifts() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, shifts }) => usersApi.update(id, { shifts }),
+    mutationFn: ({ id, shifts, options }) => usersApi.update(id, { shifts }, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

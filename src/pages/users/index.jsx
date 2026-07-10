@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
@@ -52,17 +53,26 @@ const emptyCreateForm = {
 
 export default function UsersPage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
   const { can } = usePermissions();
   const { user: currentUser } = useAuthStore();
-  const { clinicOverrideId } = useUIStore();
+  const { clinicOverrideId, platformAdminClinicId } = useUIStore();
 
   const isPlatformAdmin =
     currentUser?.isPlatformAdmin ||
     currentUser?.roles?.some((role) => role?.name === USER_ROLES.ADMIN);
+  const isPlatformAdminRoute = location.pathname.startsWith('/platform-admin');
   const canCreateUser = can(PERMISSIONS['users:create']);
   const canManageRoles = isPlatformAdmin && can(PERMISSIONS['users:manageRoles']);
   const canToggleStatus = can(PERMISSIONS['users:update']);
-  const effectiveClinicId = resolveEffectiveClinicId(currentUser, clinicOverrideId);
+  const effectiveClinicId = isPlatformAdminRoute
+    ? platformAdminClinicId
+    : resolveEffectiveClinicId(currentUser, clinicOverrideId);
+  const needsClinicSelection = Boolean(isPlatformAdminRoute && !platformAdminClinicId);
+  const platformScopeOptions =
+    isPlatformAdminRoute && platformAdminClinicId
+      ? { platformClinicId: platformAdminClinicId }
+      : {};
 
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -78,11 +88,17 @@ export default function UsersPage() {
     primaryBranchId: '',
   });
 
-  const { data, isLoading, isError, refetch, isFetching } = useUsers({
-    page,
-    limit: pageSize,
-    branchId: branchFilter !== 'all' ? Number(branchFilter) : undefined,
-  });
+  const { data, isLoading, isError, refetch, isFetching } = useUsers(
+    {
+      page,
+      limit: pageSize,
+      branchId: branchFilter !== 'all' ? Number(branchFilter) : undefined,
+    },
+    {
+      enabled: !needsClinicSelection,
+      ...platformScopeOptions,
+    },
+  );
 
   const toggleActive = useToggleUserActive();
   const setUserRoles = useSetUserRoles();
@@ -92,6 +108,7 @@ export default function UsersPage() {
   const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin && canCreateUser));
   const { data: currentBranchesData } = useBranches({
     enabled: Boolean(effectiveClinicId),
+    ...platformScopeOptions,
   });
 
   const { data: rolesPermissions } = useQuery({
@@ -128,9 +145,11 @@ export default function UsersPage() {
     if (Array.isArray(currentBranchesData?.data)) return currentBranchesData.data;
     return [];
   }, [currentBranchesData]);
-  const selectedCreateClinicId = isPlatformAdmin
-    ? Number(createForm.clinicId || 0) || null
-    : effectiveClinicId;
+  const selectedCreateClinicId = isPlatformAdminRoute
+    ? platformAdminClinicId
+    : isPlatformAdmin
+      ? Number(createForm.clinicId || 0) || null
+      : effectiveClinicId;
   const { data: createBranchesData } = useBranches({
     enabled: Boolean(canCreateUser && createDialogOpen && selectedCreateClinicId),
     platformClinicId: isPlatformAdmin ? selectedCreateClinicId ?? undefined : undefined,
@@ -233,7 +252,7 @@ export default function UsersPage() {
   const handleToggleActive = (user) => {
     if (!canToggleStatus) return;
     const next = !user.isActive;
-    toggleActive.mutate({ id: user.id, isActive: next });
+    toggleActive.mutate({ id: user.id, isActive: next, options: platformScopeOptions });
   };
 
   const handleRoleChange = (user, newRoleName) => {
@@ -256,7 +275,7 @@ export default function UsersPage() {
       .filter((r) => nextNames.includes(r.name))
       .map((r) => r.id);
 
-    setUserRoles.mutate({ id: user.id, roleIds });
+    setUserRoles.mutate({ id: user.id, roleIds, options: platformScopeOptions });
   };
 
   const handleShiftToggle = (user, shiftValue) => {
@@ -270,7 +289,7 @@ export default function UsersPage() {
       // Add shift
       newShifts = [...currentShifts, shiftValue];
     }
-    setUserShifts.mutate({ id: user.id, shifts: newShifts });
+    setUserShifts.mutate({ id: user.id, shifts: newShifts, options: platformScopeOptions });
   };
 
   const handleDailyOpsOrderChange = (user, value) => {
@@ -278,7 +297,11 @@ export default function UsersPage() {
     const nextValue = Number.parseInt(value, 10);
     if (Number.isNaN(nextValue)) return;
     if (nextValue === user.dailyOpnsOrder) return;
-    updateUser.mutate({ id: user.id, data: { dailyOpnsOrder: nextValue } });
+    updateUser.mutate({
+      id: user.id,
+      data: { dailyOpnsOrder: nextValue },
+      options: platformScopeOptions,
+    });
   };
 
   const handleAssessmentPermissionToggle = (user) => {
@@ -286,6 +309,7 @@ export default function UsersPage() {
     updateUser.mutate({
       id: user.id,
       data: { canPerformAssessments: user.canPerformAssessments !== true },
+      options: platformScopeOptions,
     });
   };
 
@@ -294,7 +318,11 @@ export default function UsersPage() {
   const openCreateDialog = () => {
     setCreateForm({
       ...emptyCreateForm,
-      clinicId: isPlatformAdmin ? '' : String(effectiveClinicId ?? ''),
+      clinicId: isPlatformAdminRoute
+        ? String(platformAdminClinicId ?? '')
+        : isPlatformAdmin
+          ? ''
+          : String(effectiveClinicId ?? ''),
       roleName: isPlatformAdmin ? USER_ROLES.MANAGER : USER_ROLES.DOCTOR,
     });
     setCreateDialogOpen(true);
@@ -400,7 +428,9 @@ export default function UsersPage() {
     };
 
     if (isPlatformAdmin) {
-      payload.clinicId = Number(createForm.clinicId);
+      payload.clinicId = isPlatformAdminRoute
+        ? Number(platformAdminClinicId)
+        : Number(createForm.clinicId);
     }
     if (createForm.branchIds.length > 0) {
       payload.branchIds = createForm.branchIds.map((branchId) => Number(branchId));
@@ -410,7 +440,7 @@ export default function UsersPage() {
     }
 
     createUser
-      .mutateAsync(payload)
+      .mutateAsync({ data: payload, options: platformScopeOptions })
       .then(() => {
         toast.success('User provisioned with forced first-login password change');
         setCreateDialogOpen(false);
@@ -470,6 +500,7 @@ export default function UsersPage() {
           branchIds,
           primaryBranchId,
         },
+        options: platformScopeOptions,
       })
       .then(() => {
         toast.success('Branch assignments updated');
@@ -739,7 +770,7 @@ export default function UsersPage() {
               variant="outline"
               size="icon"
               onClick={() => refetch()}
-              disabled={isFetching}
+              disabled={isFetching || needsClinicSelection}
             >
               <RefreshCcw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             </Button>
@@ -805,7 +836,13 @@ export default function UsersPage() {
             </div>
           </div>
 
-          {isLoading ? (
+          {needsClinicSelection ? (
+            <div className="p-6 text-center text-muted-foreground">
+              {t('platformAdmin.selectScopeFirst', {
+                defaultValue: 'Select an admin scope before managing users.',
+              })}
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center p-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -866,7 +903,7 @@ export default function UsersPage() {
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              {isPlatformAdmin && (
+              {isPlatformAdmin && !isPlatformAdminRoute && (
                 <div className="space-y-2">
                   <Label>{t('users.clinic')}</Label>
                   <Select
@@ -1078,7 +1115,8 @@ export default function UsersPage() {
                 type="submit"
                 disabled={
                   createUser.isPending ||
-                  (isPlatformAdmin && !createForm.clinicId) ||
+                  (isPlatformAdminRoute && !platformAdminClinicId) ||
+                  (isPlatformAdmin && !isPlatformAdminRoute && !createForm.clinicId) ||
                   (createBranches.length > 0 && createForm.branchIds.length === 0)
                 }
               >

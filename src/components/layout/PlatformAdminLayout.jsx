@@ -9,10 +9,13 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Receipt,
   Settings,
   ShieldCheck,
   User,
+  Users,
   X,
 } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
@@ -71,6 +74,13 @@ const platformNavigation = [
     permission: PERMISSIONS['branches:view'],
   },
   {
+    name: 'nav.users',
+    label: 'Users',
+    href: '/platform-admin/users',
+    icon: Users,
+    permission: PERMISSIONS['users:viewAll'],
+  },
+  {
     name: 'nav.branchSubscriptions',
     label: 'Branch subscriptions',
     href: '/platform-admin/branch-subscriptions',
@@ -95,7 +105,9 @@ export function PlatformAdminLayout() {
   const { can, canAny } = usePermissions();
   const {
     platformAdminClinicId,
+    platformAdminSidebarCollapsed,
     setPlatformAdminClinicId,
+    togglePlatformAdminSidebar,
   } = useUIStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const isRtl = i18n.language === 'ar';
@@ -127,41 +139,53 @@ export function PlatformAdminLayout() {
     })}`;
   }, [t, location.pathname]);
 
+  useEffect(() => {
+    document.documentElement.classList.add('platform-admin-mode');
+
+    return () => {
+      document.documentElement.classList.remove('platform-admin-mode');
+    };
+  }, []);
+
   const handleClinicChange = (value) => {
     setPlatformAdminClinicId(value === 'none' ? null : Number(value));
     queryClient.invalidateQueries();
   };
 
-  const navigation = (
+  const renderNavigation = (collapsed = false) => (
     <nav className="space-y-1">
       {visibleNavigation.map((item) => {
         const Icon = item.icon;
+        const label = t(item.name, { defaultValue: item.label });
         return (
           <NavLink
             key={item.href}
             to={item.href}
             end={item.end}
+            title={collapsed ? label : undefined}
             className={({ isActive }) =>
               cn(
-                'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                'platform-admin-nav-link flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                collapsed && 'justify-center px-2',
+                isActive && 'platform-admin-nav-link-active shadow-sm',
                 isRtl && 'flex-row-reverse',
               )
             }
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span>{t(item.name, { defaultValue: item.label })}</span>
+            <span className={cn(collapsed && 'sr-only')}>{label}</span>
           </NavLink>
         );
       })}
     </nav>
   );
 
+  const desktopSidebarOffset = platformAdminSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72';
+  const desktopSidebarOffsetRtl = platformAdminSidebarCollapsed ? 'lg:mr-20' : 'lg:mr-72';
+
   return (
     <div className="platform-admin-theme min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <header className="platform-admin-header sticky top-0 z-50 border-b backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="flex h-16 items-center gap-3 px-4">
           <Button
             variant="ghost"
@@ -263,17 +287,50 @@ export function PlatformAdminLayout() {
 
       <aside
         className={cn(
-          'fixed top-16 bottom-0 hidden w-72 border-border/80 bg-card/95 p-3 lg:block',
+          'platform-admin-sidebar fixed top-16 bottom-0 hidden p-3 transition-all duration-300 lg:block',
+          platformAdminSidebarCollapsed ? 'w-20' : 'w-72',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
         )}
       >
-        <div className="mb-4 rounded-md border bg-muted/45 px-3 py-2 text-xs text-muted-foreground">
-          {t('platformAdmin.scopeHint', {
-            defaultValue:
-              'Platform work is isolated here. Workspace override remains for support and incident handling.',
-          })}
+        <div
+          className={cn(
+            'mb-3 flex items-center gap-2',
+            platformAdminSidebarCollapsed ? 'justify-center' : 'justify-between',
+          )}
+        >
+          {!platformAdminSidebarCollapsed && (
+            <span className="text-xs font-semibold uppercase text-white/90">
+              {t('platformAdmin.consoleNav', { defaultValue: 'Console' })}
+            </span>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white/80 hover:bg-white/10 hover:text-white"
+            title={
+              platformAdminSidebarCollapsed
+                ? t('platformAdmin.expandSidebar', { defaultValue: 'Expand sidebar' })
+                : t('platformAdmin.collapseSidebar', { defaultValue: 'Collapse sidebar' })
+            }
+            onClick={togglePlatformAdminSidebar}
+          >
+            {platformAdminSidebarCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </Button>
         </div>
-        {navigation}
+        {!platformAdminSidebarCollapsed && (
+          <div className="platform-admin-sidebar-panel mb-4 rounded-md border px-3 py-2 text-xs">
+            {t('platformAdmin.scopeHint', {
+              defaultValue:
+                'Platform work is isolated here. Workspace override remains for support and incident handling.',
+            })}
+          </div>
+        )}
+        {renderNavigation(platformAdminSidebarCollapsed)}
       </aside>
 
       {mobileOpen && (
@@ -284,18 +341,23 @@ export function PlatformAdminLayout() {
           />
           <aside
             className={cn(
-              'fixed top-0 bottom-0 z-50 w-72 border-border bg-card p-4 lg:hidden',
+              'platform-admin-sidebar fixed top-0 bottom-0 z-50 w-72 p-4 lg:hidden',
               isRtl ? 'right-0 border-l' : 'left-0 border-r',
             )}
           >
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-primary" />
+                <ShieldCheck className="h-5 w-5 text-white" />
                 <span className="font-semibold">
                   {t('platformAdmin.title', { defaultValue: 'Platform Admin' })}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white/80 hover:bg-white/10 hover:text-white"
+                onClick={() => setMobileOpen(false)}
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
@@ -323,7 +385,7 @@ export function PlatformAdminLayout() {
                 </SelectContent>
               </Select>
             )}
-            {navigation}
+            {renderNavigation(false)}
           </aside>
         </>
       )}
@@ -331,13 +393,13 @@ export function PlatformAdminLayout() {
       <main
         className={cn(
           'min-h-[calc(100vh-4rem)] px-3 py-4 transition-all duration-300 md:px-6',
-          isRtl ? 'lg:mr-72' : 'lg:ml-72',
+          isRtl ? desktopSidebarOffsetRtl : desktopSidebarOffset,
         )}
       >
         <Outlet />
       </main>
 
-      <div className={cn(isRtl ? 'lg:mr-72' : 'lg:ml-72')}>
+      <div className={cn(isRtl ? desktopSidebarOffsetRtl : desktopSidebarOffset)}>
         <AppFooter />
       </div>
     </div>

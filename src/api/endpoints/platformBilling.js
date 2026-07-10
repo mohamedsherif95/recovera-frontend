@@ -1,29 +1,9 @@
 import apiClient from '../client';
-
-const buildScopeConfig = (options = {}) => {
-  const config = {};
-
-  if (options.clinicOverrideId !== undefined) {
-    config.clinicOverrideId = options.clinicOverrideId;
-  }
-
-  if (options.branchOverrideId !== undefined) {
-    config.branchOverrideId = options.branchOverrideId;
-  }
-
-  if (options.platformClinicId !== undefined && options.platformClinicId !== null) {
-    config.headers = {
-      ...config.headers,
-      'X-Platform-Clinic-Scope': String(options.platformClinicId),
-    };
-  }
-
-  return config;
-};
+import { buildScopedRequestConfig } from '../scopeConfig';
 
 const downloadBlob = async (url, options = {}) => {
   const response = await apiClient.get(url, {
-    ...buildScopeConfig(options),
+    ...buildScopedRequestConfig(options),
     responseType: 'blob',
   });
   const disposition = response.headers?.['content-disposition'] || '';
@@ -42,7 +22,7 @@ const downloadBlob = async (url, options = {}) => {
 export const platformBillingApi = {
   preview: async ({ branchId, billingMonth }, options = {}) => {
     const response = await apiClient.get('/platform/billing/preview', {
-      ...buildScopeConfig(options),
+      ...buildScopedRequestConfig(options),
       params: { branchId, billingMonth },
     });
     return response.data;
@@ -52,14 +32,14 @@ export const platformBillingApi = {
     const response = await apiClient.post(
       '/platform/billing/invoices',
       payload,
-      buildScopeConfig(options),
+      buildScopedRequestConfig(options),
     );
     return response.data;
   },
 
   listInvoices: async (params = {}, options = {}) => {
     const response = await apiClient.get('/platform/billing/invoices', {
-      ...buildScopeConfig(options),
+      ...buildScopedRequestConfig(options),
       params,
     });
     return response.data;
@@ -68,7 +48,7 @@ export const platformBillingApi = {
   getInvoice: async (id, options = {}) => {
     const response = await apiClient.get(
       `/platform/billing/invoices/${id}`,
-      buildScopeConfig(options),
+      buildScopedRequestConfig(options),
     );
     return response.data;
   },
@@ -83,7 +63,7 @@ export const platformBillingApi = {
     const response = await apiClient.post(
       '/platform/billing/adjustments',
       payload,
-      buildScopeConfig(options),
+      buildScopedRequestConfig(options),
     );
     return response.data;
   },
@@ -92,7 +72,7 @@ export const platformBillingApi = {
     const response = await apiClient.post(
       `/platform/billing/invoices/${id}/collections`,
       payload,
-      buildScopeConfig(options),
+      buildScopedRequestConfig(options),
     );
     return response.data;
   },
@@ -101,7 +81,7 @@ export const platformBillingApi = {
     const response = await apiClient.post(
       `/platform/billing/invoices/${id}/void`,
       payload,
-      buildScopeConfig(options),
+      buildScopedRequestConfig(options),
     );
     return response.data;
   },

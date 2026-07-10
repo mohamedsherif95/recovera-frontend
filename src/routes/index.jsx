@@ -5,7 +5,7 @@ import { PlatformAdminLayout } from '@/components/layout/PlatformAdminLayout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { Header } from '@/components/layout/Header';
-import { PERMISSIONS } from '@/lib/constants';
+import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { useAuthStore } from '@/store/authStore';
 
 // Auth pages
@@ -120,13 +120,7 @@ export const router = createBrowserRouter([
   {
     path: '/platform-admin',
     element: (
-      <ProtectedRoute
-        anyPermissions={[
-          PERMISSIONS['clinics:viewAll'],
-          PERMISSIONS['branchSubscriptions:view'],
-          PERMISSIONS['platformBilling:view'],
-        ]}
-      >
+      <ProtectedRoute requiredRole={USER_ROLES.ADMIN}>
         <PlatformAdminLayout />
       </ProtectedRoute>
     ),
@@ -148,6 +142,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['branches:view']}>
             <BranchesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'users',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['users:viewAll']}>
+            <UsersPage />
           </ProtectedRoute>
         ),
       },

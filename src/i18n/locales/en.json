@@ -137,7 +137,11 @@
     "allClinics": "All clinics",
     "workspace": "Clinic workspace",
     "scopeHint": "Platform work is isolated here. Workspace override remains for support and incident handling.",
-    "scopeRequired": "Uses admin scope"
+    "scopeRequired": "Uses admin scope",
+    "selectScopeFirst": "Select an admin scope before continuing.",
+    "consoleNav": "Console",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "settings": {
     "theme": "Theme",

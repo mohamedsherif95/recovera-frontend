@@ -45,6 +45,14 @@ export const platformBillingApi = {
     return response.data;
   },
 
+  listUsageEvents: async (params = {}, options = {}) => {
+    const response = await apiClient.get('/platform/billing/usage-events', {
+      ...buildScopedRequestConfig(options),
+      params,
+    });
+    return response.data;
+  },
+
   getInvoice: async (id, options = {}) => {
     const response = await apiClient.get(
       `/platform/billing/invoices/${id}`,

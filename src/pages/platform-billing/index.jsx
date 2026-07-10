@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
+  AlertTriangle,
+  CalendarClock,
+  ClipboardList,
   Download,
   FileSpreadsheet,
   FileText,
+  CheckCircle2,
   Loader2,
   Plus,
-  Receipt,
   RefreshCcw,
   WalletCards,
 } from 'lucide-react';
@@ -40,6 +43,7 @@ import {
   usePlatformBillingPreview,
   usePlatformInvoice,
   usePlatformInvoices,
+  usePlatformUsageEvents,
   useRecordPlatformCollection,
   useVoidPlatformInvoice,
 } from '@/hooks/usePlatformBilling';
@@ -64,6 +68,13 @@ const formatNumber = (value) =>
     ? '--'
     : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
+const PROFILE_LABELS = {
+  physiotherapy: 'Physiotherapy',
+  medical_doctor: 'Medical doctor',
+  dentist: 'Dentist',
+  laser_dermatology: 'Laser and dermatology',
+};
+
 const getInvoiceFromPackage = (invoicePackage) =>
   invoicePackage?.invoice || invoicePackage || null;
 
@@ -74,11 +85,71 @@ const statusBadgeVariant = (status) => {
   return 'outline';
 };
 
-function Metric({ label, value }) {
+const getProfileLabel = (profile) => PROFILE_LABELS[profile] || profile || '--';
+
+const getCompletedByName = (usageEvent) =>
+  usageEvent?.completedBy?.fullName ||
+  usageEvent?.completedByName ||
+  usageEvent?.completedBy?.name ||
+  '--';
+
+function Metric({ label, value, emphasis = false }) {
   return (
-    <div className="rounded-md border px-3 py-2">
+    <div
+      className={`rounded-md border px-3 py-2 ${
+        emphasis ? 'border-primary/30 bg-primary/5' : ''
+      }`}
+    >
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function UsageAuditTable({ usageEvents, includedMonthlyVisits }) {
+  if (!usageEvents?.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No billable visits are logged for this branch-month.
+      </p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full text-sm">
+        <thead className="bg-muted/60 text-left">
+          <tr>
+            <th className="px-3 py-2 font-medium">Patient</th>
+            <th className="px-3 py-2 font-medium">Completed</th>
+            <th className="px-3 py-2 font-medium">Profile</th>
+            <th className="px-3 py-2 font-medium">Visit type</th>
+            <th className="px-3 py-2 font-medium">Completed by</th>
+            <th className="px-3 py-2 font-medium">Billing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {usageEvents.map((event, index) => {
+            const included = index < Number(includedMonthlyVisits || 0);
+            return (
+              <tr key={event.id} className="border-t">
+                <td className="px-3 py-2 font-medium">
+                  {event.patientName || event.patient?.fullName || '--'}
+                </td>
+                <td className="px-3 py-2">{formatDateTime(event.completedAt)}</td>
+                <td className="px-3 py-2">{getProfileLabel(event.profile)}</td>
+                <td className="px-3 py-2">{event.visitType || '--'}</td>
+                <td className="px-3 py-2">{getCompletedByName(event)}</td>
+                <td className="px-3 py-2">
+                  <Badge variant={included ? 'secondary' : 'outline'}>
+                    {included ? 'Allowance' : 'Overage'}
+                  </Badge>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -356,7 +427,22 @@ export default function PlatformBillingPage() {
       ...platformScopeOptions,
     },
   );
+  const usageEventsQuery = usePlatformUsageEvents(
+    { branchId: selectedBranchId || undefined, billingMonth },
+    {
+      enabled: Boolean(
+        canView &&
+          selectedBranchId &&
+          billingMonth &&
+          !needsClinicSelection,
+      ),
+      ...platformScopeOptions,
+    },
+  );
   const invoices = Array.isArray(invoicesQuery.data) ? invoicesQuery.data : [];
+  const usageEvents = Array.isArray(usageEventsQuery.data)
+    ? usageEventsQuery.data
+    : [];
   const selectedInvoiceQuery = usePlatformInvoice(selectedInvoiceId, {
     enabled: Boolean(canView && selectedInvoiceId && !needsClinicSelection),
     ...platformScopeOptions,
@@ -391,6 +477,7 @@ export default function PlatformBillingPage() {
 
   const refreshAll = () => {
     previewQuery.refetch();
+    usageEventsQuery.refetch();
     invoicesQuery.refetch();
     if (selectedInvoiceId) selectedInvoiceQuery.refetch();
   };
@@ -484,7 +571,7 @@ export default function PlatformBillingPage() {
     <div className="space-y-6">
       <PageHeader
         title="Platform billing"
-        description="Generate branch-month subscription invoices, download invoice artifacts, and record offline collections."
+        description="Generate branch invoice packages, review usage, and record offline collections."
         actions={
           <Button
             variant="outline"
@@ -492,6 +579,7 @@ export default function PlatformBillingPage() {
             onClick={refreshAll}
             disabled={
               previewQuery.isFetching ||
+              usageEventsQuery.isFetching ||
               invoicesQuery.isFetching ||
               selectedInvoiceQuery.isFetching
             }
@@ -499,6 +587,7 @@ export default function PlatformBillingPage() {
             <RefreshCcw
               className={`h-4 w-4 ${
                 previewQuery.isFetching ||
+                usageEventsQuery.isFetching ||
                 invoicesQuery.isFetching ||
                 selectedInvoiceQuery.isFetching
                   ? 'animate-spin'
@@ -520,8 +609,8 @@ export default function PlatformBillingPage() {
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Receipt className="h-4 w-4" />
-            Billing period
+            <CalendarClock className="h-4 w-4" />
+            Branch billing context
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-[minmax(220px,360px)_180px_auto] md:items-end">
@@ -556,13 +645,21 @@ export default function PlatformBillingPage() {
           </div>
           <Button
             variant="outline"
-            onClick={() => previewQuery.refetch()}
-            disabled={!selectedBranchId || !billingMonth || previewQuery.isFetching}
+            onClick={() => {
+              previewQuery.refetch();
+              usageEventsQuery.refetch();
+            }}
+            disabled={
+              !selectedBranchId ||
+              !billingMonth ||
+              previewQuery.isFetching ||
+              usageEventsQuery.isFetching
+            }
           >
-            {previewQuery.isFetching && (
+            {(previewQuery.isFetching || usageEventsQuery.isFetching) && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Preview
+            Refresh preview
           </Button>
         </CardContent>
       </Card>
@@ -572,7 +669,19 @@ export default function PlatformBillingPage() {
           <div className="space-y-6">
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-base">Preview</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <FileText className="h-4 w-4" />
+                    Invoice package
+                  </CardTitle>
+                  {activeInvoice ? (
+                    <Badge variant="secondary">
+                      Active invoice: {activeInvoice.invoiceNumber}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Ready to generate</Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 {previewQuery.isLoading ? (
@@ -600,7 +709,7 @@ export default function PlatformBillingPage() {
                         value={formatNumber(calculation.billableVisitCount)}
                       />
                       <Metric
-                        label="Overage"
+                        label="Overage amount"
                         value={formatCurrency(calculation.overageAmount)}
                       />
                       <Metric
@@ -610,6 +719,7 @@ export default function PlatformBillingPage() {
                       <Metric
                         label="Total"
                         value={formatCurrency(calculation.totalAmount)}
+                        emphasis
                       />
                       <Metric
                         label="Profiles"
@@ -620,6 +730,23 @@ export default function PlatformBillingPage() {
                         value={formatNumber(calculation.overageBlockCount)}
                       />
                     </div>
+                    {activeInvoice ? (
+                      <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          This branch-month already has an active invoice package.
+                          Use invoice detail to download artifacts or record collections.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Generation locks this branch-month and creates the invoice
+                          PDF plus the Excel data sheet.
+                        </span>
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {canManage && (
                         <>
@@ -636,7 +763,7 @@ export default function PlatformBillingPage() {
                             ) : (
                               <FileText className="mr-2 h-4 w-4" />
                             )}
-                            Generate invoice
+                            Generate PDF + data sheet
                           </Button>
                           <Button
                             type="button"
@@ -648,11 +775,6 @@ export default function PlatformBillingPage() {
                           </Button>
                         </>
                       )}
-                      {activeInvoice && (
-                        <Badge variant="secondary">
-                          Active invoice: {activeInvoice.invoiceNumber}
-                        </Badge>
-                      )}
                     </div>
                   </>
                 )}
@@ -661,7 +783,34 @@ export default function PlatformBillingPage() {
 
             <Card>
               <CardHeader className="pb-4">
-                <CardTitle className="text-base">Invoices</CardTitle>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <ClipboardList className="h-4 w-4" />
+                    Billable usage audit
+                  </CardTitle>
+                  <Badge variant="outline">
+                    {formatNumber(usageEvents.length)} visits
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {usageEventsQuery.isLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading usage...
+                  </div>
+                ) : (
+                  <UsageAuditTable
+                    usageEvents={usageEvents}
+                    includedMonthlyVisits={calculation?.includedMonthlyVisits}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base">Invoice ledger</CardTitle>
               </CardHeader>
               <CardContent>
                 {invoicesQuery.isLoading ? (
@@ -816,28 +965,52 @@ export default function PlatformBillingPage() {
 
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Usage lines</p>
-                    <div className="max-h-64 overflow-auto rounded-md border">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/60 text-left">
-                          <tr>
-                            <th className="px-3 py-2 font-medium">Patient</th>
-                            <th className="px-3 py-2 font-medium">Profile</th>
-                            <th className="px-3 py-2 font-medium">Included</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(selectedInvoicePackage?.usageLines || []).map((line) => (
-                            <tr key={line.id} className="border-t">
-                              <td className="px-3 py-2">{line.patientName}</td>
-                              <td className="px-3 py-2">{line.profile}</td>
-                              <td className="px-3 py-2">
-                                {line.includedInAllowance ? 'Yes' : 'No'}
-                              </td>
+                    {(selectedInvoicePackage?.usageLines || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No usage lines were captured on this invoice.
+                      </p>
+                    ) : (
+                      <div className="max-h-64 overflow-auto rounded-md border">
+                        <table className="w-full text-sm">
+                          <thead className="bg-muted/60 text-left">
+                            <tr>
+                              <th className="px-3 py-2 font-medium">Patient</th>
+                              <th className="px-3 py-2 font-medium">Profile</th>
+                              <th className="px-3 py-2 font-medium">Visit type</th>
+                              <th className="px-3 py-2 font-medium">Billing</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {(selectedInvoicePackage?.usageLines || []).map((line) => (
+                              <tr key={line.id} className="border-t">
+                                <td className="px-3 py-2 font-medium">
+                                  {line.patientName}
+                                </td>
+                                <td className="px-3 py-2">
+                                  {getProfileLabel(line.profile)}
+                                </td>
+                                <td className="px-3 py-2">
+                                  {line.visitType || '--'}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <Badge
+                                    variant={
+                                      line.includedInAllowance
+                                        ? 'secondary'
+                                        : 'outline'
+                                    }
+                                  >
+                                    {line.includedInAllowance
+                                      ? 'Allowance'
+                                      : 'Overage'}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

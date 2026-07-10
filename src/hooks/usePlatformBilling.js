@@ -42,6 +42,24 @@ export function usePlatformInvoices(params = {}, options = {}) {
   });
 }
 
+export function usePlatformUsageEvents(params = {}, options = {}) {
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
+
+  return useQuery({
+    queryKey: [
+      QUERY_KEYS.PLATFORM_BILLING,
+      'usage-events',
+      params,
+      platformClinicId ?? '__platform-active__',
+    ],
+    queryFn: () =>
+      platformBillingApi.listUsageEvents(params, { platformClinicId }),
+    enabled: Boolean(enabled && params.branchId && params.billingMonth),
+    staleTime: 30 * 1000,
+    ...queryOptions,
+  });
+}
+
 export function usePlatformInvoice(id, options = {}) {
   const { enabled = true, platformClinicId, ...queryOptions } = options;
 

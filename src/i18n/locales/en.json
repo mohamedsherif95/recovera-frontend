@@ -1375,238 +1375,265 @@
     "loadingData": "Loading data..."
   },
   "marketing": {
-    "metaTitle": "Recovera | Subscription-Based Clinic Management",
+    "metaTitle": "Recovera | Clinic management built around your specialty",
     "nav": {
-      "features": "Features",
-      "workflow": "Workflow",
-      "plans": "Plans",
-      "hosted": "Hosted system"
+      "profiles": "Clinic types",
+      "experience": "How it helps",
+      "pricing": "Pricing",
+      "mobileLabel": "Landing page sections"
     },
     "topbar": {
-      "tagline": "Subscription management system",
-      "viewPlans": "View plans",
+      "tagline": "Clinic management, in one rhythm",
+      "viewPlans": "See pricing",
       "backHome": "Back to home"
     },
     "hero": {
-      "eyebrow": "A clearer public front door for the Recovera platform",
-      "title": "Manage patients, teams, billing, and growth from one subscription-based system.",
-      "description": "Recovera helps clinics run daily operations, track payments, coordinate staff, and choose the plan that fits them now, from a free starter workspace to a private hosted deployment.",
-      "primaryCta": "Explore plans",
-      "secondaryCta": "Need your own hosted system?",
-      "stats": [
-        {
-          "value": "24/7",
-          "label": "Cloud access for teams and owners"
-        },
-        {
-          "value": "4",
-          "label": "Plans from launch to private hosting"
-        },
-        {
-          "value": "1",
-          "label": "Unified workspace for clinics and staff"
-        }
-      ]
-    },
-    "preview": {
-      "eyebrow": "Live operations view",
-      "title": "Everything a modern clinic needs",
-      "planLabel": "Plan status",
-      "planValue": "Standard active",
-      "metrics": [
-        {
-          "id": "patients",
-          "label": "Active patients",
-          "value": "284",
-          "description": "Patient records, histories, and daily follow-up stay visible to the right people."
-        },
-        {
-          "id": "sessions",
-          "label": "Sessions today",
-          "value": "36",
-          "description": "Stay ahead of schedules, patient workloads, and team coordination."
-        }
+      "eyebrow": "Made for the way clinics really work",
+      "title": "Recovera clinic management, built around your specialty.",
+      "description": "Bring appointments, patient records, visits, team coordination, and branch activity into one clear workspace that feels natural from the first day.",
+      "primaryCta": "Find your clinic type",
+      "secondaryCta": "Sign in",
+      "proofs": [
+        "Four clinic specialties from day one",
+        "A clear view across every branch",
+        "Arabic and English for the whole team"
       ],
-      "revenueLabel": "Collection performance",
-      "revenueValue": "EGP 148,200",
-      "revenueGrowth": "+18% this month",
-      "highlights": [
-        {
-          "id": "payments",
-          "label": "Payments",
-          "description": "Invoices, balances, and revenue checks"
-        },
-        {
-          "id": "access",
-          "label": "Access",
-          "description": "Role-based permissions across the team"
-        },
-        {
-          "id": "reports",
-          "label": "Reports",
-          "description": "Fast visibility for owners and admins"
-        }
-      ],
-      "calloutEyebrow": "Private hosted option",
-      "calloutTitle": "Want the system on your own hosted environment?",
-      "calloutDescription": "Choose the dedicated hosted plan for isolated infrastructure, branding control, and a tailored rollout."
+      "scene": {
+        "branch": "New Cairo branch",
+        "title": "Today's clinic flow",
+        "status": "Day on track",
+        "schedule": "Upcoming appointments",
+        "summary": "12 appointments today",
+        "glance": "At a glance",
+        "rows": [
+          {
+            "time": "10:00",
+            "patient": "Mariam Hassan",
+            "type": "Physiotherapy",
+            "status": "Checked in"
+          },
+          {
+            "time": "10:30",
+            "patient": "Omar Adel",
+            "type": "Medical consultation",
+            "status": "Ready"
+          },
+          {
+            "time": "11:15",
+            "patient": "Nour Samir",
+            "type": "Dental follow-up",
+            "status": "Confirmed"
+          }
+        ],
+        "metrics": [
+          {
+            "value": "4",
+            "label": "care teams working today"
+          },
+          {
+            "value": "3",
+            "label": "branches in one view"
+          },
+          {
+            "value": "92%",
+            "label": "appointments on schedule"
+          }
+        ]
+      }
     },
-    "features": {
-      "eyebrow": "Core components",
-      "title": "The basics a subscription-based management system should communicate immediately",
-      "description": "The homepage explains what the product manages, how teams use it, how subscriptions scale, and what changes when a customer wants a private hosted system instead of the shared service.",
-      "cards": [
-        {
-          "id": "operations",
-          "title": "Operational control",
-          "description": "Track daily work, appointments, session follow-ups, and clinic activity from a single shared dashboard.",
-          "points": [
-            "Daily operations overview",
-            "Appointments and session tracking",
-            "Patient status visibility"
-          ]
-        },
-        {
-          "id": "billing",
-          "title": "Billing and subscriptions",
-          "description": "Support recurring subscriptions with clear plan tiers, payment visibility, and an upgrade path as clinics grow.",
-          "points": [
-            "Plan-based access structure",
-            "Payment and revenue monitoring",
-            "Upgrade-ready package design"
-          ]
-        },
-        {
-          "id": "roles",
-          "title": "Roles and accountability",
-          "description": "Protect the system with permissions, activity logs, and clear role boundaries for admins, doctors, and staff.",
-          "points": [
-            "Role-based access control",
-            "Audit and system logging",
-            "Safer team collaboration"
-          ]
-        },
-        {
-          "id": "reporting",
-          "title": "Reporting that matters",
-          "description": "Turn operations into decisions with balances, performance reporting, and fast visibility into clinic health.",
-          "points": [
-            "Financial and balance reports",
-            "Operational insights",
-            "Executive-ready summaries"
-          ]
-        }
-      ]
-    },
-    "workflow": {
-      "eyebrow": "Growth path",
-      "title": "A simple story from starter plan to dedicated deployment",
-      "description": "The buying journey is clear: launch quickly, upgrade when the team expands, and switch to a private hosted version when the customer needs their own environment.",
-      "hostedCardEyebrow": "Hosted deployment",
-      "hostedCardTitle": "Own infrastructure when you need it",
-      "hostedCardDescription": "This special plan is positioned as a service handoff: dedicated hosting, migration help, custom rollout, and a private environment instead of the shared subscription platform.",
-      "steps": [
-        {
-          "step": "01",
-          "title": "Launch on the Free plan",
-          "description": "Start with the essentials, onboard a small team, and validate your workflow before you spend more."
-        },
-        {
-          "step": "02",
-          "title": "Scale with Standard or Premium",
-          "description": "Unlock more staff capacity, richer reports, and stronger controls as the clinic operation becomes more demanding."
-        },
-        {
-          "step": "03",
-          "title": "Move to a dedicated hosted system",
-          "description": "When you need isolation, custom hosting, or a branded deployment, Recovera can run in its own private environment."
-        }
-      ]
-    },
-    "plans": {
-      "eyebrow": "Plans",
-      "title": "Hybrid pricing that scales with your clinic",
-      "description": "Each subscription combines a base platform fee with active practitioner seats and branch count. Optional usage add-ons apply only to higher-cost services such as SMS reminders, AI features, or external integrations.",
-      "note": "Example pricing shown in EGP. Final numbers can be tuned per market.",
-      "popularBadge": "Best value",
+    "profiles": {
+      "eyebrow": "One platform, four ways of working",
+      "title": "Your specialty should shape the system, not fight it.",
+      "description": "Choose the kind of care your branch provides. Recovera adapts the language, clinical details, and daily flow so every team sees what belongs to its work.",
+      "tabsLabel": "Choose a clinic type",
       "items": [
         {
-          "id": "free",
-          "name": "Core",
-          "price": "EGP 790",
-          "cadence": "/month base",
-          "summary": "For new clinics that need core workflows and a simple starting footprint.",
-          "ctaLabel": "Start Core",
+          "id": "physiotherapy",
+          "title": "Physiotherapy",
+          "short": "Treatment journeys that stay connected",
+          "kicker": "From first assessment to the final session",
+          "description": "Keep appointments, treatment sessions, clinical progress, and follow-ups connected around one patient journey.",
           "points": [
-            "Includes 2 active practitioner seats",
-            "Includes 1 branch",
-            "Extra practitioner seat: EGP 250 / month",
-            "Extra branch: EGP 300 / month",
-            "Core workflows: patients, sessions, and basic billing"
+            "See the full treatment timeline without searching across screens",
+            "Keep assessments and follow-ups easy for the care team to find",
+            "Give reception and therapists the same up-to-date patient picture",
+            "Follow activity across one branch or a growing clinic group"
+          ],
+          "flowLabel": "Physiotherapy workflow",
+          "flow": [
+            "Welcome",
+            "Assess",
+            "Treat",
+            "Follow up"
           ]
         },
         {
-          "id": "standard",
-          "name": "Growth",
-          "price": "EGP 1,790",
-          "cadence": "/month base",
-          "summary": "For active clinics scaling operations with stronger controls and reporting.",
-          "ctaLabel": "Choose Growth",
-          "featured": true,
+          "id": "medical",
+          "title": "Medical doctor clinics",
+          "short": "Clear consultations and follow-ups",
+          "kicker": "The right context before every consultation",
+          "description": "Organize appointments, complaints, diagnoses, prescriptions, and follow-up plans in a workflow that stays focused on the consultation.",
           "points": [
-            "Includes 5 active practitioner seats",
-            "Includes 2 branches",
-            "Extra practitioner seat: EGP 220 / month",
-            "Extra branch: EGP 275 / month",
-            "Advanced reports and role controls",
-            "Priority support"
+            "Prepare the doctor with the patient history that matters",
+            "Keep consultation notes and next steps together",
+            "Make follow-up appointments easier for reception to coordinate",
+            "Give owners a clearer picture of branch activity"
+          ],
+          "flowLabel": "Medical clinic workflow",
+          "flow": [
+            "Book",
+            "Consult",
+            "Plan",
+            "Follow up"
           ]
         },
         {
-          "id": "premium",
-          "name": "Scale",
-          "price": "EGP 3,290",
-          "cadence": "/month base",
-          "summary": "For multi-branch organizations that need deeper governance and performance visibility.",
-          "ctaLabel": "Choose Scale",
+          "id": "dental",
+          "title": "Dentist clinics",
+          "short": "Procedures, plans, and return visits",
+          "kicker": "Every procedure in the right patient story",
+          "description": "Bring appointments, tooth and area notes, procedures, treatment plans, and return visits into one practical dental workflow.",
           "points": [
-            "Includes 10 active practitioner seats",
-            "Includes 4 branches",
-            "Extra practitioner seat: EGP 190 / month",
-            "Extra branch: EGP 250 / month",
-            "Executive analytics, audit depth, and workflow automation",
-            "Dedicated success manager"
+            "Keep procedure details easy to review at the chair",
+            "Connect treatment plans with the visits that move them forward",
+            "Help reception coordinate return visits without guesswork",
+            "Track activity while each branch keeps its own daily rhythm"
+          ],
+          "flowLabel": "Dental clinic workflow",
+          "flow": [
+            "Book",
+            "Examine",
+            "Treat",
+            "Return"
           ]
         },
         {
-          "id": "hosted",
-          "name": "Private Hosted System",
-          "price": "Custom",
-          "cadence": "private deployment",
-          "summary": "For organizations that require dedicated infrastructure with the same hybrid model (platform + seats + branches).",
-          "ctaLabel": "Request hosted setup",
+          "id": "dermatology",
+          "title": "Laser and dermatology centers",
+          "short": "Courses of care that are easy to follow",
+          "kicker": "A clear record across every treatment session",
+          "description": "Coordinate consultations, treatment areas, device details, session progress, and aftercare in one consistent client journey.",
           "points": [
-            "Single-tenant hosting environment",
-            "Isolated database and infrastructure",
-            "Custom domain and branded deployment",
-            "Migration, rollout, and infrastructure handoff"
+            "Keep treatment details available before the next session",
+            "Follow multi-session courses without losing the bigger picture",
+            "Give the front desk a clear view of upcoming care",
+            "Keep every branch aligned without flattening how it works"
+          ],
+          "flowLabel": "Laser and dermatology workflow",
+          "flow": [
+            "Consult",
+            "Prepare",
+            "Treat",
+            "Aftercare"
           ]
         }
       ]
     },
-    "hosted": {
-      "eyebrow": "Special plan for private hosting",
-      "title": "For customers who want their own hosted Recovera system",
-      "description": "Not every client wants a shared subscription. This offer gives larger clinics or organizations a dedicated environment, their own hosted deployment, and a more tailored implementation path.",
-      "primaryCta": "Request hosted setup",
-      "secondaryCta": "Compare all plans",
-      "benefits": [
-        "Single-tenant hosting for clients who want full separation from the shared service",
-        "A tailored environment for compliance, branding, or internal infrastructure preferences",
-        "Deployment planning, onboarding, and operational handoff for larger organizations"
+    "experience": {
+      "eyebrow": "A calmer clinic day",
+      "title": "Less chasing. More clarity, from reception to follow-up.",
+      "description": "Recovera connects the handoffs that shape a good clinic day, so information reaches the right person and every team member knows what comes next.",
+      "steps": [
+        {
+          "id": "reception",
+          "title": "Welcome patients without starting from zero",
+          "description": "Reception can find the right patient, arrange the visit, and keep branch activity moving without repeating the same work.",
+          "result": "Faster intake and fewer disconnected records."
+        },
+        {
+          "id": "care",
+          "title": "Give every provider the right context",
+          "description": "Each specialty sees the details, language, and follow-up flow that belongs to its own kind of care.",
+          "result": "A clearer visit for the provider and the patient."
+        },
+        {
+          "id": "insight",
+          "title": "See the whole clinic without losing the details",
+          "description": "Managers can understand patients, teams, visits, and branches from one place while each branch keeps its day-to-day focus.",
+          "result": "Better decisions with less manual reporting."
+        }
       ],
-      "bestFitEyebrow": "Best fit",
-      "bestFitText": "Multi-branch clinics, healthcare groups, and organizations that need deeper ownership over infrastructure and rollout."
+      "spotlight": {
+        "label": "One connected patient story",
+        "title": "Care can continue smoothly across your branches.",
+        "description": "When a patient already belongs to your clinic group, the next branch can build on that relationship instead of creating a disconnected record."
+      }
+    },
+    "pricing": {
+      "eyebrow": "Plans shaped around your branch",
+      "title": "Two simple ways to match your subscription to your activity.",
+      "description": "Choose the approach that makes the most sense for each branch, whether monthly activity changes often or usually falls within a familiar range.",
+      "noteTitle": "Built branch by branch",
+      "note": "Each branch can follow the pricing model that best reflects its size, specialties, and usual monthly activity.",
+      "tabsLabel": "Compare pricing models",
+      "models": [
+        {
+          "id": "allowance",
+          "tab": "Monthly visit allowance",
+          "label": "Flexible monthly plan",
+          "title": "A steady base with room for busier months",
+          "description": "Your branch starts with a fixed monthly fee that includes an agreed number of completed visits. If activity goes beyond that allowance, additional usage is calculated in clear blocks.",
+          "bestFor": "A good fit for",
+          "bestForValue": "Branches that want a predictable monthly base while patient volume changes from one month to another.",
+          "points": [
+            "A monthly base that is easy to plan around",
+            "An included allowance matched to the branch",
+            "Clear overage blocks when activity grows",
+            "Terms that can reflect the branch's specialty mix"
+          ],
+          "visual": {
+            "title": "How the plan flexes",
+            "base": "Monthly foundation",
+            "steady": "Predictable",
+            "included": "Visits included",
+            "extra": "Extra blocks",
+            "note": "The base stays steady. Additional usage appears only after the agreed monthly allowance is reached."
+          }
+        },
+        {
+          "id": "packages",
+          "tab": "Capacity packages",
+          "label": "Tiered branch packages",
+          "title": "A package that fits your usual monthly volume",
+          "description": "Your branch is matched to a clear monthly visit range and package price. More, closer ranges make it easier to move between packages as the clinic grows.",
+          "bestFor": "A good fit for",
+          "bestForValue": "Branches with a fairly consistent monthly rhythm that prefer a clear capacity level and price.",
+          "points": [
+            "A clear visit range for every package",
+            "Smaller steps between capacity levels",
+            "A straightforward monthly package price",
+            "Room for branch-specific terms when needed"
+          ],
+          "visual": {
+            "title": "How capacity grows",
+            "tiers": [
+              {
+                "label": "Steady month",
+                "range": "Lower visit range"
+              },
+              {
+                "label": "Growing month",
+                "range": "Middle visit range"
+              },
+              {
+                "label": "Busy month",
+                "range": "Higher visit range"
+              }
+            ],
+            "note": "Closer capacity ranges keep the move from one package to the next smoother and easier to understand."
+          }
+        }
+      ]
+    },
+    "final": {
+      "eyebrow": "A better rhythm for every clinic day",
+      "title": "One system that feels familiar to your team and clear to clinic owners.",
+      "description": "Start with the specialties your branches need today, then let Recovera grow with the way your clinic works.",
+      "primaryCta": "Explore clinic types",
+      "secondaryCta": "Sign in"
+    },
+    "footer": {
+      "tagline": "Clinic management that adapts to your specialty."
     }
   },
   "validation": {

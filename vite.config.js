@@ -13,7 +13,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'https://app--recovera-dev--m6q9yrrjpy95.code.run',
+        target: 'http://localhost:8080',
         changeOrigin: true,
       },
     },

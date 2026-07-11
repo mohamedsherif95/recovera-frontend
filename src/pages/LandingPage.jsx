@@ -1,16 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  Activity,
   ArrowRight,
-  BarChart3,
   BadgeCheck,
+  BarChart3,
   Building2,
-  CalendarClock,
-  Check,
-  CreditCard,
-  Database,
-  FileClock,
-  ShieldCheck,
+  CalendarCheck,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardCheck,
+  Clock3,
+  HeartPulse,
+  Layers3,
+  ReceiptText,
+  Smile,
   Sparkles,
   Stethoscope,
   Users,
@@ -19,486 +23,733 @@ import { useTranslation } from 'react-i18next';
 import { PublicTopBar } from '@/components/layout/PublicTopBar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import '@/styles/landing.css';
 
-const previewMetricIcons = {
-  patients: Stethoscope,
-  sessions: FileClock,
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
+const profileIcons = {
+  physiotherapy: Activity,
+  medical: Stethoscope,
+  dental: Smile,
+  dermatology: Sparkles,
 };
 
-const previewHighlightIcons = {
-  payments: CreditCard,
-  access: ShieldCheck,
-  reports: BarChart3,
+const profileTones = {
+  physiotherapy: 'sky',
+  medical: 'emerald',
+  dental: 'amber',
+  dermatology: 'rose',
 };
 
-const featureIcons = {
-  operations: CalendarClock,
-  billing: CreditCard,
-  roles: ShieldCheck,
-  reporting: BarChart3,
+const experienceIcons = {
+  reception: CalendarCheck,
+  care: HeartPulse,
+  insight: BarChart3,
 };
 
-const planStyles = {
-  free: 'border-border bg-card/92',
-  standard: 'border-primary/25 bg-primary/10',
-  premium: 'border-transparent bg-foreground text-background',
-  hosted: 'border-border bg-secondary/75',
+const pricingIcons = {
+  allowance: ClipboardCheck,
+  packages: Layers3,
 };
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
+  const progressRef = useRef(null);
 
-  const heroStats = t('marketing.hero.stats', { returnObjects: true });
-  const previewMetrics = t('marketing.preview.metrics', { returnObjects: true });
-  const previewHighlights = t('marketing.preview.highlights', { returnObjects: true });
-  const featureCards = t('marketing.features.cards', { returnObjects: true });
-  const workflowSteps = t('marketing.workflow.steps', { returnObjects: true });
-  const plans = t('marketing.plans.items', { returnObjects: true });
-  const hostedBenefits = t('marketing.hosted.benefits', { returnObjects: true });
+  const profiles = asArray(t('marketing.profiles.items', { returnObjects: true }));
+  const experienceSteps = asArray(
+    t('marketing.experience.steps', { returnObjects: true }),
+  );
+  const pricingModels = asArray(t('marketing.pricing.models', { returnObjects: true }));
+  const [activeProfileId, setActiveProfileId] = useState('physiotherapy');
+  const [activePricingId, setActivePricingId] = useState('allowance');
+
+  const activeProfile = useMemo(
+    () => profiles.find((profile) => profile.id === activeProfileId) || profiles[0],
+    [activeProfileId, profiles],
+  );
+  const activePricing = useMemo(
+    () => pricingModels.find((model) => model.id === activePricingId) || pricingModels[0],
+    [activePricingId, pricingModels],
+  );
+
+  useLandingMotion(i18n.language, progressRef);
 
   useEffect(() => {
     document.title = t('marketing.metaTitle');
   }, [t, i18n.language]);
 
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[36rem] bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_38rem)]" />
-      <div
-        className={cn(
-          'pointer-events-none absolute top-24 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl',
-          isRtl ? 'left-[-8rem]' : 'right-[-8rem]'
-        )}
-      />
-      <div
-        className={cn(
-          'pointer-events-none absolute top-[28rem] -z-10 h-64 w-64 rounded-full bg-accent/70 blur-3xl',
-          isRtl ? 'right-[-7rem]' : 'left-[-7rem]'
-        )}
-      />
+  useEffect(() => {
+    if (profiles.length && !profiles.some((profile) => profile.id === activeProfileId)) {
+      setActiveProfileId(profiles[0].id);
+    }
+  }, [activeProfileId, profiles]);
 
+  useEffect(() => {
+    if (
+      pricingModels.length &&
+      !pricingModels.some((model) => model.id === activePricingId)
+    ) {
+      setActivePricingId(pricingModels[0].id);
+    }
+  }, [activePricingId, pricingModels]);
+
+  return (
+    <div className="landing-page min-h-screen bg-background text-foreground">
+      <div
+        ref={progressRef}
+        aria-hidden="true"
+        className="landing-scroll-progress"
+        style={{ transformOrigin: isRtl ? 'right center' : 'left center' }}
+      />
       <PublicTopBar mode="landing" />
 
-      <main className="relative">
-        <section className="mx-auto grid max-w-7xl gap-14 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:pb-24 lg:pt-16">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/85 px-4 py-2 text-sm font-medium text-primary shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4" />
-              {t('marketing.hero.eyebrow')}
-            </div>
+      <main>
+        <section className="landing-hero relative isolate overflow-hidden border-b border-sky-200/70 bg-[#f4fbfc] dark:border-slate-700 dark:bg-[#172329]">
+          <ClinicDayScene t={t} isRtl={isRtl} />
 
-            <h1 className="mt-6 text-5xl font-black tracking-tight text-foreground sm:text-6xl">
-              {t('marketing.hero.title')}
-            </h1>
-
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              {t('marketing.hero.description')}
-            </p>
-
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Button asChild size="lg" className="h-12 rounded-full px-7 text-base font-semibold">
-                <a href="#plans">
-                  {t('marketing.hero.primaryCta')}
-                  <ArrowRight className="h-4 w-4" />
-                </a>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="h-12 rounded-full border-primary/20 bg-card/80 px-7 text-base font-semibold"
-              >
-                <a href="#hosted">{t('marketing.hero.secondaryCta')}</a>
-              </Button>
-            </div>
-
-            <div className="mt-10 grid gap-4 sm:grid-cols-3">
-              {heroStats.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-3xl border border-border bg-card/88 p-5 shadow-lg shadow-primary/5 backdrop-blur"
-                >
-                  <div className="text-3xl font-black text-foreground">{item.value}</div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="rounded-[2rem] border border-border bg-card/92 p-6 shadow-2xl shadow-primary/10 backdrop-blur">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary/80">
-                    {t('marketing.preview.eyebrow')}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-bold text-foreground">
-                    {t('marketing.preview.title')}
-                  </h2>
-                </div>
-                <div className="rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary/80">
-                    {t('marketing.preview.planLabel')}
-                  </p>
-                  <p className="text-sm font-semibold text-primary">
-                    {t('marketing.preview.planValue')}
-                  </p>
-                </div>
+          <div className="relative mx-auto flex max-w-7xl items-center px-4 py-10 sm:px-6 sm:py-16 lg:min-h-[42rem] lg:px-8 lg:py-20">
+            <div className="max-w-3xl lg:max-w-[56%]" data-landing-reveal>
+              <div className="inline-flex items-center gap-2 rounded-md border border-sky-200 bg-white/90 px-3 py-2 text-sm font-semibold text-sky-900 shadow-sm dark:border-sky-900 dark:bg-slate-900/85 dark:text-sky-200">
+                <HeartPulse className="h-4 w-4" />
+                {t('marketing.hero.eyebrow')}
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                {previewMetrics.map((item) => {
-                  const Icon = previewMetricIcons[item.id];
+              <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.08] text-slate-950 sm:text-5xl lg:text-6xl dark:text-white">
+                {t('marketing.hero.title')}
+              </h1>
+
+              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-700 sm:text-lg dark:text-slate-200">
+                {t('marketing.hero.description')}
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Button asChild size="lg" className="h-12 px-6 text-base font-semibold">
+                  <a href="#profiles">
+                    {t('marketing.hero.primaryCta')}
+                    <ArrowRight className={cn('h-4 w-4', isRtl && 'rotate-180')} />
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-slate-300 bg-white/85 px-6 text-base font-semibold text-slate-900 hover:bg-white dark:border-slate-700 dark:bg-slate-900/80 dark:text-white dark:hover:bg-slate-900"
+                >
+                  <Link to="/login">{t('marketing.hero.secondaryCta')}</Link>
+                </Button>
+              </div>
+
+              <ul className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700 sm:grid-cols-3 dark:text-slate-200">
+                {asArray(t('marketing.hero.proofs', { returnObjects: true })).map(
+                  (proof) => (
+                    <li key={proof} className="flex items-start gap-2 leading-6">
+                      <BadgeCheck className="mt-1 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                      <span>{proof}</span>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="profiles" className="scroll-mt-24 border-b border-border bg-background">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+            <SectionIntro
+              eyebrow={t('marketing.profiles.eyebrow')}
+              title={t('marketing.profiles.title')}
+              description={t('marketing.profiles.description')}
+            />
+
+            <div
+              className="mt-10 overflow-hidden rounded-lg border border-border bg-card shadow-sm lg:grid lg:grid-cols-[0.72fr_1.28fr]"
+              data-landing-reveal
+            >
+              <div
+                role="tablist"
+                aria-label={t('marketing.profiles.tabsLabel')}
+                onKeyDown={(event) =>
+                  handleTabListKeyDown(event, {
+                    items: profiles,
+                    activeId: activeProfileId,
+                    setActiveId: setActiveProfileId,
+                    tabIdPrefix: 'profile-tab',
+                    isRtl,
+                  })
+                }
+                className="landing-mobile-tab-rail flex snap-x snap-mandatory gap-3 overflow-x-auto border-b border-border p-3 sm:grid sm:grid-cols-2 sm:gap-0 sm:p-0 lg:block lg:border-b-0 lg:border-e"
+              >
+                {profiles.map((profile) => {
+                  const Icon = profileIcons[profile.id] || HeartPulse;
+                  const isActive = activeProfile?.id === profile.id;
 
                   return (
-                    <div key={item.id} className="rounded-3xl border border-border bg-background/80 p-5">
-                      <div className="flex items-center gap-3">
-                        <span className="rounded-2xl bg-primary/10 p-3 text-primary">
-                          <Icon className="h-5 w-5" />
+                    <button
+                      key={profile.id}
+                      type="button"
+                      role="tab"
+                      id={`profile-tab-${profile.id}`}
+                      aria-selected={isActive}
+                      aria-controls={`profile-panel-${profile.id}`}
+                      tabIndex={isActive ? 0 : -1}
+                      onClick={(event) => {
+                        setActiveProfileId(profile.id);
+                        keepMobileTabInView(event.currentTarget);
+                      }}
+                      className={cn(
+                        'group flex min-h-[5.5rem] w-[82%] shrink-0 snap-center items-center gap-4 rounded-lg border border-border p-4 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:min-h-24 sm:w-full sm:rounded-none sm:border-x-0 sm:border-t-0 sm:p-5',
+                        'sm:[&:nth-last-child(-n+2)]:border-b-0 lg:[&:nth-last-child(-n+2)]:border-b lg:last:border-b-0',
+                        isActive
+                          ? 'bg-sky-50 text-sky-950 dark:bg-sky-950/35 dark:text-sky-100'
+                          : 'bg-card text-foreground hover:bg-muted/60',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border transition-colors',
+                          isActive
+                            ? 'border-sky-300 bg-sky-600 text-white dark:border-sky-700'
+                            : 'border-border bg-background text-muted-foreground group-hover:text-foreground',
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-base font-bold">{profile.title}</span>
+                        <span className="mt-1 block text-sm leading-5 text-muted-foreground">
+                          {profile.short}
                         </span>
-                        <div>
-                          <p className="text-sm text-muted-foreground">{item.label}</p>
-                          <p className="text-2xl font-black text-foreground">{item.value}</p>
-                        </div>
-                      </div>
-                      <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
+                      </span>
+                      <ChevronRight
+                        className={cn(
+                          'ms-auto hidden h-5 w-5 shrink-0 text-muted-foreground transition-transform sm:block',
+                          isRtl && 'rotate-180',
+                          isActive && (isRtl ? '-translate-x-1' : 'translate-x-1'),
+                        )}
+                      />
+                    </button>
                   );
                 })}
               </div>
 
-              <div className="mt-4 rounded-3xl border border-border bg-background/85 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {t('marketing.preview.revenueLabel')}
+              {activeProfile && (
+                <div
+                  key={`${i18n.language}-${activeProfile.id}`}
+                  role="tabpanel"
+                  id={`profile-panel-${activeProfile.id}`}
+                  aria-labelledby={`profile-tab-${activeProfile.id}`}
+                  className={cn(
+                    'landing-switch-panel relative overflow-hidden p-5 sm:p-8 lg:p-10',
+                    `landing-profile-tone-${profileTones[activeProfile.id] || 'sky'}`,
+                  )}
+                >
+                  <div className="relative z-10 max-w-3xl">
+                    <p className="text-sm font-bold text-current/70">{activeProfile.kicker}</p>
+                    <h3 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
+                      {activeProfile.title}
+                    </h3>
+                    <p className="mt-5 max-w-2xl text-base leading-8 text-current/75">
+                      {activeProfile.description}
                     </p>
-                    <p className="mt-1 text-3xl font-black text-foreground">
-                      {t('marketing.preview.revenueValue')}
-                    </p>
-                  </div>
-                  <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {t('marketing.preview.revenueGrowth')}
-                  </div>
-                </div>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                  {previewHighlights.map((item) => {
-                    const Icon = previewHighlightIcons[item.id];
-
-                    return (
-                      <div key={item.id} className="rounded-2xl border border-border bg-card/70 p-4">
-                        <div className="flex items-center gap-2 text-primary">
-                          <Icon className="h-4 w-4" />
-                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary/80">
-                            {item.label}
-                          </p>
+                    <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                      {asArray(activeProfile.points).map((point) => (
+                        <div
+                          key={point}
+                          className="flex items-start gap-3 border-t border-current/15 pt-4 text-sm leading-6"
+                        >
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                          <span>{point}</span>
                         </div>
-                        <p className="mt-3 text-sm font-medium leading-6 text-foreground">
-                          {item.description}
-                        </p>
-                      </div>
-                    );
-                  })}
+                      ))}
+                    </div>
+
+                    <div className="mt-9 flex flex-wrap items-center gap-2" aria-label={activeProfile.flowLabel}>
+                      {asArray(activeProfile.flow).map((step, index) => (
+                        <div key={step} className="flex items-center gap-2">
+                          <span className="rounded-md border border-current/20 bg-white/45 px-3 py-2 text-sm font-bold dark:bg-slate-950/20">
+                            {step}
+                          </span>
+                          {index < asArray(activeProfile.flow).length - 1 && (
+                            <ArrowRight className={cn('h-4 w-4 opacity-50', isRtl && 'rotate-180')} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="experience"
+          className="scroll-mt-24 border-b border-slate-700 bg-[#102a33] text-white"
+        >
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+            <SectionIntro
+              eyebrow={t('marketing.experience.eyebrow')}
+              title={t('marketing.experience.title')}
+              description={t('marketing.experience.description')}
+              tone="dark"
+            />
+
+            <div className="mt-12 grid border-y border-white/15 lg:grid-cols-3">
+              {experienceSteps.map((step, index) => {
+                const Icon = experienceIcons[step.id] || Users;
+
+                return (
+                  <article
+                    key={step.id}
+                    className="group relative border-b border-white/15 py-7 last:border-b-0 sm:py-8 lg:border-b-0 lg:border-e lg:px-7 lg:first:ps-0 lg:last:border-e-0 lg:last:pe-0"
+                    data-landing-reveal
+                    style={{ '--reveal-delay': `${index * 110}ms` }}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="text-sm font-black text-sky-300">0{index + 1}</span>
+                      <span className="flex h-11 w-11 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sky-200 transition-transform duration-300 group-hover:-translate-y-1">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-black leading-tight">{step.title}</h3>
+                    <p className="mt-4 text-sm leading-7 text-slate-300">{step.description}</p>
+                    <p className="mt-6 border-s-2 border-emerald-400 ps-4 text-sm font-semibold leading-6 text-emerald-100">
+                      {step.result}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
 
             <div
-              className={cn(
-                'absolute -bottom-6 max-w-xs rounded-3xl border border-primary/20 bg-card/92 p-5 shadow-xl shadow-primary/10 backdrop-blur',
-                isRtl ? '-right-4 sm:-right-6' : '-left-4 sm:-left-6'
-              )}
+              className="mt-10 flex flex-col gap-5 rounded-lg border border-white/15 bg-white/5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8"
+              data-landing-reveal
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-                {t('marketing.preview.calloutEyebrow')}
-              </p>
-              <p className="mt-3 text-lg font-bold text-foreground">
-                {t('marketing.preview.calloutTitle')}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                {t('marketing.preview.calloutDescription')}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.34em] text-primary">
-              {t('marketing.features.eyebrow')}
-            </p>
-            <h2 className="mt-4 text-4xl font-black tracking-tight text-foreground">
-              {t('marketing.features.title')}
-            </h2>
-            <p className="mt-5 text-lg leading-8 text-muted-foreground">
-              {t('marketing.features.description')}
-            </p>
-          </div>
-
-          <div className="mt-12 grid gap-6 lg:grid-cols-2">
-            {featureCards.map((feature) => {
-              const Icon = featureIcons[feature.id];
-
-              return (
-                <article
-                  key={feature.id}
-                  className="rounded-[2rem] border border-border bg-card/90 p-7 shadow-lg shadow-primary/5"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="rounded-2xl bg-primary/10 p-3 text-primary">
-                      <Icon className="h-6 w-6" />
-                    </span>
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground">{feature.title}</h3>
-                      <p className="mt-1 text-muted-foreground">{feature.description}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid gap-3">
-                    {feature.points.map((point) => (
-                      <div
-                        key={point}
-                        className="flex items-center gap-3 rounded-2xl border border-border bg-background/80 px-4 py-3 text-sm font-medium text-foreground"
-                      >
-                        <BadgeCheck className="h-4 w-4 text-primary" />
-                        {point}
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="workflow" className="border-y border-border bg-card/35">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
-            <div className="max-w-xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.34em] text-primary">
-                {t('marketing.workflow.eyebrow')}
-              </p>
-              <h2 className="mt-4 text-4xl font-black tracking-tight text-foreground">
-                {t('marketing.workflow.title')}
-              </h2>
-              <p className="mt-5 text-lg leading-8 text-muted-foreground">
-                {t('marketing.workflow.description')}
-              </p>
-
-              <div className="mt-8 rounded-[2rem] border border-primary/20 bg-primary/10 p-6 shadow-xl shadow-primary/5">
-                <div className="flex items-center gap-4">
-                  <span className="rounded-2xl bg-background p-3 text-primary">
-                    <Database className="h-6 w-6" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary/80">
-                      {t('marketing.workflow.hostedCardEyebrow')}
-                    </p>
-                    <p className="text-xl font-bold text-foreground">
-                      {t('marketing.workflow.hostedCardTitle')}
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-4 text-sm leading-7 text-muted-foreground">
-                  {t('marketing.workflow.hostedCardDescription')}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-5">
-              {workflowSteps.map((item) => (
-                <div
-                  key={item.step}
-                  className="rounded-[2rem] border border-border bg-card/90 p-7 shadow-lg shadow-primary/5"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                    <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-lg font-black text-primary-foreground">
-                      {item.step}
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-foreground">{item.title}</h3>
-                      <p className="mt-3 max-w-2xl text-base leading-7 text-muted-foreground">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="plans" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.34em] text-primary">
-                {t('marketing.plans.eyebrow')}
-              </p>
-              <h2 className="mt-4 text-4xl font-black tracking-tight text-foreground">
-                {t('marketing.plans.title')}
-              </h2>
-              <p className="mt-5 text-lg leading-8 text-muted-foreground">
-                {t('marketing.plans.description')}
-              </p>
-            </div>
-
-            <div className="rounded-full border border-border bg-card/80 px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm">
-              {t('marketing.plans.note')}
-            </div>
-          </div>
-
-          <div className="mt-12 grid gap-6 xl:grid-cols-4">
-            {plans.map((plan) => {
-              const isPremium = plan.id === 'premium';
-              const isHosted = plan.id === 'hosted';
-              const buttonHref = isHosted ? '#hosted' : '/login';
-
-              return (
-                <article
-                  key={plan.id}
-                  className={cn(
-                    'flex h-full flex-col rounded-[2rem] border p-7 shadow-xl shadow-primary/5',
-                    planStyles[plan.id]
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className={cn('text-2xl font-black', isPremium ? 'text-background' : 'text-foreground')}>
-                        {plan.name}
-                      </h3>
-                      <p
-                        className={cn(
-                          'mt-3 text-sm leading-6',
-                          isPremium ? 'text-background/75' : 'text-muted-foreground'
-                        )}
-                      >
-                        {plan.summary}
-                      </p>
-                    </div>
-                    {plan.featured && (
-                      <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-primary-foreground">
-                        {t('marketing.plans.popularBadge')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-8">
-                    <div className={cn('text-4xl font-black', isPremium ? 'text-background' : 'text-foreground')}>
-                      {plan.price}
-                    </div>
-                    <p
-                      className={cn(
-                        'mt-2 text-sm uppercase tracking-[0.24em]',
-                        isPremium ? 'text-background/65' : 'text-muted-foreground'
-                      )}
-                    >
-                      {plan.cadence}
-                    </p>
-                  </div>
-
-                  <div className="mt-8 space-y-3">
-                    {plan.points.map((point) => (
-                      <div
-                        key={point}
-                        className={cn(
-                          'flex items-start gap-3 rounded-2xl px-4 py-3',
-                          isPremium
-                            ? 'bg-background/10 text-background'
-                            : 'border border-border bg-background/80 text-foreground'
-                        )}
-                      >
-                        <Check className={cn('mt-0.5 h-4 w-4 shrink-0', isPremium ? 'text-background' : 'text-primary')} />
-                        <span className="text-sm leading-6">{point}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-8 pt-2">
-                    <Button
-                      asChild
-                      size="lg"
-                      variant={isPremium ? 'secondary' : plan.featured ? 'default' : 'outline'}
-                      className={cn(
-                        'h-12 w-full rounded-full font-semibold',
-                        isPremium && 'bg-background text-foreground hover:bg-background/90',
-                        plan.featured && !isPremium && 'shadow-md shadow-primary/15'
-                      )}
-                    >
-                      {buttonHref.startsWith('/') ? (
-                        <Link to={buttonHref}>{plan.ctaLabel}</Link>
-                      ) : (
-                        <a href={buttonHref}>{plan.ctaLabel}</a>
-                      )}
-                    </Button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="hosted" className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
-          <div className="rounded-[2.5rem] border border-primary/20 bg-[linear-gradient(135deg,_rgba(56,189,248,0.10),_rgba(255,255,255,0.94)_38%,_rgba(125,211,252,0.12)_100%)] p-8 shadow-2xl shadow-primary/10 dark:bg-[linear-gradient(135deg,_rgba(56,189,248,0.10),_rgba(30,41,59,0.92)_38%,_rgba(125,211,252,0.10)_100%)] lg:p-12">
-            <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr]">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-card/80 px-4 py-2 text-sm font-semibold text-primary">
-                  <Building2 className="h-4 w-4" />
-                  {t('marketing.hosted.eyebrow')}
-                </div>
-
-                <h2 className="mt-6 text-4xl font-black tracking-tight text-foreground">
-                  {t('marketing.hosted.title')}
-                </h2>
-                <p className="mt-5 text-lg leading-8 text-muted-foreground">
-                  {t('marketing.hosted.description')}
-                </p>
-
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                  <Button asChild size="lg" className="h-12 rounded-full px-7 text-base font-semibold">
-                    <Link to="/login">{t('marketing.hosted.primaryCta')}</Link>
-                  </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="h-12 rounded-full border-primary/20 bg-card/80 px-7 text-base font-semibold"
-                  >
-                    <a href="#plans">{t('marketing.hosted.secondaryCta')}</a>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid gap-4">
-                {hostedBenefits.map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-start gap-4 rounded-[1.75rem] border border-border bg-card/88 p-5 shadow-lg shadow-primary/5"
-                  >
-                    <span className="rounded-2xl bg-primary/10 p-3 text-primary">
-                      <Database className="h-5 w-5" />
-                    </span>
-                    <p className="text-base leading-7 text-foreground">{item}</p>
-                  </div>
-                ))}
-
-                <div className="rounded-[1.75rem] border border-primary/20 bg-primary/10 p-6">
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-primary" />
-                    <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary/80">
-                      {t('marketing.hosted.bestFitEyebrow')}
-                    </p>
-                  </div>
-                  <p className="mt-4 text-lg font-semibold text-foreground">
-                    {t('marketing.hosted.bestFitText')}
+              <div className="flex items-start gap-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-300">
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold text-emerald-300">
+                    {t('marketing.experience.spotlight.label')}
                   </p>
+                  <h3 className="mt-2 text-xl font-black sm:text-2xl">
+                    {t('marketing.experience.spotlight.title')}
+                  </h3>
                 </div>
+              </div>
+              <p className="max-w-xl text-sm leading-7 text-slate-300">
+                {t('marketing.experience.spotlight.description')}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="pricing" className="scroll-mt-24 border-b border-border bg-[#f8faf9] dark:bg-[#182126]">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+            <div className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-end">
+              <SectionIntro
+                eyebrow={t('marketing.pricing.eyebrow')}
+                title={t('marketing.pricing.title')}
+                description={t('marketing.pricing.description')}
+              />
+              <div className="border-s-4 border-amber-400 ps-5 text-sm leading-7 text-slate-700 dark:text-slate-300" data-landing-reveal>
+                <strong className="block text-base text-slate-950 dark:text-white">
+                  {t('marketing.pricing.noteTitle')}
+                </strong>
+                {t('marketing.pricing.note')}
+              </div>
+            </div>
+
+            <div className="mt-10 overflow-hidden rounded-lg border border-border bg-card shadow-sm" data-landing-reveal>
+              <div
+                role="tablist"
+                aria-label={t('marketing.pricing.tabsLabel')}
+                onKeyDown={(event) =>
+                  handleTabListKeyDown(event, {
+                    items: pricingModels,
+                    activeId: activePricingId,
+                    setActiveId: setActivePricingId,
+                    tabIdPrefix: 'pricing-tab',
+                    isRtl,
+                  })
+                }
+                className="grid grid-cols-2 border-b border-border"
+              >
+                {pricingModels.map((model) => {
+                  const Icon = pricingIcons[model.id] || ReceiptText;
+                  const isActive = activePricing?.id === model.id;
+
+                  return (
+                    <button
+                      key={model.id}
+                      type="button"
+                      role="tab"
+                      id={`pricing-tab-${model.id}`}
+                      aria-selected={isActive}
+                      aria-controls={`pricing-panel-${model.id}`}
+                      tabIndex={isActive ? 0 : -1}
+                      onClick={() => setActivePricingId(model.id)}
+                      className={cn(
+                        'flex min-h-16 items-center justify-center gap-2 border-e border-border px-3 py-3 text-center text-xs leading-5 transition-colors last:border-e-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:min-h-20 sm:justify-start sm:gap-3 sm:px-5 sm:py-4 sm:text-start sm:text-base',
+                        isActive
+                          ? 'bg-slate-950 text-white dark:bg-sky-950/55'
+                          : 'bg-card text-foreground hover:bg-muted/60',
+                      )}
+                    >
+                      <Icon className={cn('h-5 w-5 shrink-0', isActive && 'text-sky-300')} />
+                      <span className="font-bold">{model.tab}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {activePricing && (
+                <div
+                  key={`${i18n.language}-${activePricing.id}`}
+                  role="tabpanel"
+                  id={`pricing-panel-${activePricing.id}`}
+                  aria-labelledby={`pricing-tab-${activePricing.id}`}
+                  className="landing-switch-panel grid gap-10 p-6 sm:p-8 lg:grid-cols-[1.05fr_0.95fr] lg:p-10"
+                >
+                  <div>
+                    <p className="text-sm font-bold text-sky-700 dark:text-sky-300">
+                      {activePricing.label}
+                    </p>
+                    <h3 className="mt-3 max-w-2xl text-3xl font-black leading-tight text-foreground sm:text-4xl">
+                      {activePricing.title}
+                    </h3>
+                    <p className="mt-5 max-w-2xl text-base leading-8 text-muted-foreground">
+                      {activePricing.description}
+                    </p>
+
+                    <div className="mt-8 border-s-2 border-sky-500 ps-5">
+                      <p className="text-sm font-bold text-foreground">{activePricing.bestFor}</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        {activePricing.bestForValue}
+                      </p>
+                    </div>
+
+                    <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+                      {asArray(activePricing.points).map((point) => (
+                        <li key={point} className="flex items-start gap-3 text-sm leading-6 text-foreground">
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <PricingVisual model={activePricing} />
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-slate-950 text-white">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center" data-landing-reveal>
+              <div className="max-w-3xl">
+                <p className="text-sm font-bold text-sky-300">{t('marketing.final.eyebrow')}</p>
+                <h2 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
+                  {t('marketing.final.title')}
+                </h2>
+                <p className="mt-4 text-base leading-7 text-slate-300">
+                  {t('marketing.final.description')}
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+                <Button asChild size="lg" className="h-12 px-6 text-base font-semibold">
+                  <a href="#profiles">
+                    {t('marketing.final.primaryCta')}
+                    <ArrowRight className={cn('h-4 w-4', isRtl && 'rotate-180')} />
+                  </a>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-12 border-slate-600 bg-slate-900 px-6 text-base font-semibold text-white hover:bg-slate-800"
+                >
+                  <Link to="/login">{t('marketing.final.secondaryCta')}</Link>
+                </Button>
               </div>
             </div>
           </div>
         </section>
       </main>
+
+      <footer className="border-t border-border bg-background">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <p className="font-bold text-foreground">Recovera</p>
+          <p>{t('marketing.footer.tagline')}</p>
+        </div>
+      </footer>
     </div>
   );
+}
+
+function SectionIntro({ eyebrow, title, description, tone = 'light' }) {
+  const isDark = tone === 'dark';
+
+  return (
+    <div className="max-w-3xl" data-landing-reveal>
+      <p className={cn('text-sm font-bold', isDark ? 'text-sky-300' : 'text-sky-700 dark:text-sky-300')}>
+        {eyebrow}
+      </p>
+      <h2
+        className={cn(
+          'mt-4 text-3xl font-black leading-tight sm:text-4xl',
+          isDark ? 'text-white' : 'text-foreground',
+        )}
+      >
+        {title}
+      </h2>
+      <p className={cn('mt-5 text-base leading-8', isDark ? 'text-slate-300' : 'text-muted-foreground')}>
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function ClinicDayScene({ t, isRtl }) {
+  const rows = asArray(t('marketing.hero.scene.rows', { returnObjects: true }));
+
+  return (
+    <div aria-hidden="true" className={cn('landing-hero-scene absolute inset-0 -z-10', isRtl && 'landing-hero-scene-rtl')}>
+      <div className="landing-scene-shell absolute top-16 w-[36rem] overflow-hidden rounded-lg border border-sky-200/80 bg-white/95 shadow-2xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900/95">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-700">
+          <div>
+            <p className="text-xs font-bold text-sky-700 dark:text-sky-300">
+              {t('marketing.hero.scene.branch')}
+            </p>
+            <p className="mt-1 text-base font-black text-slate-950 dark:text-white">
+              {t('marketing.hero.scene.title')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 rounded-md bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+            <span className="landing-live-dot h-2 w-2 rounded-full bg-emerald-500" />
+            {t('marketing.hero.scene.status')}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[1fr_12rem]">
+          <div className="border-e border-slate-200 p-5 dark:border-slate-700">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold text-slate-950 dark:text-white">
+                {t('marketing.hero.scene.schedule')}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {t('marketing.hero.scene.summary')}
+              </p>
+            </div>
+            <div className="mt-4 space-y-3">
+              {rows.map((row, index) => (
+                <div
+                  key={`${row.time}-${row.patient}`}
+                  className={cn(
+                    'grid grid-cols-[3.5rem_1fr_auto] items-center gap-3 rounded-md border px-3 py-3',
+                    index === 1
+                      ? 'landing-scene-active border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/35'
+                      : 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/60',
+                  )}
+                >
+                  <span className="flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                    <Clock3 className="h-3 w-3" />
+                    {row.time}
+                  </span>
+                  <span>
+                    <span className="block text-sm font-bold text-slate-950 dark:text-white">
+                      {row.patient}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                      {row.type}
+                    </span>
+                  </span>
+                  <span className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-slate-600 shadow-sm dark:bg-slate-900 dark:text-slate-300">
+                    {row.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-5">
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {t('marketing.hero.scene.glance')}
+            </p>
+            <div className="mt-5 space-y-5">
+              {asArray(t('marketing.hero.scene.metrics', { returnObjects: true })).map((metric) => (
+                <div key={metric.label}>
+                  <p className="text-2xl font-black text-slate-950 dark:text-white">{metric.value}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    {metric.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PricingVisual({ model }) {
+  const isAllowance = model.id === 'allowance';
+
+  return (
+    <div className="self-stretch rounded-lg border border-border bg-muted/35 p-5 sm:p-6">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-bold text-foreground">{model.visual?.title}</p>
+        <ReceiptText className="h-5 w-5 text-sky-600 dark:text-sky-300" />
+      </div>
+
+      {isAllowance ? (
+        <div className="mt-8">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">{model.visual?.base}</p>
+              <p className="mt-1 text-2xl font-black text-foreground">{model.visual?.steady}</p>
+            </div>
+            <BarChart3 className="h-8 w-8 text-emerald-600" />
+          </div>
+          <div className="mt-7 flex h-12 overflow-hidden rounded-md border border-border bg-background">
+            <div className="flex w-[72%] items-center justify-center bg-sky-600 px-3 text-center text-xs font-bold text-white">
+              {model.visual?.included}
+            </div>
+            <div className="flex flex-1 items-center justify-center bg-amber-100 px-2 text-center text-xs font-bold text-amber-900 dark:bg-amber-950/50 dark:text-amber-200">
+              {model.visual?.extra}
+            </div>
+          </div>
+          <p className="mt-4 text-xs leading-6 text-muted-foreground">{model.visual?.note}</p>
+        </div>
+      ) : (
+        <div className="mt-7 space-y-4">
+          {asArray(model.visual?.tiers).map((tier, index) => (
+            <div key={tier.label}>
+              <div className="flex items-center justify-between gap-4 text-xs">
+                <span className="font-bold text-foreground">{tier.label}</span>
+                <span className="text-muted-foreground">{tier.range}</span>
+              </div>
+              <div className="mt-2 h-3 overflow-hidden rounded-sm bg-background">
+                <div
+                  className={cn(
+                    'h-full rounded-sm',
+                    index === 0 ? 'w-[42%] bg-sky-500' : index === 1 ? 'w-[68%] bg-emerald-500' : 'w-full bg-amber-500',
+                  )}
+                />
+              </div>
+            </div>
+          ))}
+          <p className="pt-2 text-xs leading-6 text-muted-foreground">{model.visual?.note}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function keepMobileTabInView(tab) {
+  if (!tab || !window.matchMedia('(max-width: 639px)').matches) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  tab.scrollIntoView({
+    behavior: reduceMotion ? 'auto' : 'smooth',
+    block: 'nearest',
+    inline: 'center',
+  });
+}
+
+function handleTabListKeyDown(
+  event,
+  { items, activeId, setActiveId, tabIdPrefix, isRtl },
+) {
+  const supportedKeys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
+  if (!supportedKeys.includes(event.key) || items.length === 0) return;
+
+  event.preventDefault();
+  const currentIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === activeId),
+  );
+  let nextIndex = currentIndex;
+
+  if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = items.length - 1;
+  } else {
+    const forwardKey = isRtl ? 'ArrowLeft' : 'ArrowRight';
+    const delta = event.key === forwardKey ? 1 : -1;
+    nextIndex = (currentIndex + delta + items.length) % items.length;
+  }
+
+  const nextId = items[nextIndex].id;
+  setActiveId(nextId);
+  window.requestAnimationFrame(() => {
+    const nextTab = document.getElementById(`${tabIdPrefix}-${nextId}`);
+    nextTab?.focus({ preventScroll: true });
+    keepMobileTabInView(nextTab);
+  });
+}
+
+function useLandingMotion(language, progressRef) {
+  useEffect(() => {
+    const revealNodes = Array.from(document.querySelectorAll('[data-landing-reveal]'));
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealNodes.forEach((node) => node.classList.add('is-visible'));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          } else {
+            entry.target.classList.remove('is-visible');
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -4% 0px' },
+    );
+
+    revealNodes.forEach((node) => observer.observe(node));
+    return () => observer.disconnect();
+  }, [language]);
+
+  useEffect(() => {
+    let frameId = null;
+
+    const updateProgress = () => {
+      frameId = null;
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = scrollable > 0 ? Math.min(window.scrollY / scrollable, 1) : 0;
+      if (progressRef.current) {
+        progressRef.current.style.transform = `scaleX(${progress})`;
+      }
+    };
+
+    const handleScroll = () => {
+      if (frameId == null) {
+        frameId = window.requestAnimationFrame(updateProgress);
+      }
+    };
+
+    updateProgress();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (frameId != null) window.cancelAnimationFrame(frameId);
+    };
+  }, [progressRef]);
 }

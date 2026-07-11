@@ -1,0 +1,177 @@
+.landing-scroll-progress {
+  position: fixed;
+  inset-block-start: 0;
+  inset-inline: 0;
+  z-index: 70;
+  height: 3px;
+  background: hsl(var(--primary));
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+[data-landing-reveal] {
+  opacity: 0;
+  filter: blur(2px);
+  transform: translateY(36px) scale(0.985);
+  transition:
+    opacity 780ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 780ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 880ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, filter, transform;
+}
+
+[data-landing-reveal].is-visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+}
+
+.landing-mobile-tab-rail {
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.landing-mobile-tab-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.landing-mobile-dock {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.landing-hero-scene {
+  pointer-events: none;
+}
+
+.landing-scene-shell {
+  inset-inline-start: 59%;
+  animation: landing-scene-arrive 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform: perspective(1200px) rotateY(-4deg) rotateX(1deg);
+  transform-origin: center left;
+}
+
+.landing-hero-scene-rtl .landing-scene-shell {
+  transform: perspective(1200px) rotateY(4deg) rotateX(1deg);
+  transform-origin: center right;
+}
+
+.landing-live-dot {
+  animation: landing-live-pulse 2.4s ease-out infinite;
+}
+
+.landing-scene-active {
+  box-shadow: 0 0 0 1px rgb(14 165 233 / 0.08);
+}
+
+.landing-switch-panel {
+  animation: landing-panel-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-profile-tone-sky {
+  color: #082f49;
+  background: #eaf7fc;
+}
+
+.landing-profile-tone-emerald {
+  color: #052e2b;
+  background: #eaf8f3;
+}
+
+.landing-profile-tone-amber {
+  color: #451a03;
+  background: #fff7df;
+}
+
+.landing-profile-tone-rose {
+  color: #4c0519;
+  background: #fff0f3;
+}
+
+.dark .landing-profile-tone-sky {
+  color: #e0f2fe;
+  background: #0d3446;
+}
+
+.dark .landing-profile-tone-emerald {
+  color: #d1fae5;
+  background: #103b34;
+}
+
+.dark .landing-profile-tone-amber {
+  color: #fef3c7;
+  background: #423215;
+}
+
+.dark .landing-profile-tone-rose {
+  color: #ffe4e6;
+  background: #461f2b;
+}
+
+@keyframes landing-scene-arrive {
+  from {
+    opacity: 0;
+    translate: 40px 16px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes landing-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.45);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgb(16 185 129 / 0);
+  }
+}
+
+@media (max-width: 1023px) {
+  .landing-page {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .landing-hero-scene {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .landing-page {
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-landing-reveal] {
+    opacity: 1;
+    filter: none;
+    transform: none;
+    transition: none;
+  }
+
+  .landing-scene-shell,
+  .landing-switch-panel,
+  .landing-live-dot {
+    animation: none;
+  }
+
+  .landing-page * {
+    scroll-behavior: auto !important;
+  }
+}

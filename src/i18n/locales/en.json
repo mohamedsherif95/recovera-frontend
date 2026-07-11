@@ -228,6 +228,8 @@
       "branchFilter": "Branch #{{id}}",
       "searchPlaceholder": "Search actor, branch, reason, URL...",
       "areaLabel": "Area",
+      "fromDate": "From date",
+      "toDate": "To date",
       "pageSize": "Page size",
       "loadError": "Could not load platform audit events.",
       "empty": "No platform audit events match these filters.",

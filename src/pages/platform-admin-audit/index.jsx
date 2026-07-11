@@ -50,13 +50,15 @@ const limitOptions = [25, 50, 100];
 
 export default function PlatformAdminAuditPage() {
   const { t } = useTranslation();
-  const { platformAdminClinicId } = useUIStore();
+  const { platformAdminClinicId, setPlatformAdminClinicId } = useUIStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState('');
   const [area, setArea] = useState('all');
   const [status, setStatus] = useState('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const branchIdParam = Number(searchParams.get('branchId') || 0);
   const branchId = Number.isFinite(branchIdParam) && branchIdParam > 0
@@ -71,8 +73,10 @@ export default function PlatformAdminAuditPage() {
       status,
       search: search.trim() || undefined,
       branchId: branchId ?? undefined,
+      fromDate: fromDate ? `${fromDate}T00:00:00.000Z` : undefined,
+      toDate: toDate ? `${toDate}T23:59:59.999Z` : undefined,
     }),
-    [area, branchId, limit, page, search, status],
+    [area, branchId, fromDate, limit, page, search, status, toDate],
   );
 
   const {
@@ -94,6 +98,8 @@ export default function PlatformAdminAuditPage() {
     area !== 'all' ||
     status !== 'all' ||
     limit !== 25 ||
+    fromDate ||
+    toDate ||
     branchId != null;
   const scopeLabel = platformAdminClinicId
     ? t('platformAdmin.scopedOverview', { defaultValue: 'Selected clinic scope' })
@@ -112,12 +118,21 @@ export default function PlatformAdminAuditPage() {
     setSearch('');
     setArea('all');
     setStatus('all');
+    setFromDate('');
+    setToDate('');
     setLimit(25);
     setPage(1);
     if (branchId != null) {
       const nextSearchParams = new URLSearchParams(searchParams);
       nextSearchParams.delete('branchId');
       setSearchParams(nextSearchParams, { replace: true });
+    }
+  };
+
+  const handleOpenWorkbench = (event) => {
+    const targetClinicId = Number(event?.target?.clinicId || 0);
+    if (Number.isFinite(targetClinicId) && targetClinicId > 0) {
+      setPlatformAdminClinicId(targetClinicId);
     }
   };
 
@@ -181,7 +196,7 @@ export default function PlatformAdminAuditPage() {
               </p>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(14rem,1fr)_11rem_10rem_8rem_auto]">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_10rem_10rem_9rem_9rem_8rem_auto]">
               <div className="space-y-1">
                 <Label htmlFor="platform-audit-search" className="text-xs">
                   {t('common.search')}
@@ -273,6 +288,41 @@ export default function PlatformAdminAuditPage() {
                 </Select>
               </div>
 
+              <div className="space-y-1">
+                <Label htmlFor="platform-audit-from-date" className="text-xs">
+                  {t('platformAdmin.audit.fromDate', {
+                    defaultValue: 'From date',
+                  })}
+                </Label>
+                <Input
+                  id="platform-audit-from-date"
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) =>
+                    resetPage(() => setFromDate(event.target.value))
+                  }
+                  className="h-9"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="platform-audit-to-date" className="text-xs">
+                  {t('platformAdmin.audit.toDate', {
+                    defaultValue: 'To date',
+                  })}
+                </Label>
+                <Input
+                  id="platform-audit-to-date"
+                  type="date"
+                  value={toDate}
+                  min={fromDate || undefined}
+                  onChange={(event) =>
+                    resetPage(() => setToDate(event.target.value))
+                  }
+                  className="h-9"
+                />
+              </div>
+
               {hasFilters && (
                 <Button
                   type="button"
@@ -362,6 +412,7 @@ export default function PlatformAdminAuditPage() {
                           key={event.id}
                           event={event}
                           onInspect={() => setSelectedEvent(event)}
+                          onOpenWorkbench={() => handleOpenWorkbench(event)}
                           t={t}
                         />
                       ))}
@@ -417,7 +468,7 @@ export default function PlatformAdminAuditPage() {
   );
 }
 
-function AuditEventRow({ event, onInspect, t }) {
+function AuditEventRow({ event, onInspect, onOpenWorkbench, t }) {
   const AreaIcon = areaIcons[event.area] || FileSearch;
   const actionLabel = t(`platformAdmin.audit.actionLabels.${event.actionKey}`, {
     defaultValue: event.actionLabel || event.actionKey,
@@ -485,6 +536,7 @@ function AuditEventRow({ event, onInspect, t }) {
           <Button asChild variant="ghost" size="icon" className="h-8 w-8">
             <Link
               to={event.workbenchHref || '/platform-admin'}
+              onClick={onOpenWorkbench}
               aria-label={t('platformAdmin.audit.openWorkbench', {
                 defaultValue: 'Open workbench',
               })}

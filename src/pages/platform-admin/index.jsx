@@ -111,7 +111,7 @@ const modules = [
 export default function PlatformAdminPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
-  const { platformAdminClinicId } = useUIStore();
+  const { platformAdminClinicId, setPlatformAdminClinicId } = useUIStore();
   const {
     data: overview,
     isLoading,
@@ -127,6 +127,12 @@ export default function PlatformAdminPage() {
   const scopeLabel = platformAdminClinicId
     ? t('platformAdmin.scopedOverview', { defaultValue: 'Selected clinic scope' })
     : t('platformAdmin.allClinics', { defaultValue: 'All clinics' });
+  const handleQueueItemOpen = (item) => {
+    const targetClinicId = Number(item?.clinicId || 0);
+    if (Number.isFinite(targetClinicId) && targetClinicId > 0) {
+      setPlatformAdminClinicId(targetClinicId);
+    }
+  };
   const metricCards = [
     {
       title: t('platformAdmin.metrics.clinicGroups', {
@@ -309,6 +315,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.openBilling', {
                 defaultValue: 'Open billing',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div>
@@ -345,6 +352,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div>
@@ -373,6 +381,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.openBilling', {
                 defaultValue: 'Open billing',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div>
@@ -406,6 +415,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div>
@@ -436,6 +446,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div>
@@ -464,10 +475,16 @@ export default function PlatformAdminPage() {
                 defaultValue: 'No platform admin changes recorded yet.',
               })}
               href="/platform-admin/audit"
-              getItemHref={(item) => item.workbenchHref || '/platform-admin'}
+              getItemHref={(item) =>
+                buildScopedWorkbenchHref(
+                  item.workbenchHref || '/platform-admin/audit',
+                  item,
+                )
+              }
               reviewLabel={t('platformAdmin.queues.openAudit', {
                 defaultValue: 'Open audit',
               })}
+              onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
                   <div className="min-w-0">
@@ -646,6 +663,7 @@ function WorkQueueCard({
   href,
   getItemHref,
   reviewLabel = 'Review',
+  onOpenItem,
   renderItem,
 }) {
   return (
@@ -661,7 +679,8 @@ function WorkQueueCard({
           items.map((item) => (
             <Link
               key={`${title}-${item.id ?? item.branchId}-${item.billingMonth ?? item.createdAt ?? ''}`}
-              to={getItemHref ? getItemHref(item) : href}
+              to={getItemHref ? getItemHref(item) : buildScopedWorkbenchHref(href, item)}
+              onClick={() => onOpenItem?.(item)}
               className="flex min-h-14 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
             >
               {renderItem(item)}
@@ -677,6 +696,22 @@ function WorkQueueCard({
       </CardContent>
     </Card>
   );
+}
+
+function buildScopedWorkbenchHref(href, item = {}) {
+  const [path, query = ''] = String(href || '/platform-admin').split('?');
+  const params = new URLSearchParams(query);
+
+  if (item.branchId) {
+    params.set('branchId', String(item.branchId));
+  }
+
+  if (path === '/platform-admin/billing' && item.billingMonth) {
+    params.set('month', toMonthInputValue(item.billingMonth));
+  }
+
+  const serializedParams = params.toString();
+  return serializedParams ? `${path}?${serializedParams}` : path;
 }
 
 function formatNumber(value) {
@@ -695,6 +730,11 @@ function formatMonth(value) {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function toMonthInputValue(value) {
+  if (!value) return '';
+  return String(value).slice(0, 7);
 }
 
 function formatDate(value) {

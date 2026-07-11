@@ -738,8 +738,9 @@ export default function PlatformBillingPage() {
     ? { platformClinicId: platformAdminClinicId }
     : {};
   const linkedBranchId = searchParams.get('branchId') || '';
+  const linkedMonth = searchParams.get('month') || '';
   const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [month, setMonth] = useState(currentMonthInput);
+  const [month, setMonth] = useState(linkedMonth || currentMonthInput);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
@@ -792,6 +793,23 @@ export default function PlatformBillingPage() {
       nextSearchParams.set('branchId', branchId);
     } else {
       nextSearchParams.delete('branchId');
+    }
+    setSearchParams(nextSearchParams, { replace: true });
+  };
+
+  useEffect(() => {
+    if (linkedMonth && linkedMonth !== month) {
+      setMonth(linkedMonth);
+    }
+  }, [linkedMonth, month]);
+
+  const handleMonthChange = (value) => {
+    setMonth(value);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (value) {
+      nextSearchParams.set('month', value);
+    } else {
+      nextSearchParams.delete('month');
     }
     setSearchParams(nextSearchParams, { replace: true });
   };
@@ -1106,7 +1124,7 @@ export default function PlatformBillingPage() {
               id="billing-month"
               type="month"
               value={month}
-              onChange={(event) => setMonth(event.target.value)}
+              onChange={(event) => handleMonthChange(event.target.value)}
               disabled={!canView}
             />
           </div>

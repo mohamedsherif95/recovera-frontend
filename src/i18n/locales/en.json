@@ -217,6 +217,59 @@
     "expandSidebar": "Expand sidebar",
     "scopedOverview": "Selected clinic scope",
     "governance": "Governance",
+    "audit": {
+      "nav": "Audit trail",
+      "badge": "Admin audit",
+      "title": "Audit trail",
+      "description": "Review platform billing, branch subscription, onboarding, and governance changes from the admin console.",
+      "refresh": "Refresh audit trail",
+      "eventsTitle": "Platform events",
+      "resultSummary": "{{count}} recorded events",
+      "searchPlaceholder": "Search actor, branch, reason, URL...",
+      "areaLabel": "Area",
+      "pageSize": "Page size",
+      "loadError": "Could not load platform audit events.",
+      "empty": "No platform audit events match these filters.",
+      "inspect": "Inspect event",
+      "openWorkbench": "Open workbench",
+      "detailTitle": "Audit event",
+      "request": "Request",
+      "columns": {
+        "area": "Area",
+        "actor": "Actor",
+        "reason": "Reason"
+      },
+      "areas": {
+        "all": "All areas",
+        "billing": "Billing",
+        "subscriptions": "Subscriptions",
+        "tenant_setup": "Tenant setup",
+        "governance": "Governance"
+      },
+      "status": {
+        "all": "All statuses",
+        "success": "Success",
+        "error": "Error"
+      },
+      "actionLabels": {
+        "collectionRecorded": "Collection recorded",
+        "invoiceVoided": "Invoice voided",
+        "billingAdjustmentRecorded": "Billing adjustment recorded",
+        "invoiceGenerated": "Invoice generated",
+        "branchAccessChanged": "Branch access changed",
+        "profileMixChanged": "Profile mix changed",
+        "pricingChanged": "Pricing changed",
+        "branchSubscriptionChanged": "Branch subscription changed",
+        "userProvisioned": "User provisioned",
+        "userChanged": "User changed",
+        "roleAssignmentChanged": "Role assignment changed",
+        "userActivated": "User activated",
+        "userDeactivated": "User deactivated",
+        "clinicGroupChanged": "Clinic group changed",
+        "branchRecordChanged": "Branch record changed",
+        "platformChange": "Platform change"
+      }
+    },
     "operations": {
       "title": "Platform operations",
       "description": "Live branch access, pricing, and billing status.",
@@ -229,14 +282,27 @@
       "branches": "Branches",
       "readyToInvoice": "Ready to invoice",
       "outstandingBalance": "Outstanding balance",
+      "suspendedBranches": "Suspended branches",
+      "overdueInvoices": "Overdue invoices",
       "activeCount": "{{count}} active",
+      "readyAcrossMonths": "{{current}} current / {{previous}} previous",
+      "readOnlyBranches": "Read-only access blocks",
+      "overdueBalance": "{{amount}} overdue",
       "billingMonth": "Billing month {{month}}",
       "currentBillingMonth": "Current billing month",
       "openInvoices": "{{count}} open invoices"
     },
     "queues": {
       "review": "Review",
+      "openBilling": "Open billing",
+      "openGovernance": "Open governance",
+      "openAudit": "Open audit",
       "readOnly": "Read-only",
+      "flexiblePlan": "Flexible plan",
+      "readyInvoiceBranches": {
+        "title": "Ready to invoice",
+        "empty": "No current or previous branch-month is ready."
+      },
       "missingPricingBranches": {
         "title": "Branches needing pricing",
         "empty": "All active branches have usable pricing."
@@ -248,6 +314,14 @@
       "openInvoices": {
         "title": "Open invoices",
         "empty": "No issued invoices have an outstanding balance."
+      },
+      "overdueInvoices": {
+        "title": "Overdue invoices",
+        "empty": "No older open invoices need attention."
+      },
+      "recentHighImpactActions": {
+        "title": "Recent high-impact changes",
+        "empty": "No platform admin changes recorded yet."
       }
     },
     "collections": {
@@ -258,6 +332,7 @@
       "title": "Billing posture",
       "missingPricing": "Missing pricing",
       "partiallyPaid": "Partially paid",
+      "overdueInvoices": "Overdue invoices",
       "collectedTotal": "Collected total",
       "openBilling": "Open billing"
     },
@@ -282,6 +357,10 @@
         "title": "Governance",
         "description": "Audit role permissions and manage platform admin access."
       },
+      "audit": {
+        "title": "Audit trail",
+        "description": "Review platform billing, subscription, onboarding, and governance changes."
+      },
       "branchSubscriptions": {
         "title": "Branch subscriptions",
         "description": "Control branch access, enabled clinic profiles, and pricing terms."
@@ -297,7 +376,31 @@
       "subscriptions": "Subscriptions",
       "clientUnitTitle": "Branch is the subscribed client unit.",
       "clientUnitDescription": "Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.",
-      "dialogDescription": "This changes the branch record only. Commercial terms and access status are managed from branch subscriptions."
+      "dialogDescription": "This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.",
+      "branchId": "Branch #{{id}}",
+      "selectedScope": "Selected company scope",
+      "inactiveBranches": "{{count}} inactive",
+      "readOnlyBranches": "Read-only branches",
+      "readOnlyHelper": "Access blocked for mutations",
+      "missingProfiles": "Without profiles",
+      "profileHelper": "Needs subscription profile setup",
+      "registryTitle": "Subscribed branch registry",
+      "registryDescription": "{{count}} of {{total}} branches shown",
+      "searchPlaceholder": "Search branch or profile...",
+      "operatingStatus": "Operating status",
+      "accessStatus": "Access status",
+      "enabledProfiles": "Enabled profiles",
+      "workbenches": "Workbenches",
+      "openSubscription": "Subscription",
+      "openBilling": "Billing",
+      "missingSubscription": "Missing subscription",
+      "noFilteredBranches": "No branches match these filters.",
+      "noProfilesEnabled": "No profiles enabled",
+      "moreProfiles": "+{{count}} more",
+      "allOperatingStatuses": "All operating statuses",
+      "activeOnly": "Active only",
+      "inactiveOnly": "Inactive only",
+      "allAccessStatuses": "All access states"
     },
     "clinicGroups": {
       "title": "Clinic groups",
@@ -332,17 +435,42 @@
       "provisionUser": "Provision user",
       "noticeTitle": "Admin console user changes apply to the selected clinic group.",
       "noticeDescription": "Platform admin accounts are shown here, but admin role assignment is kept out of the routine clinic user directory.",
-      "directory": "Clinic user directory",
+      "directory": "User access registry",
+      "directoryDescription": "Review branch reach, clinic roles, and clinical controls for the selected clinic group.",
       "shownCount": "{{count}} shown",
+      "searchPlaceholder": "Search user, email, role, or branch...",
+      "assignmentState": "Branch assignment",
+      "allAssignmentStates": "All assignment states",
+      "assignedUsers": "Assigned users",
+      "unassignedUsers": "Unassigned users",
+      "multiBranchUsers": "Multi-branch users",
+      "unassigned": "Unassigned",
+      "moreBranches": "+{{count}} more",
+      "globalPlatformAccess": "Global platform access",
+      "managedInGovernance": "Managed in governance",
+      "roleControls": "Role controls",
+      "manageBranchReach": "Manage branch reach",
+      "clinicalNotRequired": "Not a clinical user",
+      "dailyOrderShort": "Order",
+      "noFilteredUsers": "No users match these filters.",
       "provisionClinicUser": "Provision clinic user",
       "provisionDescription": "Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.",
       "temporaryPasswordDescription": "Users start with a temporary password and must set a permanent password on first login.",
+      "columns": {
+        "user": "User",
+        "accessProfile": "Access profile",
+        "branchReach": "Branch reach",
+        "clinicalControls": "Clinical controls"
+      },
       "metrics": {
         "usersInScope": "Users in scope",
         "activeUsers": "Active users",
+        "inactiveUsers": "{{count}} inactive",
         "managers": "Managers",
         "adminAccounts": "Admin accounts",
-        "clinicalLogistics": "Clinical/logistics"
+        "clinicalLogistics": "Clinical/logistics",
+        "unassignedUsers": "Unassigned users",
+        "branchCoverageHelper": "{{assigned}} of {{total}} branches covered"
       },
       "toasts": {
         "selectValidRole": "Select a valid role",
@@ -426,6 +554,43 @@
     "title": "Branch subscriptions",
     "description": "Platform workbench for branch access, profile availability, and commercial terms.",
     "refreshAria": "Refresh branch subscription data",
+    "changeReason": "Admin reason",
+    "changeReasonPlaceholder": "Describe why this change is being made.",
+    "changeReasonHint": "This reason is saved with the admin action payload for audit review.",
+    "confirmChange": "Confirm change",
+    "confirmAccessChange": "Confirm access change",
+    "confirmProfilesChange": "Confirm profile change",
+    "confirmPricingChange": "Confirm pricing change",
+    "reviewNextMonthPricing": "Review next-month pricing",
+    "reviewAccessChange": "Review access change",
+    "reviewProfileChange": "Review profile change",
+    "review": {
+      "current": "Current",
+      "proposed": "Proposed",
+      "accessTitle": "Review access change",
+      "accessDescription": "Access changes affect whether branch users can make mutating clinic updates.",
+      "suspendWarning": "Read-only access blocks mutating clinic actions while preserving login and viewing access.",
+      "profilesTitle": "Review profile mix change",
+      "profilesDescription": "Profile changes affect available branch workflows and the fixed fee multiplier.",
+      "profilesWarning": "Profile availability changes apply to this branch after saving. Review operational impact before confirming.",
+      "pricingTitle": "Review next-month pricing",
+      "pricingDescription": "Pricing changes are scheduled for the next billing month and affect future invoice calculations.",
+      "pricingWarning": "Invoice generation will use these terms when the effective month is reached.",
+      "effectiveMonth": "Effective month",
+      "model": "Model",
+      "invoiceImpact": "Invoice impact",
+      "nextInvoices": "Future invoices",
+      "currentAccess": "Current access",
+      "proposedAccess": "Proposed access",
+      "currentProfiles": "Current profiles",
+      "proposedProfiles": "Proposed profiles",
+      "currentMultiplier": "Current multiplier",
+      "proposedMultiplier": "Proposed multiplier"
+    },
+    "toasts": {
+      "updated": "Branch subscription updated successfully",
+      "updateFailed": "Failed to update branch subscription"
+    },
     "selectClinicNotice": "Select a clinic in the platform admin top bar to manage its branch subscriptions.",
     "branchCardTitle": "Branch",
     "branchLabel": "Branch",
@@ -444,6 +609,8 @@
     "noPricingTerm": "No pricing term available.",
     "effectiveMonth": "Effective month",
     "basePackageFee": "Base/package fee",
+    "baseBranchFee": "Base branch fee",
+    "packageFee": "Package fee",
     "packageLabel": "Package label",
     "includedVisits": "Included visits",
     "includedMonthlyVisits": "Included monthly visits",
@@ -455,8 +622,15 @@
     "effectiveNextBillingMonth": "Effective next billing month",
     "pricingModel": "Pricing model",
     "packagePlaceholder": "e.g. Growth, Scale",
+    "flexiblePlanControls": "Flexible branch plan controls",
+    "flexiblePlanDescription": "Set the base branch fee, monthly visit allowance, and required overage blocks.",
+    "capacityPackageControls": "Capacity package controls",
+    "capacityPackageDescription": "Name the package, set its package fee and included visit capacity, then optionally define overage blocks.",
+    "capacityOverageOptionalNotice": "Leave both overage fields empty if this package has no overage billing. If one is entered, both are required.",
     "overageBlockSize": "Overage block size",
     "overageBlockFee": "Overage block fee",
+    "overageBlockSizeOptional": "Overage block size (optional)",
+    "overageBlockFeeOptional": "Overage block fee (optional)",
     "pricingRequiredNotice": "Complete the required fields for the selected pricing model before saving.",
     "saveNextMonthPricing": "Save next-month pricing",
     "accessControl": "Access control",
@@ -499,6 +673,7 @@
     "branch": "Branch",
     "selectBranch": "Select branch",
     "month": "Month",
+    "previewInvoice": "Preview invoice",
     "refreshPreview": "Refresh preview",
     "invoicePackage": "Invoice package",
     "activeInvoice": "Active invoice: {{invoiceNumber}}",
@@ -526,8 +701,83 @@
     "collections": "Collections",
     "noCollections": "No collection records yet.",
     "downloadFailed": "Failed to download artifact",
+    "previewFailed": "Billing preview could not be generated for this branch-month.",
+    "recordCollection": "Record collection",
+    "fullyCollected": "Fully collected",
+    "voidedInvoice": "Voided invoice",
+    "voidLockedNotice": "Void is locked after collection records exist.",
     "noBillableVisits": "No billable visits are logged for this branch-month.",
     "reason": "Reason",
+    "lifecycle": {
+      "label": "Billing lifecycle",
+      "states": {
+        "not_ready": {
+          "label": "Not ready",
+          "description": "Select the clinic, branch, and billing month before generating a preview."
+        },
+        "ready_to_preview": {
+          "label": "Ready to preview",
+          "description": "The branch-month is selected. Generate or refresh the preview before issuing artifacts."
+        },
+        "preview_generated": {
+          "label": "Preview generated",
+          "description": "Usage and pricing are visible for review. Adjustments can still be added before issuing."
+        },
+        "invoice_generated": {
+          "label": "Invoice generated",
+          "description": "The PDF and data workbook exist, and the branch-month is locked."
+        },
+        "partially_collected": {
+          "label": "Partially collected",
+          "description": "At least one offline collection has been recorded and a balance remains."
+        },
+        "paid": {
+          "label": "Paid",
+          "description": "The invoice balance is fully collected."
+        },
+        "voided": {
+          "label": "Voided",
+          "description": "This invoice is cancelled and kept only as billing history."
+        }
+      },
+      "steps": {
+        "context": {
+          "label": "Context",
+          "description": "Clinic, branch, month"
+        },
+        "preview": {
+          "label": "Preview",
+          "description": "Usage and calculation"
+        },
+        "invoice": {
+          "label": "Invoice",
+          "description": "PDF and workbook"
+        },
+        "collection": {
+          "label": "Collection",
+          "description": "Offline payment records"
+        },
+        "closed": {
+          "label": "Closed",
+          "description": "Paid balance"
+        }
+      }
+    },
+    "artifacts": {
+      "title": "Current artifacts",
+      "currentVersion": "Latest generated version",
+      "pdf": "PDF",
+      "excel": "data sheet",
+      "download": "Download",
+      "generatedAt": "Generated {{date}}",
+      "notGenerated": "Not generated yet",
+      "freshness": {
+        "current": "Current",
+        "stale": "Review needed",
+        "missing": "Missing",
+        "unknown": "Unknown"
+      }
+    },
     "metrics": {
       "fixedFee": "Fixed fee",
       "includedVisits": "Included visits",
@@ -580,6 +830,8 @@
       "collectedAt": "Collected at",
       "method": "Method",
       "reference": "Reference",
+      "remainingBalance": "Remaining balance: {{amount}}",
+      "exceedsBalance": "Collection amount cannot exceed the remaining balance.",
       "submit": "Record collection"
     },
     "voidDialog": {

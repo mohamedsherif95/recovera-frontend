@@ -38,6 +38,7 @@ import PlatformBillingPage from '@/pages/platform-billing';
 import PlatformGovernancePage from '@/pages/platform-governance';
 import PlatformOnboardingPage from '@/pages/platform-onboarding';
 import PlatformAdminPage from '@/pages/platform-admin';
+import PlatformAdminAuditPage from '@/pages/platform-admin-audit';
 import InvoicesPage from '@/pages/invoices';
 
 const UnauthorizedPage = () => {
@@ -186,6 +187,23 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['users:manageRoles']}>
             <PlatformGovernancePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'audit',
+        element: (
+          <ProtectedRoute
+            anyPermissions={[
+              PERMISSIONS['branchSubscriptions:view'],
+              PERMISSIONS['platformBilling:view'],
+              PERMISSIONS['users:manageRoles'],
+              PERMISSIONS['clinics:viewAll'],
+              PERMISSIONS['branches:view'],
+              PERMISSIONS['users:viewAll'],
+            ]}
+          >
+            <PlatformAdminAuditPage />
           </ProtectedRoute>
         ),
       },

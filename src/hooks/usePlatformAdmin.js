@@ -18,3 +18,23 @@ export function usePlatformAdminOverview(options = {}) {
     ...queryOptions,
   });
 }
+
+export function usePlatformAdminAuditEvents(params = {}, options = {}) {
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
+
+  return useQuery({
+    queryKey: [
+      QUERY_KEYS.PLATFORM_ADMIN,
+      'audit',
+      platformClinicId ?? '__all__',
+      params,
+    ],
+    queryFn: () =>
+      platformAdminApi.getAuditEvents(params, {
+        platformClinicId,
+      }),
+    enabled,
+    staleTime: 30 * 1000,
+    ...queryOptions,
+  });
+}

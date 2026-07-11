@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   Banknote,
@@ -8,6 +9,9 @@ import {
   ClipboardCheck,
   Clock3,
   CreditCard,
+  FileWarning,
+  FileSearch,
+  History,
   Receipt,
   RefreshCcw,
   ShieldCheck,
@@ -70,6 +74,16 @@ const modules = [
     descriptionDefault: 'Audit role permissions and manage platform admin access.',
     href: '/platform-admin/governance',
     icon: ShieldCheck,
+    permission: PERMISSIONS['users:manageRoles'],
+  },
+  {
+    titleKey: 'platformAdmin.modules.audit.title',
+    titleDefault: 'Audit trail',
+    descriptionKey: 'platformAdmin.modules.audit.description',
+    descriptionDefault:
+      'Review platform billing, subscription, onboarding, and governance changes.',
+    href: '/platform-admin/audit',
+    icon: FileSearch,
     permission: PERMISSIONS['users:manageRoles'],
   },
   {
@@ -141,16 +155,24 @@ export default function PlatformAdminPage() {
         defaultValue: 'Ready to invoice',
       }),
       value: formatNumber(metrics.branchesReadyToInvoice),
-      helper: overview?.billingMonth
-        ? t('platformAdmin.metrics.billingMonth', {
-            month: formatMonth(overview.billingMonth),
-            defaultValue: 'Billing month {{month}}',
-          })
-        : t('platformAdmin.metrics.currentBillingMonth', {
-            defaultValue: 'Current billing month',
-          }),
+      helper: t('platformAdmin.metrics.readyAcrossMonths', {
+        current: formatNumber(metrics.branchesReadyToInvoiceCurrent),
+        previous: formatNumber(metrics.branchesReadyToInvoicePrevious),
+        defaultValue: '{{current}} current / {{previous}} previous',
+      }),
       icon: CheckCircle2,
       href: '/platform-admin/billing',
+    },
+    {
+      title: t('platformAdmin.metrics.suspendedBranches', {
+        defaultValue: 'Suspended branches',
+      }),
+      value: formatNumber(metrics.suspendedBranches),
+      helper: t('platformAdmin.metrics.readOnlyBranches', {
+        defaultValue: 'Read-only access blocks',
+      }),
+      icon: Clock3,
+      href: '/platform-admin/branch-subscriptions',
     },
     {
       title: t('platformAdmin.metrics.outstandingBalance', {
@@ -162,6 +184,18 @@ export default function PlatformAdminPage() {
         defaultValue: '{{count}} open invoices',
       }),
       icon: Banknote,
+      href: '/platform-admin/billing',
+    },
+    {
+      title: t('platformAdmin.metrics.overdueInvoices', {
+        defaultValue: 'Overdue invoices',
+      }),
+      value: formatNumber(metrics.overdueInvoices),
+      helper: t('platformAdmin.metrics.overdueBalance', {
+        amount: formatMoney(metrics.overdueBalance),
+        defaultValue: '{{amount}} overdue',
+      }),
+      icon: FileWarning,
       href: '/platform-admin/billing',
     },
   ];
@@ -233,7 +267,7 @@ export default function PlatformAdminPage() {
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             {metricCards.map((metric) => {
               const Icon = metric.icon;
               return (
@@ -263,6 +297,42 @@ export default function PlatformAdminPage() {
 
           <div className="grid gap-4 xl:grid-cols-3">
             <WorkQueueCard
+              title={t('platformAdmin.queues.readyInvoiceBranches.title', {
+                defaultValue: 'Ready to invoice',
+              })}
+              icon={CheckCircle2}
+              items={workQueues.readyInvoiceBranches}
+              empty={t('platformAdmin.queues.readyInvoiceBranches.empty', {
+                defaultValue: 'No current or previous branch-month is ready.',
+              })}
+              href="/platform-admin/billing"
+              reviewLabel={t('platformAdmin.queues.openBilling', {
+                defaultValue: 'Open billing',
+              })}
+              renderItem={(item) => (
+                <>
+                  <div>
+                    <p className="font-medium">{item.branchName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.clinicName}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">
+                      {formatMonth(item.billingMonth)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.packageName ||
+                        t('platformAdmin.queues.flexiblePlan', {
+                          defaultValue: 'Flexible plan',
+                        })}
+                    </p>
+                  </div>
+                </>
+              )}
+            />
+
+            <WorkQueueCard
               title={t('platformAdmin.queues.missingPricingBranches.title', {
                 defaultValue: 'Branches needing pricing',
               })}
@@ -290,6 +360,39 @@ export default function PlatformAdminPage() {
               )}
             />
 
+            <WorkQueueCard
+              title={t('platformAdmin.queues.overdueInvoices.title', {
+                defaultValue: 'Overdue invoices',
+              })}
+              icon={FileWarning}
+              items={workQueues.overdueInvoices}
+              empty={t('platformAdmin.queues.overdueInvoices.empty', {
+                defaultValue: 'No older open invoices need attention.',
+              })}
+              href="/platform-admin/billing"
+              reviewLabel={t('platformAdmin.queues.openBilling', {
+                defaultValue: 'Open billing',
+              })}
+              renderItem={(item) => (
+                <>
+                  <div>
+                    <p className="font-medium">{item.invoiceNumber}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.clinicName} / {item.branchName}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{formatMoney(item.balanceAmount)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatMonth(item.billingMonth)}
+                    </p>
+                  </div>
+                </>
+              )}
+            />
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-3">
             <WorkQueueCard
               title={t('platformAdmin.queues.suspendedBranches.title', {
                 defaultValue: 'Suspended branches',
@@ -350,16 +453,59 @@ export default function PlatformAdminPage() {
                 </>
               )}
             />
+
+            <WorkQueueCard
+              title={t('platformAdmin.queues.recentHighImpactActions.title', {
+                defaultValue: 'Recent high-impact changes',
+              })}
+              icon={Activity}
+              items={workQueues.recentHighImpactActions}
+              empty={t('platformAdmin.queues.recentHighImpactActions.empty', {
+                defaultValue: 'No platform admin changes recorded yet.',
+              })}
+              href="/platform-admin/audit"
+              getItemHref={(item) => item.workbenchHref || '/platform-admin'}
+              reviewLabel={t('platformAdmin.queues.openAudit', {
+                defaultValue: 'Open audit',
+              })}
+              renderItem={(item) => (
+                <>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{item.actionLabel}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {item.branchName || item.clinicName || item.actorName}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs font-semibold">{item.actorName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(item.createdAt)}
+                    </p>
+                  </div>
+                </>
+              )}
+            />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  {t('platformAdmin.collections.recent', {
-                    defaultValue: 'Recent collections',
-                  })}
-                </CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    {t('platformAdmin.collections.recent', {
+                      defaultValue: 'Recent collections',
+                    })}
+                  </CardTitle>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to="/platform-admin/billing">
+                      {t('platformAdmin.queues.openBilling', {
+                        defaultValue: 'Open billing',
+                      })}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 {(workQueues.recentCollections || []).length === 0 ? (
@@ -419,6 +565,16 @@ export default function PlatformAdminPage() {
                   </span>
                   <span className="font-semibold">
                     {formatNumber(metrics.partiallyPaidInvoices)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {t('platformAdmin.billingPosture.overdueInvoices', {
+                      defaultValue: 'Overdue invoices',
+                    })}
+                  </span>
+                  <span className="font-semibold">
+                    {formatNumber(metrics.overdueInvoices)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -488,6 +644,7 @@ function WorkQueueCard({
   items = [],
   empty,
   href,
+  getItemHref,
   reviewLabel = 'Review',
   renderItem,
 }) {
@@ -502,12 +659,13 @@ function WorkQueueCard({
           <p className="py-4 text-sm text-muted-foreground">{empty}</p>
         ) : (
           items.map((item) => (
-            <div
-              key={`${title}-${item.branchId ?? item.id}`}
+            <Link
+              key={`${title}-${item.id ?? item.branchId}-${item.billingMonth ?? item.createdAt ?? ''}`}
+              to={getItemHref ? getItemHref(item) : href}
               className="flex min-h-14 items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
             >
               {renderItem(item)}
-            </div>
+            </Link>
           ))
         )}
         <Button asChild variant="outline" size="sm" className="mt-2 w-full">

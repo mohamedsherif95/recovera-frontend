@@ -9,4 +9,12 @@ export const platformAdminApi = {
     );
     return response.data;
   },
+
+  getAuditEvents: async (params = {}, options = {}) => {
+    const config = buildScopedRequestConfig(options);
+    config.params = params;
+
+    const response = await apiClient.get('/platform/admin/audit', config);
+    return response.data;
+  },
 };

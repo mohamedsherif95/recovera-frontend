@@ -34,7 +34,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, RefreshCcw, ShieldCheck, UserPlus } from 'lucide-react';
+import {
+  Building2,
+  ClipboardList,
+  Loader2,
+  MapPin,
+  RefreshCcw,
+  Search,
+  ShieldCheck,
+  UserCheck,
+  UserCog,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
 
@@ -64,13 +76,27 @@ const hasRoleName = (user, roleName) =>
 const isAdminAccount = (user) =>
   user?.isPlatformAdmin || hasRoleName(user, USER_ROLES.ADMIN);
 
-function AdminMetric({ label, value }) {
+function AdminMetric({ label, value, helper, icon: Icon = Users, tone = 'default' }) {
+  const toneClass =
+    {
+      default: 'bg-primary/10 text-primary',
+      success: 'bg-emerald-500/10 text-emerald-700',
+      warning: 'bg-amber-500/10 text-amber-700',
+      muted: 'bg-muted text-muted-foreground',
+    }[tone] || 'bg-primary/10 text-primary';
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+    <Card className="border-border/70">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+        <span className={`rounded-md p-2 ${toneClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
       </CardHeader>
-      <CardContent className="text-2xl font-semibold">{value}</CardContent>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        {helper && <div className="mt-1 text-xs text-muted-foreground">{helper}</div>}
+      </CardContent>
     </Card>
   );
 }
@@ -103,6 +129,8 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [branchFilter, setBranchFilter] = useState('all');
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
+  const [userSearch, setUserSearch] = useState('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
@@ -211,44 +239,8 @@ export default function UsersPage() {
     return [];
   }, [data]);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      if (roleFilter !== 'all') {
-        const hasRole = user.roles?.some((r) => r.name === roleFilter);
-        if (!hasRole) return false;
-      }
-
-      if (statusFilter === 'active' && user.isActive === false) return false;
-      if (statusFilter === 'inactive' && user.isActive === true) return false;
-
-      return true;
-    });
-  }, [users, roleFilter, statusFilter]);
-
   const totalUsers = data?.total ?? data?.meta?.total ?? users.length;
   const totalPages = totalUsers ? Math.ceil(totalUsers / pageSize) : 1;
-  const userSummary = useMemo(() => {
-    const active = users.filter((user) => user.isActive !== false).length;
-    const managers = users.filter(
-      (user) =>
-        hasRoleName(user, USER_ROLES.MANAGER) ||
-        hasRoleName(user, USER_ROLES.BRANCH_MANAGER),
-    ).length;
-    const logisticsUsers = users.filter(
-      (user) =>
-        hasRoleName(user, USER_ROLES.SECRETARY) ||
-        hasRoleName(user, USER_ROLES.DOCTOR),
-    ).length;
-    const admins = users.filter(isAdminAccount).length;
-
-    return {
-      total: totalUsers,
-      active,
-      managers,
-      logisticsUsers,
-      admins,
-    };
-  }, [totalUsers, users]);
 
   const getUserBranchIds = (user) => {
     if (Array.isArray(user?.branchAssignments) && user.branchAssignments.length > 0) {
@@ -294,6 +286,111 @@ export default function UsersPage() {
     );
     return branch?.name || fallback || `#${branchId}`;
   };
+
+  const getRoleNames = (user) =>
+    user?.roles?.map((role) => role?.name).filter(Boolean) || [];
+
+  const getSearchableBranchLabels = (user) => {
+    const branchIds = getUserBranchIds(user);
+    if (!branchIds.length) return [];
+
+    return branchIds.map((branchId) =>
+      getBranchName(
+        branchId,
+        user.branchAssignments?.find(
+          (assignment) => Number(assignment.branchId) === Number(branchId),
+        )?.branch?.name || user.branch?.name,
+      ),
+    );
+  };
+
+  const filteredUsers = useMemo(() => {
+    const normalizedSearch = userSearch.trim().toLowerCase();
+
+    return users.filter((user) => {
+      const roleNames = getRoleNames(user);
+      const assignedBranchIds = getUserBranchIds(user);
+
+      if (roleFilter !== 'all' && !roleNames.includes(roleFilter)) return false;
+
+      if (statusFilter === 'active' && user.isActive === false) return false;
+      if (statusFilter === 'inactive' && user.isActive !== false) return false;
+
+      if (assignmentFilter === 'assigned' && assignedBranchIds.length === 0) return false;
+      if (assignmentFilter === 'unassigned' && assignedBranchIds.length > 0) return false;
+      if (assignmentFilter === 'multi_branch' && assignedBranchIds.length <= 1) return false;
+
+      if (!normalizedSearch) return true;
+
+      const roleLabels = roleNames.map((name) =>
+        t(`users.${name}`, {
+          defaultValue: name,
+        }),
+      );
+      const branchLabels = getSearchableBranchLabels(user);
+      const searchableText = [
+        user.fullName,
+        user.username,
+        user.email,
+        user.branch?.name,
+        ...roleNames,
+        ...roleLabels,
+        ...branchLabels,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return searchableText.includes(normalizedSearch);
+    });
+  }, [
+    users,
+    roleFilter,
+    statusFilter,
+    assignmentFilter,
+    userSearch,
+    currentBranches,
+    t,
+  ]);
+
+  const userSummary = useMemo(() => {
+    const active = users.filter((user) => user.isActive !== false).length;
+    const inactive = users.filter((user) => user.isActive === false).length;
+    const managers = users.filter(
+      (user) =>
+        hasRoleName(user, USER_ROLES.MANAGER) ||
+        hasRoleName(user, USER_ROLES.BRANCH_MANAGER),
+    ).length;
+    const logisticsUsers = users.filter(
+      (user) =>
+        hasRoleName(user, USER_ROLES.SECRETARY) ||
+        hasRoleName(user, USER_ROLES.DOCTOR),
+    ).length;
+    const admins = users.filter(isAdminAccount).length;
+    const unassigned = users.filter(
+      (user) => !isAdminAccount(user) && getUserBranchIds(user).length === 0,
+    ).length;
+    const multiBranch = users.filter((user) => getUserBranchIds(user).length > 1).length;
+    const coveredBranchIds = new Set(
+      users.flatMap((user) => getUserBranchIds(user)).map((branchId) => Number(branchId)),
+    );
+    const coveredBranches = currentBranches.filter((branch) =>
+      coveredBranchIds.has(Number(branch.id)),
+    ).length;
+
+    return {
+      total: totalUsers,
+      active,
+      inactive,
+      managers,
+      logisticsUsers,
+      admins,
+      unassigned,
+      multiBranch,
+      coveredBranches,
+      branchCount: currentBranches.length,
+    };
+  }, [currentBranches, totalUsers, users]);
 
   const handleToggleActive = (user) => {
     if (!canToggleStatus) return;
@@ -384,6 +481,10 @@ export default function UsersPage() {
       setBranchFilter('all');
     }
   }, [branchFilter, currentBranches]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [roleFilter, statusFilter, branchFilter, assignmentFilter, userSearch]);
 
   useEffect(() => {
     if (!createDialogOpen) return;
@@ -584,8 +685,385 @@ export default function UsersPage() {
       });
   };
 
-  const columns = useMemo(
-    () => [
+  const columns = useMemo(() => {
+    const roleOptions = allRoles.filter((role) => role.name !== USER_ROLES.ADMIN);
+
+    const renderRoleBadges = (row) => {
+      const names = getRoleNames(row);
+      if (!names.length) return <span className="text-muted-foreground">--</span>;
+
+      return (
+        <div className="flex flex-wrap gap-1.5">
+          {names.map((name) => (
+            <Badge
+              key={name}
+              variant={name === USER_ROLES.ADMIN ? 'destructive' : 'secondary'}
+              className="rounded-full px-2.5 py-1"
+            >
+              {name === USER_ROLES.ADMIN && <ShieldCheck className="mr-1 h-3 w-3" />}
+              {t(`users.${name}`, { defaultValue: name })}
+            </Badge>
+          ))}
+        </div>
+      );
+    };
+
+    const renderRoleControls = (row) => {
+      if (!canManageRoles) return null;
+
+      if (isAdminAccount(row)) {
+        return (
+          <div className="text-xs text-muted-foreground">
+            {t('platformAdmin.userAccess.managedInGovernance', {
+              defaultValue: 'Managed in governance',
+            })}
+          </div>
+        );
+      }
+
+      const names = getRoleNames(row);
+      return (
+        <div className="space-y-1.5">
+          <div className="text-[11px] font-medium uppercase text-muted-foreground">
+            {t('platformAdmin.userAccess.roleControls', {
+              defaultValue: 'Role controls',
+            })}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {roleOptions.map((role) => {
+              const isAssigned = names.includes(role.name);
+              return (
+                <Button
+                  key={role.name}
+                  size="sm"
+                  variant={isAssigned ? 'secondary' : 'ghost'}
+                  className={`h-7 rounded-full border px-3 text-xs ${
+                    isAssigned
+                      ? 'border-primary/20 text-foreground'
+                      : 'border-transparent text-muted-foreground'
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRoleChange(row, role.name);
+                  }}
+                >
+                  {t(`users.${role.name}`, { defaultValue: role.name })}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    const renderBranchReach = (row, compact = false) => {
+      const assignedBranchIds = getUserBranchIds(row);
+      const primaryBranchId = getUserPrimaryBranchId(row);
+      const assignedBranchLabels = assignedBranchIds.map((branchId) =>
+        getBranchName(
+          branchId,
+          row.branchAssignments?.find(
+            (assignment) => Number(assignment.branchId) === Number(branchId),
+          )?.branch?.name || row.branch?.name,
+        ),
+      );
+      const primaryLabel =
+        primaryBranchId != null
+          ? getBranchName(primaryBranchId, row.branch?.name)
+          : null;
+      const isPlatformAdminUser = isAdminAccount(row);
+      const canEditBranchAssignment = canToggleStatus && !isPlatformAdminUser;
+
+      if (isPlatformAdminUser) {
+        return (
+          <div className="min-w-[220px] space-y-1.5">
+            <Badge variant="secondary" className="rounded-full px-3 py-1">
+              <ShieldCheck className="mr-1 h-3 w-3" />
+              {t('platformAdmin.userAccess.globalPlatformAccess', {
+                defaultValue: 'Global platform access',
+              })}
+            </Badge>
+            <div className="text-xs text-muted-foreground">
+              {t('platformAdmin.userAccess.managedInGovernance', {
+                defaultValue: 'Managed in governance',
+              })}
+            </div>
+          </div>
+        );
+      }
+
+      if (compact) {
+        const summary = assignedBranchLabels.length
+          ? assignedBranchLabels.join(', ')
+          : row.branch?.name ||
+            t('platformAdmin.userAccess.unassigned', { defaultValue: 'Unassigned' });
+
+        return (
+          <div className="flex min-w-[220px] items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm">{summary}</div>
+              {primaryLabel && assignedBranchLabels.length > 1 && (
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {t('branches.primaryBranch', { defaultValue: 'Primary branch' })}: {primaryLabel}
+                </div>
+              )}
+            </div>
+            {canEditBranchAssignment && currentBranches.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-3 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openAssignmentDialog(row);
+                }}
+              >
+                {t('common.manage', { defaultValue: 'Manage' })}
+              </Button>
+            )}
+          </div>
+        );
+      }
+
+      const displayedBranches = assignedBranchLabels.slice(0, 3);
+      const hiddenBranchCount = Math.max(0, assignedBranchLabels.length - displayedBranches.length);
+
+      return (
+        <div className="min-w-[240px] space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {displayedBranches.length ? (
+              displayedBranches.map((label) => (
+                <Badge key={label} variant="outline" className="rounded-full px-2.5 py-1">
+                  <Building2 className="mr-1 h-3 w-3" />
+                  {label}
+                </Badge>
+              ))
+            ) : (
+              <Badge
+                variant="outline"
+                className="rounded-full border-amber-300 bg-amber-50 px-2.5 py-1 text-amber-800"
+              >
+                {t('platformAdmin.userAccess.unassigned', {
+                  defaultValue: 'Unassigned',
+                })}
+              </Badge>
+            )}
+            {hiddenBranchCount > 0 && (
+              <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                {t('platformAdmin.userAccess.moreBranches', {
+                  count: hiddenBranchCount,
+                  defaultValue: '+{{count}} more',
+                })}
+              </Badge>
+            )}
+          </div>
+          {primaryLabel && assignedBranchLabels.length > 1 && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span>
+                {t('branches.primaryBranch', { defaultValue: 'Primary branch' })}: {primaryLabel}
+              </span>
+            </div>
+          )}
+          {canEditBranchAssignment && currentBranches.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-full px-3 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                openAssignmentDialog(row);
+              }}
+            >
+              {t('platformAdmin.userAccess.manageBranchReach', {
+                defaultValue: 'Manage branch reach',
+              })}
+            </Button>
+          )}
+        </div>
+      );
+    };
+
+    const renderClinicalControls = (row) => {
+      if (!isDoctor(row)) {
+        return (
+          <span className="text-xs text-muted-foreground">
+            {t('platformAdmin.userAccess.clinicalNotRequired', {
+              defaultValue: 'Not a clinical user',
+            })}
+          </span>
+        );
+      }
+
+      const shifts = row.shifts || [];
+      const canPerformAssessments = row.canPerformAssessments === true;
+
+      if (!canToggleStatus) {
+        return (
+          <div className="min-w-[220px] space-y-1 text-xs text-muted-foreground">
+            <div>
+              {shifts.length
+                ? shifts.map((shift) => t(`shifts.${shift}`, { defaultValue: shift })).join(', ')
+                : '--'}
+            </div>
+            <div>
+              {canPerformAssessments
+                ? t('users.assessmentAllowed', { defaultValue: 'Allowed' })
+                : t('users.assessmentNotAllowed', { defaultValue: 'Not allowed' })}
+            </div>
+            <div>{row.dailyOpnsOrder ?? '--'}</div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-w-[250px] space-y-2">
+          <div className="flex flex-wrap gap-1">
+            {[DOCTOR_SHIFT.SATURDAY, DOCTOR_SHIFT.SUNDAY].map((shiftVal) => {
+              const isAssigned = shifts.includes(shiftVal);
+              return (
+                <Button
+                  key={shiftVal}
+                  size="sm"
+                  variant={isAssigned ? 'secondary' : 'ghost'}
+                  className="h-7 rounded-full border px-3 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShiftToggle(row, shiftVal);
+                  }}
+                  disabled={setUserShifts.isPending}
+                >
+                  {t(`shifts.${shiftVal}`, { defaultValue: shiftVal })}
+                </Button>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              variant={canPerformAssessments ? 'secondary' : 'ghost'}
+              className="h-7 rounded-full border px-3 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAssessmentPermissionToggle(row);
+              }}
+              disabled={updateUser.isPending}
+            >
+              {canPerformAssessments
+                ? t('users.assessmentAllowed', { defaultValue: 'Allowed' })
+                : t('users.assessmentNotAllowed', { defaultValue: 'Not allowed' })}
+            </Button>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>
+                {t('platformAdmin.userAccess.dailyOrderShort', {
+                  defaultValue: 'Order',
+                })}
+              </span>
+              <Input
+                key={`${row.id}-${row.dailyOpnsOrder ?? ''}`}
+                type="number"
+                min={1}
+                defaultValue={row.dailyOpnsOrder ?? ''}
+                className="h-7 w-16 px-2 text-xs"
+                onBlur={(e) => handleDailyOpsOrderChange(row, e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
+                disabled={updateUser.isPending}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const renderStatusControl = (row) => {
+      const isActive = row.isActive !== false;
+
+      return (
+        <Button
+          size="sm"
+          variant={isActive ? 'secondary' : 'outline'}
+          className={`h-8 w-full rounded-full px-3 text-xs ${
+            isActive
+              ? 'border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+              : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleActive(row);
+          }}
+          disabled={!canToggleStatus || toggleActive.isPending}
+        >
+          {isActive ? t('users.active') : t('users.inactive')}
+        </Button>
+      );
+    };
+
+    if (isPlatformAdminRoute) {
+      return [
+        {
+          key: 'user',
+          header: t('platformAdmin.userAccess.columns.user', { defaultValue: 'User' }),
+          cell: (row) => (
+            <div className="min-w-[220px] space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">
+                  {row.fullName || row.username || `#${row.id}`}
+                </span>
+                {isAdminAccount(row) && (
+                  <Badge variant="destructive" className="rounded-full px-2.5 py-1">
+                    <ShieldCheck className="mr-1 h-3 w-3" />
+                    {t('users.admin', { defaultValue: 'Admin' })}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {row.username || '--'}
+                {row.email ? ` / ${row.email}` : ''}
+              </div>
+            </div>
+          ),
+        },
+        {
+          key: 'accessProfile',
+          header: t('platformAdmin.userAccess.columns.accessProfile', {
+            defaultValue: 'Access profile',
+          }),
+          cell: (row) => (
+            <div className="min-w-[260px] space-y-2">
+              {renderRoleBadges(row)}
+              {renderRoleControls(row)}
+            </div>
+          ),
+        },
+        {
+          key: 'branchReach',
+          header: t('platformAdmin.userAccess.columns.branchReach', {
+            defaultValue: 'Branch reach',
+          }),
+          cell: (row) => renderBranchReach(row),
+        },
+        {
+          key: 'clinicalControls',
+          header: t('platformAdmin.userAccess.columns.clinicalControls', {
+            defaultValue: 'Clinical controls',
+          }),
+          cell: (row) => renderClinicalControls(row),
+        },
+        {
+          key: 'status',
+          header: t('users.status'),
+          className: 'w-36',
+          cellClassName: 'w-36',
+          cell: (row) => renderStatusControl(row),
+        },
+      ];
+    }
+
+    return [
       {
         key: 'fullName',
         header: t('users.fullName'),
@@ -604,59 +1082,13 @@ export default function UsersPage() {
       {
         key: 'branch',
         header: t('users.branches', { defaultValue: 'Branches' }),
-        cell: (row) => {
-          const assignedBranchIds = getUserBranchIds(row);
-          const primaryBranchId = getUserPrimaryBranchId(row);
-          const assignedBranchLabels = assignedBranchIds.map((branchId) =>
-            getBranchName(
-              branchId,
-              row.branchAssignments?.find(
-                (assignment) => Number(assignment.branchId) === Number(branchId),
-              )?.branch?.name,
-            ),
-          );
-          const summary = assignedBranchLabels.length
-            ? assignedBranchLabels.join(', ')
-            : row.branch?.name || '--';
-          const primaryLabel =
-            primaryBranchId != null
-              ? getBranchName(primaryBranchId, row.branch?.name)
-              : null;
-          const isPlatformAdminUser = isAdminAccount(row);
-          const canEditBranchAssignment = canToggleStatus && !isPlatformAdminUser;
-
-          return (
-            <div className="flex min-w-[220px] items-center gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm">{summary}</div>
-                {primaryLabel && assignedBranchLabels.length > 1 && (
-                  <div className="truncate text-[11px] text-muted-foreground">
-                    {t('branches.primaryBranch', { defaultValue: 'Primary branch' })}: {primaryLabel}
-                  </div>
-                )}
-              </div>
-              {canEditBranchAssignment && currentBranches.length > 0 && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  className="h-7 px-3 text-xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openAssignmentDialog(row);
-                  }}
-                >
-                  {t('common.manage', { defaultValue: 'Manage' })}
-                </Button>
-              )}
-            </div>
-          );
-        },
+        cell: (row) => renderBranchReach(row, true),
       },
       {
         key: 'roles',
         header: t('users.roles'),
         cell: (row) => {
-          const names = row.roles?.map((r) => r.name) || [];
+          const names = getRoleNames(row);
           if (!canManageRoles) {
             return names.length
               ? names
@@ -670,32 +1102,9 @@ export default function UsersPage() {
           }
 
           return (
-            <div className="flex flex-wrap gap-1">
-              {isAdminAccount(row) && (
-                <Badge variant="destructive" className="rounded-full px-3 py-1">
-                  <ShieldCheck className="mr-1 h-3 w-3" />
-                  {t('users.admin', { defaultValue: 'Admin' })}
-                </Badge>
-              )}
-              {allRoles
-                .filter((role) => role.name !== USER_ROLES.ADMIN)
-                .map((role) => {
-                const isAssigned = names.includes(role.name);
-                return (
-                  <Button
-                    key={role.name}
-                    size="xs"
-                    variant={isAssigned ? 'default' : 'outline'}
-                    className="px-4 py-1 rounded-full text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRoleChange(row, role.name);
-                    }}
-                  >
-                    {t(`users.${role.name}`, { defaultValue: role.name })}
-                  </Button>
-                );
-              })}
+            <div className="space-y-2">
+              {renderRoleBadges(row)}
+              {renderRoleControls(row)}
             </div>
           );
         },
@@ -720,9 +1129,9 @@ export default function UsersPage() {
                 return (
                   <Button
                     key={shiftVal}
-                    size="xs"
+                    size="sm"
                     variant={isAssigned ? 'default' : 'outline'}
-                    className="px-3 py-1 rounded-full text-xs"
+                    className="h-7 rounded-full px-3 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleShiftToggle(row, shiftVal);
@@ -756,7 +1165,7 @@ export default function UsersPage() {
 
           return (
             <Button
-              size="xs"
+              size="sm"
               variant={canPerformAssessments ? 'default' : 'outline'}
               className="h-7 rounded-full px-3 text-xs"
               onClick={(e) => {
@@ -804,33 +1213,20 @@ export default function UsersPage() {
         header: t('users.status'),
         className: 'w-32',
         cellClassName: 'w-32',
-        cell: (row) => (
-          <Button
-            size="xs"
-            variant={row.isActive ? 'default' : 'outline'}
-            className="h-7 w-full rounded-full px-3 text-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleActive(row);
-            }}
-            disabled={!canToggleStatus || toggleActive.isPending}
-          >
-            {row.isActive ? t('users.active') : t('users.inactive')}
-          </Button>
-        ),
+        cell: (row) => renderStatusControl(row),
       },
-    ],
-    [
-      t,
-      allRoles,
-      canManageRoles,
-      canToggleStatus,
-      currentBranches,
-      toggleActive.isPending,
-      setUserShifts.isPending,
-      updateUser.isPending,
-    ]
-  );
+    ];
+  }, [
+    t,
+    allRoles,
+    canManageRoles,
+    canToggleStatus,
+    currentBranches,
+    isPlatformAdminRoute,
+    toggleActive.isPending,
+    setUserShifts.isPending,
+    updateUser.isPending,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -899,42 +1295,90 @@ export default function UsersPage() {
             defaultValue: 'Users in scope',
           })}
           value={userSummary.total}
+          helper={t('platformAdmin.userAccess.shownCount', {
+            count: filteredUsers.length,
+            defaultValue: '{{count}} shown',
+          })}
+          icon={Users}
         />
         <AdminMetric
           label={t('platformAdmin.userAccess.metrics.activeUsers', {
             defaultValue: 'Active users',
           })}
           value={userSummary.active}
-        />
-        <AdminMetric
-          label={t('platformAdmin.userAccess.metrics.managers', {
-            defaultValue: 'Managers',
+          helper={t('platformAdmin.userAccess.metrics.inactiveUsers', {
+            count: userSummary.inactive,
+            defaultValue: '{{count}} inactive',
           })}
-          value={userSummary.managers}
+          icon={UserCheck}
+          tone="success"
         />
-        <AdminMetric
-          label={
-            isPlatformAdminRoute
-              ? t('platformAdmin.userAccess.metrics.adminAccounts', {
-                  defaultValue: 'Admin accounts',
-                })
-              : t('platformAdmin.userAccess.metrics.clinicalLogistics', {
-                  defaultValue: 'Clinical/logistics',
-                })
-          }
-          value={isPlatformAdminRoute ? userSummary.admins : userSummary.logisticsUsers}
-        />
+        {isPlatformAdminRoute ? (
+          <>
+            <AdminMetric
+              label={t('platformAdmin.userAccess.metrics.unassignedUsers', {
+                defaultValue: 'Unassigned users',
+              })}
+              value={userSummary.unassigned}
+              helper={t('platformAdmin.userAccess.metrics.branchCoverageHelper', {
+                assigned: userSummary.coveredBranches,
+                total: userSummary.branchCount,
+                defaultValue: '{{assigned}} of {{total}} branches covered',
+              })}
+              icon={MapPin}
+              tone={userSummary.unassigned > 0 ? 'warning' : 'muted'}
+            />
+            <AdminMetric
+              label={t('platformAdmin.userAccess.metrics.adminAccounts', {
+                defaultValue: 'Admin accounts',
+              })}
+              value={userSummary.admins}
+              helper={t('platformAdmin.userAccess.managedInGovernance', {
+                defaultValue: 'Managed in governance',
+              })}
+              icon={ShieldCheck}
+              tone="muted"
+            />
+          </>
+        ) : (
+          <>
+            <AdminMetric
+              label={t('platformAdmin.userAccess.metrics.managers', {
+                defaultValue: 'Managers',
+              })}
+              value={userSummary.managers}
+              icon={UserCog}
+            />
+            <AdminMetric
+              label={t('platformAdmin.userAccess.metrics.clinicalLogistics', {
+                defaultValue: 'Clinical/logistics',
+              })}
+              value={userSummary.logisticsUsers}
+              icon={ClipboardList}
+            />
+          </>
+        )}
       </div>
 
       <Card>
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base">
-            {isPlatformAdminRoute
-              ? t('platformAdmin.userAccess.directory', {
-                  defaultValue: 'Clinic user directory',
-                })
-              : t('users.title')}
-          </CardTitle>
+          <div className="space-y-1">
+            <CardTitle className="text-base">
+              {isPlatformAdminRoute
+                ? t('platformAdmin.userAccess.directory', {
+                    defaultValue: 'User access registry',
+                  })
+                : t('users.title')}
+            </CardTitle>
+            {isPlatformAdminRoute && (
+              <p className="text-sm text-muted-foreground">
+                {t('platformAdmin.userAccess.directoryDescription', {
+                  defaultValue:
+                    'Review branch reach, clinic roles, and clinical controls for the selected clinic group.',
+                })}
+              </p>
+            )}
+          </div>
           <Badge variant="outline">
             {t('platformAdmin.userAccess.shownCount', {
               count: filteredUsers.length,
@@ -943,8 +1387,21 @@ export default function UsersPage() {
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-2 border-y bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-col gap-3 border-y bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+            {isPlatformAdminRoute && (
+              <div className="relative w-full lg:max-w-sm">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={userSearch}
+                  onChange={(event) => setUserSearch(event.target.value)}
+                  placeholder={t('platformAdmin.userAccess.searchPlaceholder', {
+                    defaultValue: 'Search user, email, role, or branch...',
+                  })}
+                  className="h-9 pl-9"
+                />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span>{t('users.role')}</span>
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -975,6 +1432,47 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {isPlatformAdminRoute && (
+                <div className="flex items-center gap-2">
+                  <span>
+                    {t('platformAdmin.userAccess.assignmentState', {
+                      defaultValue: 'Branch assignment',
+                    })}
+                  </span>
+                  <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                    <SelectTrigger className="h-8 w-[190px]">
+                      <SelectValue
+                        placeholder={t('platformAdmin.userAccess.assignmentState', {
+                          defaultValue: 'Branch assignment',
+                        })}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        {t('platformAdmin.userAccess.allAssignmentStates', {
+                          defaultValue: 'All assignment states',
+                        })}
+                      </SelectItem>
+                      <SelectItem value="assigned">
+                        {t('platformAdmin.userAccess.assignedUsers', {
+                          defaultValue: 'Assigned users',
+                        })}
+                      </SelectItem>
+                      <SelectItem value="unassigned">
+                        {t('platformAdmin.userAccess.unassignedUsers', {
+                          defaultValue: 'Unassigned users',
+                        })}
+                      </SelectItem>
+                      <SelectItem value="multi_branch">
+                        {t('platformAdmin.userAccess.multiBranchUsers', {
+                          defaultValue: 'Multi-branch users',
+                        })}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {currentBranches.length > 0 && (
                 <div className="flex items-center gap-2">
@@ -1012,7 +1510,13 @@ export default function UsersPage() {
           ) : isError ? (
             <div className="p-6 text-center text-destructive">{t('messages.errorOccurred')}</div>
           ) : filteredUsers.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">{t('users.noUsers')}</div>
+            <div className="p-6 text-center text-muted-foreground">
+              {isPlatformAdminRoute
+                ? t('platformAdmin.userAccess.noFilteredUsers', {
+                    defaultValue: 'No users match these filters.',
+                  })
+                : t('users.noUsers')}
+            </div>
           ) : (
             <>
               <DataTable

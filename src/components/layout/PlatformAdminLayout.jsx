@@ -6,6 +6,7 @@ import {
   Building2,
   ClipboardCheck,
   CreditCard,
+  FileSearch,
   Home,
   LayoutDashboard,
   LogOut,
@@ -94,6 +95,20 @@ const platformNavigation = [
     href: '/platform-admin/governance',
     icon: ShieldCheck,
     permission: PERMISSIONS['users:manageRoles'],
+  },
+  {
+    name: 'platformAdmin.audit.nav',
+    label: 'Audit trail',
+    href: '/platform-admin/audit',
+    icon: FileSearch,
+    anyPermissions: [
+      PERMISSIONS['branchSubscriptions:view'],
+      PERMISSIONS['platformBilling:view'],
+      PERMISSIONS['users:manageRoles'],
+      PERMISSIONS['clinics:viewAll'],
+      PERMISSIONS['branches:view'],
+      PERMISSIONS['users:viewAll'],
+    ],
   },
   {
     name: 'nav.branchSubscriptions',

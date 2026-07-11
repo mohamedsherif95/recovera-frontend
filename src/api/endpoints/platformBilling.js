@@ -7,8 +7,14 @@ const downloadBlob = async (url, options = {}) => {
     responseType: 'blob',
   });
   const disposition = response.headers?.['content-disposition'] || '';
-  const fileNameMatch = disposition.match(/filename="?(.*?)"?$/);
-  const fileName = fileNameMatch?.[1] || 'platform-billing-artifact';
+  const encodedFileNameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  const quotedFileNameMatch = disposition.match(/filename="([^"]+)"/i);
+  const plainFileNameMatch = disposition.match(/filename=([^;]+)/i);
+  const fileName = encodedFileNameMatch?.[1]
+    ? decodeURIComponent(encodedFileNameMatch[1])
+    : quotedFileNameMatch?.[1] ||
+      plainFileNameMatch?.[1]?.trim() ||
+      'platform-billing-artifact';
   const blobUrl = window.URL.createObjectURL(response.data);
   const anchor = document.createElement('a');
   anchor.href = blobUrl;

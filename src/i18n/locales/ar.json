@@ -938,6 +938,59 @@
     "collapseSidebar": "طي الشريط الجانبي",
     "expandSidebar": "توسيع الشريط الجانبي",
     "governance": "الحوكمة",
+    "audit": {
+      "nav": "سجل التدقيق",
+      "badge": "تدقيق الإدارة",
+      "title": "سجل التدقيق",
+      "description": "راجع تغييرات فوترة المنصة واشتراكات الفروع والتهيئة والحوكمة من لوحة إدارة المنصة.",
+      "refresh": "تحديث سجل التدقيق",
+      "eventsTitle": "أحداث المنصة",
+      "resultSummary": "{{count}} حدث مسجل",
+      "searchPlaceholder": "ابحث بالمسؤول أو الفرع أو السبب أو الرابط...",
+      "areaLabel": "المجال",
+      "pageSize": "حجم الصفحة",
+      "loadError": "تعذر تحميل أحداث تدقيق المنصة.",
+      "empty": "لا توجد أحداث تدقيق تطابق هذه الفلاتر.",
+      "inspect": "فحص الحدث",
+      "openWorkbench": "فتح مساحة العمل",
+      "detailTitle": "حدث تدقيق",
+      "request": "الطلب",
+      "columns": {
+        "area": "المجال",
+        "actor": "المسؤول",
+        "reason": "السبب"
+      },
+      "areas": {
+        "all": "كل المجالات",
+        "billing": "الفوترة",
+        "subscriptions": "الاشتراكات",
+        "tenant_setup": "تهيئة العملاء",
+        "governance": "الحوكمة"
+      },
+      "status": {
+        "all": "كل الحالات",
+        "success": "نجح",
+        "error": "خطأ"
+      },
+      "actionLabels": {
+        "collectionRecorded": "تم تسجيل تحصيل",
+        "invoiceVoided": "تم إلغاء الفاتورة",
+        "billingAdjustmentRecorded": "تم تسجيل تسوية فوترة",
+        "invoiceGenerated": "تم إنشاء فاتورة",
+        "branchAccessChanged": "تم تغيير وصول الفرع",
+        "profileMixChanged": "تم تغيير ملفات العيادة",
+        "pricingChanged": "تم تغيير التسعير",
+        "branchSubscriptionChanged": "تم تغيير اشتراك الفرع",
+        "userProvisioned": "تم تجهيز مستخدم",
+        "userChanged": "تم تغيير مستخدم",
+        "roleAssignmentChanged": "تم تغيير تعيين الأدوار",
+        "userActivated": "تم تفعيل مستخدم",
+        "userDeactivated": "تم إيقاف مستخدم",
+        "clinicGroupChanged": "تم تغيير مجموعة عيادات",
+        "branchRecordChanged": "تم تغيير سجل فرع",
+        "platformChange": "تغيير في المنصة"
+      }
+    },
     "operations": {
       "title": "عمليات المنصة",
       "description": "حالة مباشرة لوصول الفروع والتسعير والفوترة.",
@@ -950,14 +1003,27 @@
       "branches": "الفروع",
       "readyToInvoice": "جاهزة للفوترة",
       "outstandingBalance": "الرصيد المستحق",
+      "suspendedBranches": "الفروع المعلقة",
+      "overdueInvoices": "فواتير متأخرة",
       "activeCount": "{{count}} نشط",
+      "readyAcrossMonths": "{{current}} حالي / {{previous}} سابق",
+      "readOnlyBranches": "قيود وصول القراءة فقط",
+      "overdueBalance": "{{amount}} متأخر",
       "billingMonth": "شهر الفوترة {{month}}",
       "currentBillingMonth": "شهر الفوترة الحالي",
       "openInvoices": "{{count}} فواتير مفتوحة"
     },
     "queues": {
       "review": "مراجعة",
+      "openBilling": "فتح الفوترة",
+      "openGovernance": "فتح الحوكمة",
+      "openAudit": "فتح التدقيق",
       "readOnly": "قراءة فقط",
+      "flexiblePlan": "خطة مرنة",
+      "readyInvoiceBranches": {
+        "title": "جاهزة للفوترة",
+        "empty": "لا يوجد فرع-شهر حالي أو سابق جاهز للفوترة."
+      },
       "missingPricingBranches": {
         "title": "فروع تحتاج إلى تسعير",
         "empty": "كل الفروع النشطة لديها تسعير قابل للاستخدام."
@@ -969,6 +1035,14 @@
       "openInvoices": {
         "title": "فواتير مفتوحة",
         "empty": "لا توجد فواتير صادرة ذات رصيد مستحق."
+      },
+      "overdueInvoices": {
+        "title": "فواتير متأخرة",
+        "empty": "لا توجد فواتير مفتوحة قديمة تحتاج إلى متابعة."
+      },
+      "recentHighImpactActions": {
+        "title": "تغييرات إدارية مهمة حديثة",
+        "empty": "لا توجد تغييرات إدارية على المنصة مسجلة بعد."
       }
     },
     "collections": {
@@ -979,6 +1053,7 @@
       "title": "وضع الفوترة",
       "missingPricing": "تسعير مفقود",
       "partiallyPaid": "مدفوع جزئياً",
+      "overdueInvoices": "فواتير متأخرة",
       "collectedTotal": "إجمالي المحصل",
       "openBilling": "فتح الفوترة"
     },
@@ -1003,6 +1078,10 @@
         "title": "الحوكمة",
         "description": "مراجعة صلاحيات الأدوار وإدارة وصول مسؤولي المنصة."
       },
+      "audit": {
+        "title": "سجل التدقيق",
+        "description": "مراجعة تغييرات فوترة المنصة والاشتراكات والتهيئة والحوكمة."
+      },
       "branchSubscriptions": {
         "title": "اشتراكات الفروع",
         "description": "التحكم في وصول الفروع وملفات العيادة المفعلة وشروط التسعير."
@@ -1018,7 +1097,31 @@
       "subscriptions": "الاشتراكات",
       "clientUnitTitle": "الفرع هو وحدة العميل المشتركة.",
       "clientUnitDescription": "التسعير والتعليق وإنشاء الفواتير والتحصيلات تتم في مساحات عمل الفروع المخصصة.",
-      "dialogDescription": "هذا يغير سجل الفرع فقط. الشروط التجارية وحالة الوصول تُدار من اشتراكات الفروع."
+      "dialogDescription": "هذا يغير سجل الفرع فقط. الشروط التجارية وحالة الوصول تُدار من اشتراكات الفروع.",
+      "branchId": "فرع #{{id}}",
+      "selectedScope": "نطاق الشركة المحددة",
+      "inactiveBranches": "{{count}} غير نشط",
+      "readOnlyBranches": "فروع قراءة فقط",
+      "readOnlyHelper": "الوصول يمنع إجراءات التعديل",
+      "missingProfiles": "بدون ملفات",
+      "profileHelper": "تحتاج إلى ضبط ملفات الاشتراك",
+      "registryTitle": "سجل الفروع المشتركة",
+      "registryDescription": "{{count}} من {{total}} فرع معروض",
+      "searchPlaceholder": "ابحث بالفرع أو الملف...",
+      "operatingStatus": "حالة التشغيل",
+      "accessStatus": "حالة الوصول",
+      "enabledProfiles": "الملفات المفعلة",
+      "workbenches": "مساحات العمل",
+      "openSubscription": "الاشتراك",
+      "openBilling": "الفوترة",
+      "missingSubscription": "اشتراك مفقود",
+      "noFilteredBranches": "لا توجد فروع تطابق هذه الفلاتر.",
+      "noProfilesEnabled": "لا توجد ملفات مفعلة",
+      "moreProfiles": "+{{count}} أخرى",
+      "allOperatingStatuses": "كل حالات التشغيل",
+      "activeOnly": "النشطة فقط",
+      "inactiveOnly": "غير النشطة فقط",
+      "allAccessStatuses": "كل حالات الوصول"
     },
     "clinicGroups": {
       "title": "مجموعات العيادات",
@@ -1053,17 +1156,42 @@
       "provisionUser": "تجهيز مستخدم",
       "noticeTitle": "تغييرات المستخدمين من لوحة الإدارة تطبق على مجموعة العيادات المحددة.",
       "noticeDescription": "تظهر حسابات مسؤولي المنصة هنا، لكن تعيين دور المسؤول يبقى خارج دليل مستخدمي العيادة المعتاد.",
-      "directory": "دليل مستخدمي العيادة",
+      "directory": "سجل وصول المستخدمين",
+      "directoryDescription": "راجع نطاق الفروع وأدوار العيادة وضوابط العمل السريري لمجموعة العيادات المحددة.",
       "shownCount": "{{count}} معروض",
+      "searchPlaceholder": "ابحث بالمستخدم أو البريد أو الدور أو الفرع...",
+      "assignmentState": "تعيين الفرع",
+      "allAssignmentStates": "كل حالات التعيين",
+      "assignedUsers": "مستخدمون معينون",
+      "unassignedUsers": "مستخدمون غير معينين",
+      "multiBranchUsers": "مستخدمون متعددو الفروع",
+      "unassigned": "غير معين",
+      "moreBranches": "+{{count}} إضافي",
+      "globalPlatformAccess": "وصول عام للمنصة",
+      "managedInGovernance": "يدار من الحوكمة",
+      "roleControls": "ضوابط الأدوار",
+      "manageBranchReach": "إدارة نطاق الفروع",
+      "clinicalNotRequired": "ليس مستخدماً سريرياً",
+      "dailyOrderShort": "الترتيب",
+      "noFilteredUsers": "لا يوجد مستخدمون يطابقون هذه المرشحات.",
       "provisionClinicUser": "تجهيز مستخدم للعيادة",
       "provisionDescription": "أنشئ مديراً أو مدير فرع أو طبيباً أو سكرتيراً لهذه المجموعة. يجب تغيير كلمة المرور المؤقتة عند أول تسجيل دخول.",
       "temporaryPasswordDescription": "يبدأ المستخدمون بكلمة مرور مؤقتة ويجب عليهم تعيين كلمة مرور دائمة عند أول تسجيل دخول.",
+      "columns": {
+        "user": "المستخدم",
+        "accessProfile": "ملف الوصول",
+        "branchReach": "نطاق الفروع",
+        "clinicalControls": "الضوابط السريرية"
+      },
       "metrics": {
         "usersInScope": "المستخدمون ضمن النطاق",
         "activeUsers": "المستخدمون النشطون",
+        "inactiveUsers": "{{count}} غير نشط",
         "managers": "المديرون",
         "adminAccounts": "حسابات المسؤولين",
-        "clinicalLogistics": "العيادة/التشغيل"
+        "clinicalLogistics": "العيادة/التشغيل",
+        "unassignedUsers": "مستخدمون غير معينين",
+        "branchCoverageHelper": "{{assigned}} من {{total}} فرعاً مغطى"
       },
       "toasts": {
         "selectValidRole": "اختر دوراً صالحاً",
@@ -1147,6 +1275,43 @@
     "title": "اشتراكات الفروع",
     "description": "مساحة عمل المنصة لإدارة وصول الفروع وتوفر ملفات العيادة والشروط التجارية.",
     "refreshAria": "تحديث بيانات اشتراك الفرع",
+    "changeReason": "سبب إداري",
+    "changeReasonPlaceholder": "اكتب سبب إجراء هذا التغيير.",
+    "changeReasonHint": "يتم حفظ هذا السبب ضمن بيانات الإجراء الإداري للمراجعة والتدقيق.",
+    "confirmChange": "تأكيد التغيير",
+    "confirmAccessChange": "تأكيد تغيير الوصول",
+    "confirmProfilesChange": "تأكيد تغيير الملفات",
+    "confirmPricingChange": "تأكيد تغيير التسعير",
+    "reviewNextMonthPricing": "مراجعة تسعير الشهر القادم",
+    "reviewAccessChange": "مراجعة تغيير الوصول",
+    "reviewProfileChange": "مراجعة تغيير الملفات",
+    "review": {
+      "current": "الحالي",
+      "proposed": "المقترح",
+      "accessTitle": "مراجعة تغيير الوصول",
+      "accessDescription": "تغييرات الوصول تؤثر على قدرة مستخدمي الفرع على تنفيذ إجراءات تعدل بيانات العيادة.",
+      "suspendWarning": "وضع القراءة فقط يمنع الإجراءات المعدلة داخل العيادة مع الحفاظ على تسجيل الدخول وإمكانية العرض.",
+      "profilesTitle": "مراجعة تغيير مزيج الملفات",
+      "profilesDescription": "تغييرات الملفات تؤثر على سير العمل المتاح للفرع وعلى معامل الرسوم الثابتة.",
+      "profilesWarning": "تغييرات توفر الملفات تطبق على هذا الفرع بعد الحفظ. راجع أثرها التشغيلي قبل التأكيد.",
+      "pricingTitle": "مراجعة تسعير الشهر القادم",
+      "pricingDescription": "تغييرات التسعير تُجدول للشهر القادم وتؤثر على حساب الفواتير المستقبلية.",
+      "pricingWarning": "سيتم استخدام هذه الشروط عند إنشاء الفواتير بعد وصول شهر السريان.",
+      "effectiveMonth": "شهر السريان",
+      "model": "النموذج",
+      "invoiceImpact": "أثر الفاتورة",
+      "nextInvoices": "الفواتير المستقبلية",
+      "currentAccess": "الوصول الحالي",
+      "proposedAccess": "الوصول المقترح",
+      "currentProfiles": "الملفات الحالية",
+      "proposedProfiles": "الملفات المقترحة",
+      "currentMultiplier": "المعامل الحالي",
+      "proposedMultiplier": "المعامل المقترح"
+    },
+    "toasts": {
+      "updated": "تم تحديث اشتراك الفرع بنجاح",
+      "updateFailed": "تعذر تحديث اشتراك الفرع"
+    },
     "selectClinicNotice": "اختر عيادة من الشريط العلوي لإدارة المنصة لإدارة اشتراكات فروعها.",
     "branchCardTitle": "الفرع",
     "branchLabel": "الفرع",
@@ -1165,6 +1330,8 @@
     "noPricingTerm": "لا يوجد شرط تسعير متاح.",
     "effectiveMonth": "شهر السريان",
     "basePackageFee": "رسوم الأساس/الباقة",
+    "baseBranchFee": "رسوم الفرع الأساسية",
+    "packageFee": "رسوم الباقة",
     "packageLabel": "اسم الباقة",
     "includedVisits": "الزيارات المشمولة",
     "includedMonthlyVisits": "الزيارات الشهرية المشمولة",
@@ -1176,8 +1343,15 @@
     "effectiveNextBillingMonth": "يسري من شهر الفوترة القادم",
     "pricingModel": "نموذج التسعير",
     "packagePlaceholder": "مثال: نمو، توسع",
+    "flexiblePlanControls": "إعدادات خطة الفرع المرنة",
+    "flexiblePlanDescription": "حدد رسوم الفرع الأساسية وسماحية الزيارات الشهرية وشرائح الزيادة المطلوبة.",
+    "capacityPackageControls": "إعدادات باقة السعة",
+    "capacityPackageDescription": "سمّ الباقة وحدد رسومها وسعة الزيارات المشمولة، ثم عرّف شرائح الزيادة عند الحاجة.",
+    "capacityOverageOptionalNotice": "اترك حقلي الزيادة فارغين إذا لم تكن هذه الباقة تتضمن فوترة زيادة. إذا أدخلت أحدهما فيجب إدخال الاثنين.",
     "overageBlockSize": "حجم شريحة الزيادة",
     "overageBlockFee": "رسوم شريحة الزيادة",
+    "overageBlockSizeOptional": "حجم شريحة الزيادة (اختياري)",
+    "overageBlockFeeOptional": "رسوم شريحة الزيادة (اختياري)",
     "pricingRequiredNotice": "أكمل الحقول المطلوبة لنموذج التسعير المحدد قبل الحفظ.",
     "saveNextMonthPricing": "حفظ تسعير الشهر القادم",
     "accessControl": "التحكم في الوصول",
@@ -1220,6 +1394,7 @@
     "branch": "الفرع",
     "selectBranch": "اختر فرعاً",
     "month": "الشهر",
+    "previewInvoice": "معاينة الفاتورة",
     "refreshPreview": "تحديث المعاينة",
     "invoicePackage": "حزمة الفاتورة",
     "activeInvoice": "الفاتورة النشطة: {{invoiceNumber}}",
@@ -1247,8 +1422,83 @@
     "collections": "التحصيلات",
     "noCollections": "لا توجد سجلات تحصيل بعد.",
     "downloadFailed": "تعذر تنزيل المرفق",
+    "previewFailed": "تعذر إنشاء معاينة الفوترة لهذا الفرع والشهر.",
+    "recordCollection": "تسجيل تحصيل",
+    "fullyCollected": "محصلة بالكامل",
+    "voidedInvoice": "فاتورة ملغاة",
+    "voidLockedNotice": "لا يمكن إلغاء الفاتورة بعد وجود سجلات تحصيل.",
     "noBillableVisits": "لا توجد زيارات قابلة للفوترة مسجلة لهذا الفرع-الشهر.",
     "reason": "السبب",
+    "lifecycle": {
+      "label": "دورة الفوترة",
+      "states": {
+        "not_ready": {
+          "label": "غير جاهزة",
+          "description": "اختر العيادة والفرع وشهر الفوترة قبل إنشاء المعاينة."
+        },
+        "ready_to_preview": {
+          "label": "جاهزة للمعاينة",
+          "description": "تم اختيار الفرع والشهر. أنشئ المعاينة أو حدثها قبل إصدار المرفقات."
+        },
+        "preview_generated": {
+          "label": "تمت المعاينة",
+          "description": "الاستخدام والتسعير ظاهران للمراجعة. يمكن إضافة التعديلات قبل الإصدار."
+        },
+        "invoice_generated": {
+          "label": "تم إصدار الفاتورة",
+          "description": "ملف PDF ودفتر البيانات موجودان، وتم قفل الفرع والشهر."
+        },
+        "partially_collected": {
+          "label": "محصلة جزئياً",
+          "description": "تم تسجيل تحصيل واحد على الأقل وما زال هناك رصيد متبقٍ."
+        },
+        "paid": {
+          "label": "مدفوعة",
+          "description": "تم تحصيل رصيد الفاتورة بالكامل."
+        },
+        "voided": {
+          "label": "ملغاة",
+          "description": "هذه الفاتورة ملغاة ومحفوظة كسجل فوترة فقط."
+        }
+      },
+      "steps": {
+        "context": {
+          "label": "السياق",
+          "description": "العيادة، الفرع، الشهر"
+        },
+        "preview": {
+          "label": "المعاينة",
+          "description": "الاستخدام والحساب"
+        },
+        "invoice": {
+          "label": "الفاتورة",
+          "description": "PDF ودفتر البيانات"
+        },
+        "collection": {
+          "label": "التحصيل",
+          "description": "سجلات الدفع خارج المنصة"
+        },
+        "closed": {
+          "label": "الإغلاق",
+          "description": "رصيد مدفوع"
+        }
+      }
+    },
+    "artifacts": {
+      "title": "المرفقات الحالية",
+      "currentVersion": "آخر نسخة منشأة",
+      "pdf": "ملف الفاتورة PDF",
+      "excel": "ملف بيانات الفاتورة",
+      "download": "تنزيل",
+      "generatedAt": "تم الإنشاء {{date}}",
+      "notGenerated": "لم يتم الإنشاء بعد",
+      "freshness": {
+        "current": "محدث",
+        "stale": "يحتاج مراجعة",
+        "missing": "مفقود",
+        "unknown": "غير معروف"
+      }
+    },
     "metrics": {
       "fixedFee": "الرسوم الثابتة",
       "includedVisits": "الزيارات المشمولة",
@@ -1301,6 +1551,8 @@
       "collectedAt": "تاريخ التحصيل",
       "method": "الطريقة",
       "reference": "المرجع",
+      "remainingBalance": "الرصيد المتبقي: {{amount}}",
+      "exceedsBalance": "لا يمكن أن يتجاوز مبلغ التحصيل الرصيد المتبقي.",
       "submit": "تسجيل التحصيل"
     },
     "voidDialog": {

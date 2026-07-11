@@ -1,7 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, Loader2, Plus, RefreshCcw } from 'lucide-react';
+import {
+  Building2,
+  CreditCard,
+  Layers3,
+  Loader2,
+  Plus,
+  Receipt,
+  RefreshCcw,
+  Search,
+  ShieldCheck,
+} from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/common/DataTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,7 +42,11 @@ import {
   useReconcileBranchCredit,
 } from '@/hooks/useBranches';
 import { usePermissions } from '@/hooks/usePermissions';
-import { PERMISSIONS } from '@/lib/constants';
+import {
+  BRANCH_SUBSCRIPTION_ACCESS_STATUS,
+  CLINIC_PROFILES,
+  PERMISSIONS,
+} from '@/lib/constants';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
@@ -42,6 +56,29 @@ const emptyBranchForm = {
   name: '',
   isActive: 'true',
 };
+
+const PROFILE_OPTIONS = [
+  {
+    value: CLINIC_PROFILES.PHYSIOTHERAPY,
+    labelKey: 'branchSubscriptions.profiles.physiotherapy',
+    labelDefault: 'Physiotherapy',
+  },
+  {
+    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
+    labelKey: 'branchSubscriptions.profiles.medicalDoctor',
+    labelDefault: 'Medical doctor clinic',
+  },
+  {
+    value: CLINIC_PROFILES.DENTIST,
+    labelKey: 'branchSubscriptions.profiles.dentist',
+    labelDefault: 'Dentist',
+  },
+  {
+    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
+    labelKey: 'branchSubscriptions.profiles.laserDermatology',
+    labelDefault: 'Laser and dermatology',
+  },
+];
 
 export default function BranchesPage() {
   const { t, i18n } = useTranslation();
@@ -72,6 +109,9 @@ export default function BranchesPage() {
   const [creditStatus, setCreditStatus] = useState('all');
   const [creditFromBranchId, setCreditFromBranchId] = useState('all');
   const [creditToBranchId, setCreditToBranchId] = useState('all');
+  const [branchSearch, setBranchSearch] = useState('');
+  const [branchOperatingStatus, setBranchOperatingStatus] = useState('all');
+  const [branchAccessStatus, setBranchAccessStatus] = useState('all');
 
   const {
     data: branchesData,
@@ -122,6 +162,14 @@ export default function BranchesPage() {
 
   const summary = useMemo(() => {
     const activeBranches = branches.filter((branch) => branch.isActive).length;
+    const readOnlyBranches = branches.filter(
+      (branch) =>
+        branch.subscription?.accessStatus ===
+        BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED,
+    ).length;
+    const branchesWithoutProfiles = branches.filter(
+      (branch) => getEnabledProfiles(branch).length === 0,
+    ).length;
     const pendingCredits = credits.filter((credit) => credit.status === 'pending');
     const pendingCreditTotal = pendingCredits.reduce(
       (sum, credit) => sum + Number(credit.amount || 0),
@@ -131,10 +179,39 @@ export default function BranchesPage() {
     return {
       totalBranches: branches.length,
       activeBranches,
+      inactiveBranches: branches.length - activeBranches,
+      readOnlyBranches,
+      branchesWithoutProfiles,
       pendingCredits: pendingCredits.length,
       pendingCreditTotal,
     };
   }, [branches, credits]);
+
+  const filteredBranches = useMemo(() => {
+    const normalizedSearch = branchSearch.trim().toLowerCase();
+
+    return branches.filter((branch) => {
+      const profiles = getEnabledProfiles(branch);
+      const profileLabels = profiles
+        .map((profile) => getProfileLabel(profile, t))
+        .join(' ')
+        .toLowerCase();
+      const accessStatus = branch.subscription?.accessStatus || 'missing';
+      const matchesSearch =
+        !normalizedSearch ||
+        branch.name?.toLowerCase().includes(normalizedSearch) ||
+        String(branch.id).includes(normalizedSearch) ||
+        profileLabels.includes(normalizedSearch);
+      const matchesOperatingStatus =
+        branchOperatingStatus === 'all' ||
+        (branchOperatingStatus === 'active' && branch.isActive) ||
+        (branchOperatingStatus === 'inactive' && !branch.isActive);
+      const matchesAccessStatus =
+        branchAccessStatus === 'all' || branchAccessStatus === accessStatus;
+
+      return matchesSearch && matchesOperatingStatus && matchesAccessStatus;
+    });
+  }, [branchAccessStatus, branchOperatingStatus, branchSearch, branches, t]);
 
   const openCreateDialog = () => {
     setEditingBranch(null);
@@ -175,46 +252,139 @@ export default function BranchesPage() {
   };
 
   const branchColumns = useMemo(
-    () => [
-      {
-        key: 'name',
-        header: t('users.branch', { defaultValue: 'Branch' }),
-        cell: (row) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium">{row.name}</span>
-            {row.isDefault && (
-              <Badge variant="secondary">
-                {t('branches.defaultBranch', { defaultValue: 'Default' })}
+    () => {
+      if (isPlatformAdminRoute) {
+        return [
+          {
+            key: 'name',
+            header: t('users.branch', { defaultValue: 'Branch' }),
+            cell: (row) => (
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{row.name}</span>
+                  {row.isDefault && (
+                    <Badge variant="secondary">
+                      {t('branches.defaultBranch', { defaultValue: 'Default' })}
+                    </Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('platformAdmin.branchAdministration.branchId', {
+                    id: row.id,
+                    defaultValue: 'Branch #{{id}}',
+                  })}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: 'operatingStatus',
+            header: t('platformAdmin.branchAdministration.operatingStatus', {
+              defaultValue: 'Operating status',
+            }),
+            cell: (row) => (
+              <Badge variant={row.isActive ? 'default' : 'outline'}>
+                {row.isActive
+                  ? t('users.active', { defaultValue: 'Active' })
+                  : t('users.inactive', { defaultValue: 'Inactive' })}
               </Badge>
-            )}
-          </div>
-        ),
-      },
-      {
-        key: 'status',
-        header: t('users.status'),
-        cell: (row) => (
-          <Badge variant={row.isActive ? 'default' : 'outline'}>
-            {row.isActive
-              ? t('users.active', { defaultValue: 'Active' })
-              : t('users.inactive', { defaultValue: 'Inactive' })}
-          </Badge>
-        ),
-      },
-      {
-        key: 'actions',
-        header: t('common.actions', { defaultValue: 'Actions' }),
-        cell: (row) =>
-          canUpdateBranches ? (
-            <Button size="sm" variant="outline" onClick={() => openEditDialog(row)}>
-              {t('common.edit', { defaultValue: 'Edit' })}
-            </Button>
-          ) : (
-            <span className="text-muted-foreground">--</span>
+            ),
+          },
+          {
+            key: 'accessStatus',
+            header: t('platformAdmin.branchAdministration.accessStatus', {
+              defaultValue: 'Access status',
+            }),
+            cell: (row) => <BranchAccessBadge branch={row} t={t} />,
+          },
+          {
+            key: 'profiles',
+            header: t('platformAdmin.branchAdministration.enabledProfiles', {
+              defaultValue: 'Enabled profiles',
+            }),
+            cell: (row) => <BranchProfileBadges branch={row} t={t} />,
+          },
+          {
+            key: 'workbenches',
+            header: t('platformAdmin.branchAdministration.workbenches', {
+              defaultValue: 'Workbenches',
+            }),
+            className: 'text-right',
+            cellClassName: 'text-right',
+            cell: (row) => (
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/platform-admin/branch-subscriptions?branchId=${row.id}`}>
+                    <CreditCard className="h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.openSubscription', {
+                      defaultValue: 'Subscription',
+                    })}
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/platform-admin/billing?branchId=${row.id}`}>
+                    <Receipt className="h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.openBilling', {
+                      defaultValue: 'Billing',
+                    })}
+                  </Link>
+                </Button>
+                {canUpdateBranches && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openEditDialog(row)}
+                  >
+                    {t('common.edit', { defaultValue: 'Edit' })}
+                  </Button>
+                )}
+              </div>
+            ),
+          },
+        ];
+      }
+
+      return [
+        {
+          key: 'name',
+          header: t('users.branch', { defaultValue: 'Branch' }),
+          cell: (row) => (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{row.name}</span>
+              {row.isDefault && (
+                <Badge variant="secondary">
+                  {t('branches.defaultBranch', { defaultValue: 'Default' })}
+                </Badge>
+              )}
+            </div>
           ),
-      },
-    ],
-    [canUpdateBranches, t],
+        },
+        {
+          key: 'status',
+          header: t('users.status'),
+          cell: (row) => (
+            <Badge variant={row.isActive ? 'default' : 'outline'}>
+              {row.isActive
+                ? t('users.active', { defaultValue: 'Active' })
+                : t('users.inactive', { defaultValue: 'Inactive' })}
+            </Badge>
+          ),
+        },
+        {
+          key: 'actions',
+          header: t('common.actions', { defaultValue: 'Actions' }),
+          cell: (row) =>
+            canUpdateBranches ? (
+              <Button size="sm" variant="outline" onClick={() => openEditDialog(row)}>
+                {t('common.edit', { defaultValue: 'Edit' })}
+              </Button>
+            ) : (
+              <span className="text-muted-foreground">--</span>
+            ),
+        },
+      ];
+    },
+    [canUpdateBranches, isPlatformAdminRoute, t],
   );
 
   const creditColumns = useMemo(
@@ -275,6 +445,75 @@ export default function BranchesPage() {
     [canReconcileCredits, reconcileBranchCredit, t],
   );
 
+  const branchMetricCards = isPlatformAdminRoute
+    ? [
+        {
+          key: 'totalBranches',
+          title: t('branches.totalBranches', { defaultValue: 'Total branches' }),
+          value: summary.totalBranches,
+          helper: t('platformAdmin.branchAdministration.selectedScope', {
+            defaultValue: 'Selected company scope',
+          }),
+          icon: Building2,
+        },
+        {
+          key: 'activeBranches',
+          title: t('branches.activeBranches', { defaultValue: 'Active branches' }),
+          value: summary.activeBranches,
+          helper: t('platformAdmin.branchAdministration.inactiveBranches', {
+            count: summary.inactiveBranches,
+            defaultValue: '{{count}} inactive',
+          }),
+          icon: ShieldCheck,
+        },
+        {
+          key: 'readOnlyBranches',
+          title: t('platformAdmin.branchAdministration.readOnlyBranches', {
+            defaultValue: 'Read-only branches',
+          }),
+          value: summary.readOnlyBranches,
+          helper: t('platformAdmin.branchAdministration.readOnlyHelper', {
+            defaultValue: 'Access blocked for mutations',
+          }),
+          icon: CreditCard,
+        },
+        {
+          key: 'missingProfiles',
+          title: t('platformAdmin.branchAdministration.missingProfiles', {
+            defaultValue: 'Without profiles',
+          }),
+          value: summary.branchesWithoutProfiles,
+          helper: t('platformAdmin.branchAdministration.profileHelper', {
+            defaultValue: 'Needs subscription profile setup',
+          }),
+          icon: Layers3,
+        },
+      ]
+    : [
+        {
+          key: 'totalBranches',
+          title: t('branches.totalBranches', { defaultValue: 'Total branches' }),
+          value: summary.totalBranches,
+        },
+        {
+          key: 'activeBranches',
+          title: t('branches.activeBranches', { defaultValue: 'Active branches' }),
+          value: summary.activeBranches,
+        },
+        {
+          key: 'pendingCredits',
+          title: t('branches.pendingCredits', { defaultValue: 'Pending credits' }),
+          value: summary.pendingCredits,
+        },
+        {
+          key: 'pendingCreditAmount',
+          title: t('branches.pendingCreditAmount', {
+            defaultValue: 'Pending credit amount',
+          }),
+          value: formatCurrency(summary.pendingCreditTotal),
+        },
+      ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -314,14 +553,24 @@ export default function BranchesPage() {
               />
             </Button>
             {isPlatformAdminRoute && !needsClinicSelection && (
-              <Button variant="outline" asChild>
-                <Link to="/platform-admin/branch-subscriptions">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  {t('platformAdmin.branchAdministration.subscriptions', {
-                    defaultValue: 'Subscriptions',
-                  })}
-                </Link>
-              </Button>
+              <>
+                <Button variant="outline" asChild>
+                  <Link to="/platform-admin/branch-subscriptions">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.subscriptions', {
+                      defaultValue: 'Subscriptions',
+                    })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/platform-admin/billing">
+                    <Receipt className="mr-2 h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.openBilling', {
+                      defaultValue: 'Billing',
+                    })}
+                  </Link>
+                </Button>
+              </>
             )}
             {canCreateBranches && !needsClinicSelection && (
               <Button onClick={openCreateDialog}>
@@ -362,55 +611,125 @@ export default function BranchesPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              {t('branches.totalBranches', { defaultValue: 'Total branches' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {summary.totalBranches}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              {t('branches.activeBranches', { defaultValue: 'Active branches' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {summary.activeBranches}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              {t('branches.pendingCredits', { defaultValue: 'Pending credits' })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {summary.pendingCredits}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground">
-              {t('branches.pendingCreditAmount', {
-                defaultValue: 'Pending credit amount',
-              })}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {formatCurrency(summary.pendingCreditTotal)}
-          </CardContent>
-        </Card>
+        {branchMetricCards.map((metric) => {
+          const Icon = metric.icon;
+          return (
+            <Card key={metric.key}>
+              <CardContent className="flex items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">
+                    {metric.title}
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold tracking-normal">
+                    {metric.value}
+                  </p>
+                  {metric.helper && (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {metric.helper}
+                    </p>
+                  )}
+                </div>
+                {Icon && (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>
-            {t('branches.branchDirectory', { defaultValue: 'Branch directory' })}
-          </CardTitle>
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <CardTitle>
+              {isPlatformAdminRoute
+                ? t('platformAdmin.branchAdministration.registryTitle', {
+                    defaultValue: 'Subscribed branch registry',
+                  })
+                : t('branches.branchDirectory', { defaultValue: 'Branch directory' })}
+            </CardTitle>
+            {isPlatformAdminRoute && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('platformAdmin.branchAdministration.registryDescription', {
+                  count: filteredBranches.length,
+                  total: branches.length,
+                  defaultValue: '{{count}} of {{total}} branches shown',
+                })}
+              </p>
+            )}
+          </div>
+          {isPlatformAdminRoute && !needsClinicSelection && (
+            <div className="grid w-full gap-2 md:grid-cols-3 lg:w-auto">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={branchSearch}
+                  onChange={(event) => setBranchSearch(event.target.value)}
+                  placeholder={t(
+                    'platformAdmin.branchAdministration.searchPlaceholder',
+                    {
+                      defaultValue: 'Search branch or profile...',
+                    },
+                  )}
+                  className="h-9 pl-9"
+                />
+              </div>
+              <Select
+                value={branchOperatingStatus}
+                onValueChange={setBranchOperatingStatus}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('platformAdmin.branchAdministration.allOperatingStatuses', {
+                      defaultValue: 'All operating statuses',
+                    })}
+                  </SelectItem>
+                  <SelectItem value="active">
+                    {t('platformAdmin.branchAdministration.activeOnly', {
+                      defaultValue: 'Active only',
+                    })}
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    {t('platformAdmin.branchAdministration.inactiveOnly', {
+                      defaultValue: 'Inactive only',
+                    })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={branchAccessStatus} onValueChange={setBranchAccessStatus}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t('platformAdmin.branchAdministration.allAccessStatuses', {
+                      defaultValue: 'All access states',
+                    })}
+                  </SelectItem>
+                  <SelectItem value={BRANCH_SUBSCRIPTION_ACCESS_STATUS.ACTIVE}>
+                    {t('branchSubscriptions.accessStatuses.active', {
+                      defaultValue: 'Active',
+                    })}
+                  </SelectItem>
+                  <SelectItem value={BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED}>
+                    {t('branchSubscriptions.accessStatuses.readOnly', {
+                      defaultValue: 'Read-only',
+                    })}
+                  </SelectItem>
+                  <SelectItem value="missing">
+                    {t('platformAdmin.branchAdministration.missingSubscription', {
+                      defaultValue: 'Missing subscription',
+                    })}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {needsClinicSelection ? (
@@ -431,10 +750,16 @@ export default function BranchesPage() {
             <div className="p-6 text-center text-muted-foreground">
               {t('branches.noBranches', { defaultValue: 'No branches found.' })}
             </div>
+          ) : filteredBranches.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground">
+              {t('platformAdmin.branchAdministration.noFilteredBranches', {
+                defaultValue: 'No branches match these filters.',
+              })}
+            </div>
           ) : (
             <DataTable
               columns={branchColumns}
-              data={branches}
+              data={isPlatformAdminRoute ? filteredBranches : branches}
               getRowId={(row) => row.id}
               direction={i18n.language === 'ar' ? 'rtl' : 'ltr'}
             />
@@ -673,4 +998,87 @@ export default function BranchesPage() {
       </Dialog>
     </div>
   );
+}
+
+function BranchAccessBadge({ branch, t }) {
+  const accessStatus = branch.subscription?.accessStatus;
+
+  if (!accessStatus) {
+    return (
+      <Badge variant="outline">
+        {t('platformAdmin.branchAdministration.missingSubscription', {
+          defaultValue: 'Missing subscription',
+        })}
+      </Badge>
+    );
+  }
+
+  const isReadOnly =
+    accessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+
+  return (
+    <Badge variant={isReadOnly ? 'secondary' : 'default'}>
+      {isReadOnly
+        ? t('branchSubscriptions.accessStatuses.readOnly', {
+            defaultValue: 'Read-only',
+          })
+        : t('branchSubscriptions.accessStatuses.active', {
+            defaultValue: 'Active',
+          })}
+    </Badge>
+  );
+}
+
+function BranchProfileBadges({ branch, t }) {
+  const profiles = getEnabledProfiles(branch);
+
+  if (!profiles.length) {
+    return (
+      <Badge variant="outline">
+        {t('platformAdmin.branchAdministration.noProfilesEnabled', {
+          defaultValue: 'No profiles enabled',
+        })}
+      </Badge>
+    );
+  }
+
+  const visibleProfiles = profiles.slice(0, 2);
+  const hiddenCount = profiles.length - visibleProfiles.length;
+
+  return (
+    <div className="flex max-w-sm flex-wrap gap-1.5">
+      {visibleProfiles.map((profile) => (
+        <Badge key={profile} variant="secondary" className="max-w-48 truncate">
+          {getProfileLabel(profile, t)}
+        </Badge>
+      ))}
+      {hiddenCount > 0 && (
+        <Badge variant="outline">
+          {t('platformAdmin.branchAdministration.moreProfiles', {
+            count: hiddenCount,
+            defaultValue: '+{{count}} more',
+          })}
+        </Badge>
+      )}
+    </div>
+  );
+}
+
+function getEnabledProfiles(branch) {
+  return (branch.subscription?.profiles || [])
+    .filter((profile) => profile?.isEnabled !== false)
+    .map((profile) =>
+      typeof profile === 'string'
+        ? profile
+        : profile?.profile || profile?.profileCode || profile?.code || profile?.name,
+    )
+    .filter(Boolean);
+}
+
+function getProfileLabel(profile, t) {
+  const option = PROFILE_OPTIONS.find((item) => item.value === profile);
+
+  return option
+    ? t(option.labelKey, { defaultValue: option.labelDefault })
+    : String(profile);
 }

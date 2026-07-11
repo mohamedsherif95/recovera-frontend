@@ -75,7 +75,8 @@ export function useSetUserRoles() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, roleIds, options }) => usersApi.setRoles(id, roleIds, options),
+    mutationFn: ({ id, roleIds, changeReason, options }) =>
+      usersApi.setRoles(id, roleIds, { ...options, changeReason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({

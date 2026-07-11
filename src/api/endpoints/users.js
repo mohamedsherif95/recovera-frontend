@@ -62,10 +62,14 @@ export const usersApi = {
    * Set roles for a user using POST /users/:id/roles with { roleIds }
    */
   setRoles: async (id, roleIds, options = {}) => {
+    const { changeReason, ...requestOptions } = options;
     const response = await apiClient.post(
       `/users/${id}/roles`,
-      { roleIds },
-      buildScopedRequestConfig(options),
+      {
+        roleIds,
+        ...(changeReason ? { changeReason } : {}),
+      },
+      buildScopedRequestConfig(requestOptions),
     );
     return response.data;
   },

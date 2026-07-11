@@ -56,6 +56,7 @@ const emptyClinicForm = {
   slug: '',
   status: 'active',
   billingNotes: '',
+  changeReason: '',
 };
 
 const emptyUserForm = {
@@ -69,6 +70,7 @@ const emptyUserForm = {
   shifts: [],
   dailyOpnsOrder: '',
   canPerformAssessments: false,
+  changeReason: '',
 };
 
 const slugify = (value) =>
@@ -267,6 +269,7 @@ export default function ClinicsPage() {
       slug: clinic.slug || '',
       status: clinic.status || 'active',
       billingNotes: clinic.billingNotes || '',
+      changeReason: '',
     });
     setClinicDialogOpen(true);
   };
@@ -286,6 +289,7 @@ export default function ClinicsPage() {
       slug: slugify(clinicForm.slug),
       status: clinicForm.status,
       billingNotes: clinicForm.billingNotes.trim() || null,
+      changeReason: clinicForm.changeReason.trim(),
     };
 
     const mutation = editingClinic
@@ -361,6 +365,7 @@ export default function ClinicsPage() {
           ? Number(userForm.dailyOpnsOrder)
           : undefined,
       isActive: true,
+      changeReason: userForm.changeReason.trim(),
     };
 
     createUser
@@ -1042,8 +1047,38 @@ export default function ClinicsPage() {
                 onChange={(event) => updateClinicField('billingNotes', event.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="clinic-change-reason">
+                {t('platformAdmin.auditReason', {
+                  defaultValue: 'Admin reason',
+                })}
+              </Label>
+              <Textarea
+                id="clinic-change-reason"
+                value={clinicForm.changeReason}
+                onChange={(event) =>
+                  updateClinicField('changeReason', event.target.value)
+                }
+                placeholder={t('platformAdmin.auditReasonPlaceholder', {
+                  defaultValue: 'Describe why this admin change is being made.',
+                })}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('platformAdmin.auditReasonHint', {
+                  defaultValue: 'Saved with the platform audit event.',
+                })}
+              </p>
+            </div>
             <DialogFooter>
-              <Button type="submit" disabled={createClinic.isPending || updateClinic.isPending}>
+              <Button
+                type="submit"
+                disabled={
+                  createClinic.isPending ||
+                  updateClinic.isPending ||
+                  clinicForm.changeReason.trim().length < 3
+                }
+              >
                 {(createClinic.isPending || updateClinic.isPending) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
@@ -1246,8 +1281,42 @@ export default function ClinicsPage() {
               </div>
             )}
 
+            <div className="space-y-2">
+              <Label htmlFor="user-provision-change-reason">
+                {t('platformAdmin.auditReason', {
+                  defaultValue: 'Admin reason',
+                })}
+              </Label>
+              <Textarea
+                id="user-provision-change-reason"
+                value={userForm.changeReason}
+                onChange={(event) =>
+                  setUserForm((current) => ({
+                    ...current,
+                    changeReason: event.target.value,
+                  }))
+                }
+                placeholder={t('platformAdmin.auditReasonPlaceholder', {
+                  defaultValue: 'Describe why this admin change is being made.',
+                })}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                {t('platformAdmin.auditReasonHint', {
+                  defaultValue: 'Saved with the platform audit event.',
+                })}
+              </p>
+            </div>
+
             <DialogFooter>
-              <Button type="submit" disabled={createUser.isPending || !userForm.clinicId}>
+              <Button
+                type="submit"
+                disabled={
+                  createUser.isPending ||
+                  !userForm.clinicId ||
+                  userForm.changeReason.trim().length < 3
+                }
+              >
                 {createUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {t('users.createUser')}
               </Button>

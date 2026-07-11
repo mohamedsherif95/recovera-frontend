@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -56,6 +57,7 @@ import { formatCurrency } from '@/lib/utils';
 const emptyBranchForm = {
   name: '',
   isActive: 'true',
+  changeReason: '',
 };
 
 const PROFILE_OPTIONS = [
@@ -225,6 +227,7 @@ export default function BranchesPage() {
     setBranchForm({
       name: branch.name || '',
       isActive: String(branch.isActive !== false),
+      changeReason: '',
     });
     setBranchDialogOpen(true);
   };
@@ -234,6 +237,9 @@ export default function BranchesPage() {
     const payload = {
       name: branchForm.name.trim(),
       isActive: branchForm.isActive === 'true',
+      ...(isPlatformAdminRoute
+        ? { changeReason: branchForm.changeReason.trim() }
+        : {}),
     };
 
     const mutation = editingBranch
@@ -999,10 +1005,43 @@ export default function BranchesPage() {
                 </SelectContent>
               </Select>
             </div>
+            {isPlatformAdminRoute && (
+              <div className="space-y-2">
+                <Label htmlFor="branch-change-reason">
+                  {t('platformAdmin.auditReason', {
+                    defaultValue: 'Admin reason',
+                  })}
+                </Label>
+                <Textarea
+                  id="branch-change-reason"
+                  value={branchForm.changeReason}
+                  onChange={(event) =>
+                    setBranchForm((current) => ({
+                      ...current,
+                      changeReason: event.target.value,
+                    }))
+                  }
+                  placeholder={t('platformAdmin.auditReasonPlaceholder', {
+                    defaultValue: 'Describe why this admin change is being made.',
+                  })}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  {t('platformAdmin.auditReasonHint', {
+                    defaultValue: 'Saved with the platform audit event.',
+                  })}
+                </p>
+              </div>
+            )}
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={createBranch.isPending || updateBranch.isPending}
+                disabled={
+                  createBranch.isPending ||
+                  updateBranch.isPending ||
+                  (isPlatformAdminRoute &&
+                    branchForm.changeReason.trim().length < 3)
+                }
               >
                 {(createBranch.isPending || updateBranch.isPending) && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

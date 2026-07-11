@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { accessApi } from '@/api/endpoints/access';
 import { useSetUserRoles, useUsers } from '@/hooks/useUsers';
 import { useAuthStore } from '@/store/authStore';
@@ -216,6 +217,8 @@ function RoleChangeDialog({
   onOpenChange,
   onConfirm,
   isLoading,
+  changeReason,
+  onChangeReason,
 }) {
   const { t } = useTranslation();
   const user = pendingChange?.user;
@@ -260,6 +263,28 @@ function RoleChangeDialog({
           </div>
         )}
 
+        <div className="space-y-2">
+          <label htmlFor="admin-role-change-reason" className="text-sm font-medium">
+            {t('platformAdmin.auditReason', {
+              defaultValue: 'Admin reason',
+            })}
+          </label>
+          <Textarea
+            id="admin-role-change-reason"
+            value={changeReason}
+            onChange={(event) => onChangeReason(event.target.value)}
+            placeholder={t('platformAdmin.auditReasonPlaceholder', {
+              defaultValue: 'Describe why this admin change is being made.',
+            })}
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            {t('platformAdmin.auditReasonHint', {
+              defaultValue: 'Saved with the platform audit event.',
+            })}
+          </p>
+        </div>
+
         <DialogFooter>
           <Button
             type="button"
@@ -272,7 +297,7 @@ function RoleChangeDialog({
             type="button"
             variant={isGrant ? 'default' : 'destructive'}
             onClick={onConfirm}
-            disabled={isLoading}
+            disabled={isLoading || changeReason.trim().length < 3}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isGrant
@@ -295,6 +320,7 @@ export default function PlatformGovernancePage() {
   const [candidateSearch, setCandidateSearch] = useState('');
   const [selectedRoleName, setSelectedRoleName] = useState(USER_ROLES.ADMIN);
   const [pendingChange, setPendingChange] = useState(null);
+  const [roleChangeReason, setRoleChangeReason] = useState('');
   const setUserRoles = useSetUserRoles();
 
   const rolesQuery = useQuery({
@@ -374,15 +400,23 @@ export default function PlatformGovernancePage() {
   };
 
   const openGrantDialog = (user) => {
+    setRoleChangeReason('');
     setPendingChange({ type: 'grant', user });
   };
 
   const openRevokeDialog = (user) => {
+    setRoleChangeReason('');
     setPendingChange({ type: 'revoke', user });
   };
 
   const confirmRoleChange = () => {
-    if (!pendingChange?.user || !adminRole) return;
+    if (
+      !pendingChange?.user ||
+      !adminRole ||
+      roleChangeReason.trim().length < 3
+    ) {
+      return;
+    }
 
     const user = pendingChange.user;
     const existingRoleIds = getRoleIds(user);
@@ -392,7 +426,7 @@ export default function PlatformGovernancePage() {
         : existingRoleIds.filter((roleId) => Number(roleId) !== Number(adminRole.id));
 
     setUserRoles.mutate(
-      { id: user.id, roleIds },
+      { id: user.id, roleIds, changeReason: roleChangeReason.trim() },
       {
         onSuccess: () => {
           toast.success(
@@ -405,6 +439,7 @@ export default function PlatformGovernancePage() {
                 }),
           );
           setPendingChange(null);
+          setRoleChangeReason('');
           refresh();
         },
         onError: (error) => {
@@ -823,9 +858,12 @@ export default function PlatformGovernancePage() {
         pendingChange={pendingChange}
         onOpenChange={(open) => {
           if (!open) setPendingChange(null);
+          if (!open) setRoleChangeReason('');
         }}
         onConfirm={confirmRoleChange}
         isLoading={setUserRoles.isPending}
+        changeReason={roleChangeReason}
+        onChangeReason={setRoleChangeReason}
       />
 
       {isLoading && (

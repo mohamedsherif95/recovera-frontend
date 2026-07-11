@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -502,12 +503,14 @@ export default function BranchSubscriptionsPage() {
   const { t } = useTranslation();
   const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
   const canView = can(PERMISSIONS['branchSubscriptions:view']);
   const canManage = can(PERMISSIONS['branchSubscriptions:manage']);
   const needsClinicSelection = !platformAdminClinicId;
   const platformScopeOptions = platformAdminClinicId
     ? { platformClinicId: platformAdminClinicId }
     : {};
+  const linkedBranchId = searchParams.get('branchId') || '';
   const [selectedBranchId, setSelectedBranchId] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [reviewAction, setReviewAction] = useState(null);
@@ -591,6 +594,16 @@ export default function BranchSubscriptionsPage() {
       return;
     }
 
+    const linkedBranch = linkedBranchId
+      ? branches.find((branch) => String(branch.id) === String(linkedBranchId))
+      : null;
+    if (linkedBranch) {
+      if (String(selectedBranchId) !== String(linkedBranch.id)) {
+        setSelectedBranchId(String(linkedBranch.id));
+      }
+      return;
+    }
+
     const selectedBranchExists = branches.some(
       (branch) => String(branch.id) === String(selectedBranchId),
     );
@@ -598,7 +611,24 @@ export default function BranchSubscriptionsPage() {
 
     const defaultBranch = branches.find((branch) => branch.isDefault) || branches[0];
     setSelectedBranchId(defaultBranch ? String(defaultBranch.id) : '');
-  }, [branches, platformAdminClinicId, needsClinicSelection, selectedBranchId]);
+  }, [
+    branches,
+    linkedBranchId,
+    needsClinicSelection,
+    platformAdminClinicId,
+    selectedBranchId,
+  ]);
+
+  const handleBranchSelectionChange = (branchId) => {
+    setSelectedBranchId(branchId);
+    const nextSearchParams = new URLSearchParams(searchParams);
+    if (branchId) {
+      nextSearchParams.set('branchId', branchId);
+    } else {
+      nextSearchParams.delete('branchId');
+    }
+    setSearchParams(nextSearchParams, { replace: true });
+  };
 
   useEffect(() => {
     if (!selectedBranchId) return;
@@ -998,7 +1028,7 @@ export default function BranchSubscriptionsPage() {
                   <Label>{t('branchSubscriptions.branchLabel')}</Label>
                   <Select
                     value={selectedBranchId}
-                    onValueChange={setSelectedBranchId}
+                    onValueChange={handleBranchSelectionChange}
                     disabled={!canView}
                   >
                     <SelectTrigger>

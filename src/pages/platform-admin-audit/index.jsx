@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
@@ -51,12 +51,17 @@ const limitOptions = [25, 50, 100];
 export default function PlatformAdminAuditPage() {
   const { t } = useTranslation();
   const { platformAdminClinicId } = useUIStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [search, setSearch] = useState('');
   const [area, setArea] = useState('all');
   const [status, setStatus] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const branchIdParam = Number(searchParams.get('branchId') || 0);
+  const branchId = Number.isFinite(branchIdParam) && branchIdParam > 0
+    ? branchIdParam
+    : null;
 
   const queryParams = useMemo(
     () => ({
@@ -65,8 +70,9 @@ export default function PlatformAdminAuditPage() {
       area,
       status,
       search: search.trim() || undefined,
+      branchId: branchId ?? undefined,
     }),
-    [area, limit, page, search, status],
+    [area, branchId, limit, page, search, status],
   );
 
   const {
@@ -84,10 +90,18 @@ export default function PlatformAdminAuditPage() {
   const totalPages = meta.totalPages || 1;
   const total = meta.total || 0;
   const hasFilters =
-    search.trim().length > 0 || area !== 'all' || status !== 'all' || limit !== 25;
+    search.trim().length > 0 ||
+    area !== 'all' ||
+    status !== 'all' ||
+    limit !== 25 ||
+    branchId != null;
   const scopeLabel = platformAdminClinicId
     ? t('platformAdmin.scopedOverview', { defaultValue: 'Selected clinic scope' })
     : t('platformAdmin.allClinics', { defaultValue: 'All clinics' });
+
+  useEffect(() => {
+    setPage(1);
+  }, [branchId]);
 
   const resetPage = (updater) => {
     setPage(1);
@@ -100,6 +114,11 @@ export default function PlatformAdminAuditPage() {
     setStatus('all');
     setLimit(25);
     setPage(1);
+    if (branchId != null) {
+      const nextSearchParams = new URLSearchParams(searchParams);
+      nextSearchParams.delete('branchId');
+      setSearchParams(nextSearchParams, { replace: true });
+    }
   };
 
   return (
@@ -122,6 +141,14 @@ export default function PlatformAdminAuditPage() {
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{scopeLabel}</Badge>
+          {branchId != null && (
+            <Badge variant="outline">
+              {t('platformAdmin.audit.branchFilter', {
+                id: branchId,
+                defaultValue: 'Branch #{{id}}',
+              })}
+            </Badge>
+          )}
           <Button
             variant="outline"
             size="icon"

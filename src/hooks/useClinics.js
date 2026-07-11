@@ -18,6 +18,9 @@ export function useCreateClinic() {
     mutationFn: clinicsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CLINICS] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
     },
   });
 }
@@ -29,6 +32,9 @@ export function useUpdateClinic() {
     mutationFn: ({ id, data }) => clinicsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.CLINICS] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
   });

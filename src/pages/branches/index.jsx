@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Building2,
   CreditCard,
+  FileSearch,
   Layers3,
   Loader2,
   Plus,
@@ -329,6 +330,14 @@ export default function BranchesPage() {
                     })}
                   </Link>
                 </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link to={`/platform-admin/audit?branchId=${row.id}`}>
+                    <FileSearch className="h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.openAudit', {
+                      defaultValue: 'Audit',
+                    })}
+                  </Link>
+                </Button>
                 {canUpdateBranches && (
                   <Button
                     size="sm"
@@ -567,6 +576,14 @@ export default function BranchesPage() {
                     <Receipt className="mr-2 h-4 w-4" />
                     {t('platformAdmin.branchAdministration.openBilling', {
                       defaultValue: 'Billing',
+                    })}
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/platform-admin/audit">
+                    <FileSearch className="mr-2 h-4 w-4" />
+                    {t('platformAdmin.branchAdministration.openAudit', {
+                      defaultValue: 'Audit',
                     })}
                   </Link>
                 </Button>

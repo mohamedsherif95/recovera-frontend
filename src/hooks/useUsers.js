@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '@/api/endpoints/users';
+import { QUERY_KEYS } from '@/lib/constants';
 
 export function useUsers(filters = {}, options = {}) {
   const { enabled = true, platformClinicId, ...queryOptions } = options;
@@ -26,6 +27,9 @@ export function useUpdateUser() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
     },
   });
 }
@@ -45,6 +49,9 @@ export function useCreateUser() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['auth'] });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
     },
   });
 }
@@ -57,6 +64,9 @@ export function useToggleUserActive() {
       isActive ? usersApi.activate(id, options) : usersApi.deactivate(id, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
     },
   });
 }
@@ -68,6 +78,9 @@ export function useSetUserRoles() {
     mutationFn: ({ id, roleIds, options }) => usersApi.setRoles(id, roleIds, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'clinic-groups'],
+      });
     },
   });
 }

@@ -19,6 +19,22 @@ export function usePlatformAdminOverview(options = {}) {
   });
 }
 
+export function usePlatformClinicGroups(options = {}) {
+  const { enabled = true, platformClinicId, ...queryOptions } = options;
+
+  return useQuery({
+    queryKey: [
+      QUERY_KEYS.PLATFORM_ADMIN,
+      'clinic-groups',
+      platformClinicId ?? '__all__',
+    ],
+    queryFn: () => platformAdminApi.getClinicGroups({ platformClinicId }),
+    enabled,
+    staleTime: 30 * 1000,
+    ...queryOptions,
+  });
+}
+
 export function usePlatformAdminAuditEvents(params = {}, options = {}) {
   const { enabled = true, platformClinicId, ...queryOptions } = options;
 

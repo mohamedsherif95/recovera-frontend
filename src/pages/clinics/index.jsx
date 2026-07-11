@@ -1,8 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
-import { Building2, Loader2, Plus, RefreshCcw, UserPlus } from 'lucide-react';
+import {
+  Building2,
+  CreditCard,
+  FileSearch,
+  FileText,
+  Loader2,
+  Plus,
+  Receipt,
+  RefreshCcw,
+  Search,
+  Settings2,
+  ShieldCheck,
+  UserPlus,
+  Users,
+  Workflow,
+} from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
@@ -26,11 +42,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useClinics, useCreateClinic, useUpdateClinic } from '@/hooks/useClinics';
+import { useCreateClinic, useUpdateClinic } from '@/hooks/useClinics';
 import { useCreateUser } from '@/hooks/useUsers';
 import { useBranches } from '@/hooks/useBranches';
+import { usePlatformClinicGroups } from '@/hooks/usePlatformAdmin';
 import { accessApi } from '@/api/endpoints/access';
 import { DOCTOR_SHIFT, USER_ROLES } from '@/lib/constants';
+import { useUIStore } from '@/store/uiStore';
+import { formatCurrency } from '@/lib/utils';
 
 const emptyClinicForm = {
   name: '',
@@ -59,26 +78,51 @@ const slugify = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-function AdminMetric({ label, value }) {
+function AdminMetric({ label, value, helper, icon: Icon = Building2, tone = 'default' }) {
+  const toneClass =
+    {
+      default: 'bg-primary/10 text-primary',
+      success: 'bg-emerald-500/10 text-emerald-700',
+      warning: 'bg-amber-500/10 text-amber-700',
+      muted: 'bg-muted text-muted-foreground',
+    }[tone] || 'bg-primary/10 text-primary';
+
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+    <Card className="border-border/70">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+        <span className={`rounded-md p-2 ${toneClass}`}>
+          <Icon className="h-4 w-4" />
+        </span>
       </CardHeader>
-      <CardContent className="text-2xl font-semibold">{value}</CardContent>
+      <CardContent>
+        <div className="text-2xl font-semibold">{value}</div>
+        {helper && <div className="mt-1 text-xs text-muted-foreground">{helper}</div>}
+      </CardContent>
     </Card>
   );
 }
 
 export default function ClinicsPage() {
   const { t, i18n } = useTranslation();
+  const { setPlatformAdminClinicId } = useUIStore();
   const [clinicDialogOpen, setClinicDialogOpen] = useState(false);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingClinic, setEditingClinic] = useState(null);
   const [clinicForm, setClinicForm] = useState(emptyClinicForm);
   const [userForm, setUserForm] = useState(emptyUserForm);
+  const [clinicSearch, setClinicSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [readinessFilter, setReadinessFilter] = useState('all');
+  const [notesFilter, setNotesFilter] = useState('all');
 
-  const { data, isLoading, isError, refetch, isFetching } = useClinics();
+  const {
+    data: clinicGroupsData,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = usePlatformClinicGroups();
   const createClinic = useCreateClinic();
   const updateClinic = useUpdateClinic();
   const createUser = useCreateUser();
@@ -95,10 +139,38 @@ export default function ClinicsPage() {
   });
 
   const clinics = useMemo(() => {
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(clinicGroupsData)) return clinicGroupsData;
+    if (Array.isArray(clinicGroupsData?.data)) return clinicGroupsData.data;
     return [];
-  }, [data]);
+  }, [clinicGroupsData]);
+  const readinessPricingMonth =
+    !Array.isArray(clinicGroupsData) && clinicGroupsData?.readinessPricingMonth
+      ? String(clinicGroupsData.readinessPricingMonth).slice(0, 7)
+      : '';
+
+  const filteredClinics = useMemo(() => {
+    const normalizedSearch = clinicSearch.trim().toLowerCase();
+
+    return clinics.filter((clinic) => {
+      const hasBillingNotes = Boolean(clinic.billingNotes?.trim());
+      const matchesSearch =
+        !normalizedSearch ||
+        clinic.name?.toLowerCase().includes(normalizedSearch) ||
+        clinic.slug?.toLowerCase().includes(normalizedSearch) ||
+        String(clinic.id).includes(normalizedSearch) ||
+        clinic.billingNotes?.toLowerCase().includes(normalizedSearch);
+      const matchesStatus = statusFilter === 'all' || clinic.status === statusFilter;
+      const matchesReadiness =
+        readinessFilter === 'all' || clinic.readiness?.status === readinessFilter;
+      const matchesNotes =
+        notesFilter === 'all' ||
+        (notesFilter === 'with_notes' && hasBillingNotes) ||
+        (notesFilter === 'without_notes' && !hasBillingNotes);
+
+      return matchesSearch && matchesStatus && matchesReadiness && matchesNotes;
+    });
+  }, [clinicSearch, clinics, notesFilter, readinessFilter, statusFilter]);
+
   const clinicSummary = useMemo(() => {
     const active = clinics.filter((clinic) => clinic.status === 'active').length;
     const suspended = clinics.filter(
@@ -107,12 +179,31 @@ export default function ClinicsPage() {
     const withBillingNotes = clinics.filter((clinic) =>
       Boolean(clinic.billingNotes?.trim()),
     ).length;
+    const needsSetup = clinics.filter(
+      (clinic) => clinic.readiness?.status === 'attention',
+    ).length;
+    const reviewNeeded = clinics.filter(
+      (clinic) => clinic.readiness?.status === 'review',
+    ).length;
+    const outstandingBalance = clinics.reduce(
+      (sum, clinic) => sum + Number(clinic.billingStats?.outstandingBalance || 0),
+      0,
+    );
+    const openInvoices = clinics.reduce(
+      (sum, clinic) => sum + Number(clinic.billingStats?.openInvoices || 0),
+      0,
+    );
 
     return {
       total: clinics.length,
       active,
       suspended,
       withBillingNotes,
+      withoutBillingNotes: clinics.length - withBillingNotes,
+      needsSetup,
+      reviewNeeded,
+      outstandingBalance,
+      openInvoices,
     };
   }, [clinics]);
 
@@ -292,44 +383,304 @@ export default function ClinicsPage() {
       });
   };
 
+  const selectClinicScope = (clinic) => {
+    if (!clinic?.id) return;
+    setPlatformAdminClinicId(Number(clinic.id));
+  };
+
   const columns = useMemo(
     () => [
       {
-        key: 'name',
-        header: t('clinics.name'),
+        key: 'company',
+        header: t('platformAdmin.clinicGroups.columns.company', {
+          defaultValue: 'Company group',
+        }),
         cell: (clinic) => (
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex min-w-[240px] items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Building2 className="h-4 w-4" />
             </div>
-            <div>
-              <div className="font-medium">{clinic.name}</div>
-              <div className="text-xs text-muted-foreground">{clinic.slug}</div>
+            <div className="min-w-0 space-y-1">
+              <div className="truncate font-medium">{clinic.name}</div>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>{clinic.slug}</span>
+                <span className="text-border">/</span>
+                <span>
+                  {t('platformAdmin.clinicGroups.clinicId', {
+                    id: clinic.id,
+                    defaultValue: 'Company #{{id}}',
+                  })}
+                </span>
+              </div>
             </div>
           </div>
         ),
       },
       {
-        key: 'status',
-        header: t('clinics.status'),
+        key: 'readiness',
+        header: t('platformAdmin.clinicGroups.columns.readiness', {
+          defaultValue: 'Next-month setup',
+        }),
+        cell: (clinic) => {
+          const readinessStatus = clinic.readiness?.status || 'ready';
+          const branchStats = clinic.branchStats || {};
+          const userStats = clinic.userStats || {};
+          const hasBillingNotes = Boolean(clinic.billingNotes?.trim());
+          const issueItems = [
+            {
+              count: (branchStats.totalBranches || 0) === 0 ? 1 : 0,
+              label: t('platformAdmin.clinicGroups.readiness.noBranches', {
+                defaultValue: 'no branches',
+              }),
+            },
+            {
+              count: branchStats.missingSubscriptions || 0,
+              label: t('platformAdmin.clinicGroups.readiness.missingSubscriptions', {
+                defaultValue: 'missing subscriptions',
+              }),
+            },
+            {
+              count: branchStats.branchesWithoutProfiles || 0,
+              label: t('platformAdmin.clinicGroups.readiness.missingProfiles', {
+                defaultValue: 'without profiles',
+              }),
+            },
+            {
+              count: branchStats.branchesMissingPricing || 0,
+              label: t('platformAdmin.clinicGroups.readiness.missingPricing', {
+                defaultValue: 'next-month pricing missing',
+              }),
+            },
+            {
+              count: userStats.managerUsers > 0 ? 0 : 1,
+              label: t('platformAdmin.clinicGroups.readiness.missingManager', {
+                defaultValue: 'no manager',
+              }),
+            },
+          ].filter((item) => item.count > 0);
+          const readinessClass =
+            readinessStatus === 'ready'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : readinessStatus === 'attention'
+                ? 'border-amber-300 bg-amber-50 text-amber-800'
+                : 'border-slate-300 bg-slate-50 text-slate-700';
+
+          return (
+            <div className="min-w-[260px] space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge variant="outline" className={`rounded-full px-2.5 py-1 ${readinessClass}`}>
+                  {t(`platformAdmin.clinicGroups.readiness.${readinessStatus}`, {
+                    defaultValue: readinessStatus,
+                  })}
+                </Badge>
+                <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                  <FileText className="mr-1 h-3 w-3" />
+                  {hasBillingNotes
+                    ? t('platformAdmin.clinicGroups.withBillingNotes', {
+                        defaultValue: 'Notes saved',
+                      })
+                    : t('platformAdmin.clinicGroups.noBillingNotes', {
+                        defaultValue: 'No admin notes',
+                      })}
+                </Badge>
+              </div>
+              {issueItems.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {issueItems.map((item) => (
+                    <Badge
+                      key={item.label}
+                      variant="outline"
+                      className="rounded-full border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-800"
+                    >
+                      {item.count > 1 ? `${item.count} ` : ''}
+                      {item.label}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">
+                  {t('platformAdmin.clinicGroups.readiness.readyHelper', {
+                    defaultValue: 'Next-month branch setup is in place.',
+                  })}
+                </div>
+              )}
+              <div className="line-clamp-1 text-xs text-muted-foreground">
+                {hasBillingNotes
+                  ? clinic.billingNotes
+                  : t('platformAdmin.clinicGroups.companyRecordHint', {
+                      defaultValue:
+                        'Company identity only. Branch subscriptions and billing stay per branch.',
+                    })}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'footprint',
+        header: t('platformAdmin.clinicGroups.columns.footprint', {
+          defaultValue: 'Footprint',
+        }),
+        cell: (clinic) => {
+          const branchStats = clinic.branchStats || {};
+          const userStats = clinic.userStats || {};
+
+          return (
+            <div className="min-w-[230px] space-y-2 text-xs">
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary" className="rounded-full px-2.5 py-1">
+                  <Building2 className="mr-1 h-3 w-3" />
+                  {t('platformAdmin.clinicGroups.branchCount', {
+                    count: branchStats.totalBranches || 0,
+                    defaultValue: '{{count}} branches',
+                  })}
+                </Badge>
+                <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                  {t('platformAdmin.clinicGroups.activeBranchCount', {
+                    count: branchStats.activeBranches || 0,
+                    defaultValue: '{{count}} active',
+                  })}
+                </Badge>
+                {(branchStats.suspendedBranches || 0) > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-amber-300 bg-amber-50 px-2.5 py-1 text-amber-800"
+                  >
+                    {t('platformAdmin.clinicGroups.readOnlyBranchCount', {
+                      count: branchStats.suspendedBranches || 0,
+                      defaultValue: '{{count}} read-only',
+                    })}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                  <Users className="mr-1 h-3 w-3" />
+                  {t('platformAdmin.clinicGroups.userCount', {
+                    count: userStats.totalUsers || 0,
+                    defaultValue: '{{count}} users',
+                  })}
+                </Badge>
+                <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                  {t('platformAdmin.clinicGroups.managerCount', {
+                    count: userStats.managerUsers || 0,
+                    defaultValue: '{{count}} managers',
+                  })}
+                </Badge>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'billing',
+        header: t('platformAdmin.clinicGroups.columns.billing', {
+          defaultValue: 'Billing posture',
+        }),
+        cell: (clinic) => {
+          const billingStats = clinic.billingStats || {};
+          const outstandingBalance = Number(billingStats.outstandingBalance || 0);
+          const openInvoices = Number(billingStats.openInvoices || 0);
+          const overdueInvoices = Number(billingStats.overdueInvoices || 0);
+
+          return (
+            <div className="min-w-[190px] space-y-1.5">
+              <div className="font-medium">{formatCurrency(outstandingBalance)}</div>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="outline" className="rounded-full px-2.5 py-1">
+                  {t('platformAdmin.clinicGroups.openInvoiceCount', {
+                    count: openInvoices,
+                    defaultValue: '{{count}} open',
+                  })}
+                </Badge>
+                {overdueInvoices > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-destructive/30 bg-destructive/5 px-2.5 py-1 text-destructive"
+                  >
+                    {t('platformAdmin.clinicGroups.overdueInvoiceCount', {
+                      count: overdueInvoices,
+                      defaultValue: '{{count}} overdue',
+                    })}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'workbenches',
+        header: t('platformAdmin.clinicGroups.columns.workbenches', {
+          defaultValue: 'Scoped workbenches',
+        }),
         cell: (clinic) => (
-          <Badge
-            variant={clinic.status === 'active' ? 'default' : 'outline'}
-            className={
-              clinic.status === 'active'
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'border-slate-300 text-slate-600'
-            }
-          >
-            {t(`clinics.${clinic.status}`, { defaultValue: clinic.status })}
-          </Badge>
+          <div className="flex min-w-[320px] flex-wrap gap-2">
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/platform-admin/branches"
+                onClick={() => selectClinicScope(clinic)}
+              >
+                <Workflow className="h-4 w-4" />
+                {t('platformAdmin.clinicGroups.openBranches', {
+                  defaultValue: 'Branches',
+                })}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/platform-admin/branch-subscriptions"
+                onClick={() => selectClinicScope(clinic)}
+              >
+                <CreditCard className="h-4 w-4" />
+                {t('platformAdmin.clinicGroups.openSubscriptions', {
+                  defaultValue: 'Subscriptions',
+                })}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/platform-admin/billing"
+                onClick={() => selectClinicScope(clinic)}
+              >
+                <Receipt className="h-4 w-4" />
+                {t('platformAdmin.clinicGroups.openBilling', {
+                  defaultValue: 'Billing',
+                })}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/platform-admin/users"
+                onClick={() => selectClinicScope(clinic)}
+              >
+                <Users className="h-4 w-4" />
+                {t('platformAdmin.clinicGroups.openUsers', {
+                  defaultValue: 'Users',
+                })}
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/platform-admin/audit"
+                onClick={() => selectClinicScope(clinic)}
+              >
+                <FileSearch className="h-4 w-4" />
+                {t('platformAdmin.clinicGroups.openAudit', {
+                  defaultValue: 'Audit',
+                })}
+              </Link>
+            </Button>
+          </div>
         ),
       },
       {
-        key: 'actions',
-        header: t('common.actions'),
+        key: 'setupActions',
+        header: t('platformAdmin.clinicGroups.columns.setupActions', {
+          defaultValue: 'Setup actions',
+        }),
         cell: (clinic) => (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-[230px] flex-wrap gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -338,6 +689,7 @@ export default function ClinicsPage() {
                 openEditClinic(clinic);
               }}
             >
+              <Settings2 className="h-4 w-4" />
               {t('platformAdmin.clinicGroups.companySettings', {
                 defaultValue: 'Company settings',
               })}
@@ -349,7 +701,7 @@ export default function ClinicsPage() {
                 openProvisionUser(clinic);
               }}
             >
-              <UserPlus className="mr-2 h-4 w-4" />
+              <UserPlus className="h-4 w-4" />
               {t('platformAdmin.clinicGroups.provisionUser', {
                 defaultValue: 'Provision user',
               })}
@@ -358,7 +710,7 @@ export default function ClinicsPage() {
         ),
       },
     ],
-    [t],
+    [setPlatformAdminClinicId, t],
   );
 
   return (
@@ -392,54 +744,234 @@ export default function ClinicsPage() {
             defaultValue: 'Clinic groups',
           })}
           value={clinicSummary.total}
+          helper={t('platformAdmin.clinicGroups.totalCount', {
+            count: filteredClinics.length,
+            defaultValue: '{{count}} total',
+          })}
+          icon={Building2}
         />
         <AdminMetric
           label={t('platformAdmin.clinicGroups.metrics.active', {
             defaultValue: 'Active',
           })}
           value={clinicSummary.active}
+          helper={t('platformAdmin.clinicGroups.metrics.activeHelper', {
+            defaultValue: 'Can operate through branch workbenches',
+          })}
+          icon={ShieldCheck}
+          tone="success"
         />
         <AdminMetric
-          label={t('platformAdmin.clinicGroups.metrics.suspended', {
-            defaultValue: 'Suspended',
+          label={t('platformAdmin.clinicGroups.metrics.needsSetup', {
+            defaultValue: 'Next-month setup',
           })}
-          value={clinicSummary.suspended}
+          value={clinicSummary.needsSetup}
+          helper={t('platformAdmin.clinicGroups.metrics.readinessMonthHelper', {
+            count: clinicSummary.reviewNeeded,
+            month: readinessPricingMonth || '--',
+            defaultValue: 'Pricing month {{month}} / {{count}} company status review',
+          })}
+          icon={Workflow}
+          tone={clinicSummary.needsSetup > 0 ? 'warning' : 'muted'}
         />
         <AdminMetric
-          label={t('platformAdmin.clinicGroups.metrics.billingNotes', {
-            defaultValue: 'Billing notes',
+          label={t('platformAdmin.clinicGroups.metrics.openBalance', {
+            defaultValue: 'Open balance',
           })}
-          value={clinicSummary.withBillingNotes}
+          value={formatCurrency(clinicSummary.outstandingBalance)}
+          helper={t('platformAdmin.clinicGroups.metrics.openInvoiceHelper', {
+            count: clinicSummary.openInvoices,
+            defaultValue: '{{count}} open invoices',
+          })}
+          icon={Receipt}
+          tone={clinicSummary.outstandingBalance > 0 ? 'warning' : 'muted'}
         />
       </div>
 
+      <Card className="border-primary/15 bg-muted/20">
+        <CardContent className="flex flex-col gap-2 p-4 text-sm md:flex-row md:items-center md:justify-between">
+          <div className="font-medium">
+            {t('platformAdmin.clinicGroups.tenantBoundaryTitle', {
+              defaultValue: 'Company groups own people and patients.',
+            })}
+          </div>
+          <div className="text-muted-foreground">
+            {t('platformAdmin.clinicGroups.tenantBoundaryDescription', {
+              defaultValue:
+                'Branches remain the subscribed client units for profiles, pricing, access blocks, invoices, and collections.',
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="border-primary/15 shadow-sm">
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-base">
-            {t('platformAdmin.clinicGroups.directory', {
-              defaultValue: 'Clinic group directory',
-            })}
-          </CardTitle>
+          <div className="space-y-1">
+            <CardTitle className="text-base">
+              {t('platformAdmin.clinicGroups.directory', {
+                defaultValue: 'Clinic group directory',
+              })}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {t('platformAdmin.clinicGroups.directoryDescription', {
+                month: readinessPricingMonth || '--',
+                defaultValue:
+                  'Select a company scope. Setup readiness checks {{month}} pricing; billing posture shows current invoice exposure.',
+              })}
+            </p>
+          </div>
           <Badge variant="outline">
             {t('platformAdmin.clinicGroups.totalCount', {
-              count: clinicSummary.total,
+              count: filteredClinics.length,
               defaultValue: '{{count}} total',
             })}
           </Badge>
         </CardHeader>
         <CardContent className="p-0">
+          <div className="flex flex-col gap-3 border-y bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="relative w-full lg:max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={clinicSearch}
+                onChange={(event) => setClinicSearch(event.target.value)}
+                placeholder={t('platformAdmin.clinicGroups.searchPlaceholder', {
+                  defaultValue: 'Search company, slug, note, or ID...',
+                })}
+                className="h-9 pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span>{t('clinics.status')}</span>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-8 w-[160px]">
+                    <SelectValue placeholder={t('clinics.status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t('platformAdmin.clinicGroups.allStatuses', {
+                        defaultValue: 'All statuses',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="active">{t('clinics.active')}</SelectItem>
+                    <SelectItem value="suspended">{t('clinics.suspended')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span>
+                  {t('platformAdmin.clinicGroups.noteState', {
+                    defaultValue: 'Admin notes',
+                  })}
+                </span>
+                <Select value={notesFilter} onValueChange={setNotesFilter}>
+                  <SelectTrigger className="h-8 w-[170px]">
+                    <SelectValue
+                      placeholder={t('platformAdmin.clinicGroups.noteState', {
+                        defaultValue: 'Admin notes',
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t('platformAdmin.clinicGroups.allNoteStates', {
+                        defaultValue: 'All note states',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="with_notes">
+                      {t('platformAdmin.clinicGroups.withBillingNotes', {
+                        defaultValue: 'Notes saved',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="without_notes">
+                      {t('platformAdmin.clinicGroups.noBillingNotes', {
+                        defaultValue: 'No admin notes',
+                      })}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span>
+                  {t('platformAdmin.clinicGroups.readiness.label', {
+                    defaultValue: 'Setup readiness',
+                  })}
+                </span>
+                <Select value={readinessFilter} onValueChange={setReadinessFilter}>
+                  <SelectTrigger className="h-8 w-[160px]">
+                    <SelectValue
+                      placeholder={t('platformAdmin.clinicGroups.readiness.label', {
+                        defaultValue: 'Setup readiness',
+                      })}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t('platformAdmin.clinicGroups.readiness.all', {
+                        defaultValue: 'All setup readiness',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="ready">
+                      {t('platformAdmin.clinicGroups.readiness.ready', {
+                        defaultValue: 'Ready',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="attention">
+                      {t('platformAdmin.clinicGroups.readiness.attention', {
+                        defaultValue: 'Setup attention',
+                      })}
+                    </SelectItem>
+                    <SelectItem value="review">
+                      {t('platformAdmin.clinicGroups.readiness.review', {
+                        defaultValue: 'Review',
+                      })}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {(clinicSearch ||
+                statusFilter !== 'all' ||
+                readinessFilter !== 'all' ||
+                notesFilter !== 'all') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    setClinicSearch('');
+                    setStatusFilter('all');
+                    setReadinessFilter('all');
+                    setNotesFilter('all');
+                  }}
+                >
+                  {t('common.clearFilters', { defaultValue: 'Clear filters' })}
+                </Button>
+              )}
+            </div>
+          </div>
+
           {isLoading ? (
             <div className="flex items-center justify-center p-12">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : isError ? (
             <div className="p-6 text-center text-destructive">{t('messages.errorOccurred')}</div>
-          ) : clinics.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">{t('clinics.noClinics')}</div>
+          ) : filteredClinics.length === 0 ? (
+            <div className="p-6 text-center text-muted-foreground">
+              {clinics.length === 0
+                ? t('clinics.noClinics')
+                : t('platformAdmin.clinicGroups.noFilteredClinics', {
+                    defaultValue: 'No company groups match these filters.',
+                  })}
+            </div>
           ) : (
             <DataTable
               columns={columns}
-              data={clinics}
+              data={filteredClinics}
               getRowId={(clinic) => clinic.id}
               direction={i18n.language === 'ar' ? 'rtl' : 'ltr'}
             />

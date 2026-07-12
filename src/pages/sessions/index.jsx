@@ -30,6 +30,7 @@ import {
 } from "@/hooks/useSessions";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchAccessState } from "@/hooks/useBranchAccessState";
 import {
   CLINIC_PROFILES,
   PERMISSIONS,
@@ -79,6 +80,12 @@ function getStatusBadgeClass(status) {
 export default function SessionsPage() {
   const { t, i18n } = useTranslation();
   const { canAny, can } = usePermissions();
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+  } = useBranchAccessState();
+  const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
   const { hasAnyRole } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -170,11 +177,12 @@ export default function SessionsPage() {
   );
 
   const [showForm, setShowForm] = useState(
-    !!(
-      initialFromState.initialDoctorId ||
-      initialFromState.initialDate ||
-      initialFromState.initialSlot
-    ),
+    !isReadOnlyBranch &&
+      !!(
+        initialFromState.initialDoctorId ||
+        initialFromState.initialDate ||
+        initialFromState.initialSlot
+      ),
   );
 
   const sessions = useMemo(() => {
@@ -208,8 +216,15 @@ export default function SessionsPage() {
   const isAdmin = hasAnyRole([USER_ROLES.MANAGER]);
   const [sessionPendingDelete, setSessionPendingDelete] = useState(null);
 
+  useEffect(() => {
+    if (isReadOnlyBranch) {
+      setShowForm(false);
+      setSessionPendingDelete(null);
+    }
+  }, [isReadOnlyBranch]);
+
   const handleConfirmDelete = () => {
-    if (!sessionPendingDelete) return;
+    if (isReadOnlyBranch || !sessionPendingDelete) return;
     deleteSession.mutate(sessionPendingDelete.id, {
       onSuccess: () => {
         setSessionPendingDelete(null);
@@ -374,9 +389,11 @@ export default function SessionsPage() {
                     className="text-destructive hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (isReadOnlyBranch) return;
                       setSessionPendingDelete(row);
                     }}
-                    disabled={deleteSession.isPending}
+                    disabled={isReadOnlyBranch || deleteSession.isPending}
+                    title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                     <span className="sr-only">{t("common.delete")}</span>
@@ -387,7 +404,14 @@ export default function SessionsPage() {
           ]
         : []),
     ],
-    [t, canSeeFinancialAndCategory, isAdmin, deleteSession.isPending],
+    [
+      t,
+      canSeeFinancialAndCategory,
+      isAdmin,
+      deleteSession.isPending,
+      isReadOnlyBranch,
+      readOnlyTooltip,
+    ],
   );
 
   if (!canView) {
@@ -412,7 +436,12 @@ export default function SessionsPage() {
             </Button>
             {can(PERMISSIONS["sessions:create"]) && (
               <Button
-                onClick={() => setShowForm((prev) => !prev)}
+                onClick={() => {
+                  if (isReadOnlyBranch) return;
+                  setShowForm((prev) => !prev);
+                }}
+                disabled={isReadOnlyBranch}
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                 className="w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -452,11 +481,12 @@ export default function SessionsPage() {
         </div>
       </ImpactPanel>
 
-      {showForm && can(PERMISSIONS["sessions:create"]) && (
+      {showForm && !isReadOnlyBranch && can(PERMISSIONS["sessions:create"]) && (
         <SessionForm
           initialValues={initialFormValues}
           lockDoctor={lockDoctor}
-          onSubmit={(values) =>
+          onSubmit={(values) => {
+            if (isReadOnlyBranch) return;
             createSession.mutate(values, {
               onSuccess: () => {
                 if (returnDate) {
@@ -470,8 +500,8 @@ export default function SessionsPage() {
                   setShowForm(false);
                 }
               },
-            })
-          }
+            });
+          }}
           onCancel={handleCancelForm}
           isSubmitting={createSession.isPending}
         />
@@ -758,7 +788,8 @@ export default function SessionsPage() {
         onConfirm={handleConfirmDelete}
         confirmProps={{
           variant: "destructive",
-          disabled: deleteSession.isPending,
+          disabled: isReadOnlyBranch || deleteSession.isPending,
+          title: isReadOnlyBranch ? readOnlyTooltip : undefined,
         }}
       />
     </div>

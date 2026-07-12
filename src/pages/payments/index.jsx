@@ -10,6 +10,7 @@ import { LocalizedDatePicker } from '@/components/common/LocalizedDatePicker';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useSessions, useSession } from '@/hooks/useSessions';
 import { useCreatePayment } from '@/hooks/usePayments';
+import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { CLINIC_PROFILES } from '@/lib/constants';
 import { getClinicProfileLabel } from '@/lib/clinicProfiles';
 
@@ -17,6 +18,17 @@ export default function PaymentsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+    readOnlyDescription,
+    readOnlyDescriptionKey,
+  } = useBranchAccessState();
+  const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
+  const readOnlyHelper = t(readOnlyDescriptionKey, {
+    defaultValue: readOnlyDescription,
+  });
 
   const preselectedSessionId = searchParams.get('sessionId');
   const preselectedAmount = searchParams.get('amount');
@@ -82,7 +94,7 @@ export default function PaymentsPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!sessionId || !amount || !paymentMethod) return;
+    if (isReadOnlyBranch || !sessionId || !amount || !paymentMethod) return;
 
     createPayment.mutate(
       {
@@ -112,6 +124,9 @@ export default function PaymentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t('payments.createPayment')}</CardTitle>
+          {isReadOnlyBranch && (
+            <p className="text-sm text-muted-foreground">{readOnlyHelper}</p>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
@@ -144,7 +159,12 @@ export default function PaymentsPage() {
               <Select
                 value={sessionId}
                 onValueChange={setSessionId}
-                disabled={isSessionsLoading || createPayment.isPending || isSessionLocked}
+                disabled={
+                  isReadOnlyBranch ||
+                  isSessionsLoading ||
+                  createPayment.isPending ||
+                  isSessionLocked
+                }
               >
                 <SelectTrigger id="sessionId">
                   <SelectValue
@@ -169,7 +189,8 @@ export default function PaymentsPage() {
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                disabled={createPayment.isPending}
+                disabled={isReadOnlyBranch || createPayment.isPending}
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                 max={
                   preselectedAmount
                     ? Number(preselectedAmount)
@@ -183,7 +204,7 @@ export default function PaymentsPage() {
               <Select
                 value={paymentMethod}
                 onValueChange={setPaymentMethod}
-                disabled={createPayment.isPending}
+                disabled={isReadOnlyBranch || createPayment.isPending}
               >
                 <SelectTrigger id="method">
                   <SelectValue />
@@ -202,7 +223,7 @@ export default function PaymentsPage() {
                 id="paymentDate"
                 value={paymentDate}
                 onChange={setPaymentDate}
-                disabled={createPayment.isPending}
+                disabled={isReadOnlyBranch || createPayment.isPending}
               />
             </div>
 
@@ -212,7 +233,8 @@ export default function PaymentsPage() {
                 id="referenceNumber"
                 value={referenceNumber}
                 onChange={(e) => setReferenceNumber(e.target.value)}
-                disabled={createPayment.isPending}
+                disabled={isReadOnlyBranch || createPayment.isPending}
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
               />
             </div>
 
@@ -222,12 +244,22 @@ export default function PaymentsPage() {
                 id="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                disabled={createPayment.isPending}
+                disabled={isReadOnlyBranch || createPayment.isPending}
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
               />
             </div>
 
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={createPayment.isPending || !sessionId || !amount}>
+              <Button
+                type="submit"
+                disabled={
+                  isReadOnlyBranch ||
+                  createPayment.isPending ||
+                  !sessionId ||
+                  !amount
+                }
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+              >
                 {createPayment.isPending ? t('common.loading') : t('common.save')}
               </Button>
             </div>

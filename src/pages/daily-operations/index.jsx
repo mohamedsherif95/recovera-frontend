@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -28,6 +28,7 @@ import { LocalizedDatePicker } from "@/components/common/LocalizedDatePicker";
 import { useDailyOperations } from "@/hooks/useDashboard";
 import { useUpdateSessionStatus } from "@/hooks/useSessions";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useBranchAccessState } from "@/hooks/useBranchAccessState";
 import {
   CLINIC_PROFILES,
   PERMISSIONS,
@@ -208,10 +209,24 @@ export default function DailyOperationsPage() {
     hasPermission(PERMISSIONS["sessions:updateStatusOwn"]);
 
   const updateStatus = useUpdateSessionStatus();
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+  } = useBranchAccessState();
+  const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [pendingCancelSessionId, setPendingCancelSessionId] = useState(null);
   const [pendingCancelSession, setPendingCancelSession] = useState(null);
+
+  useEffect(() => {
+    if (isReadOnlyBranch) {
+      setCancelConfirmOpen(false);
+      setPendingCancelSessionId(null);
+      setPendingCancelSession(null);
+    }
+  }, [isReadOnlyBranch]);
 
   const { data, refetch, isFetching } = useDailyOperations(
     { date: selectedDate, shift: shiftFilter },
@@ -334,7 +349,7 @@ export default function DailyOperationsPage() {
   }, [sessions]);
 
   const handleChangeStatus = (session, newStatus) => {
-    if (!canUpdateStatus || !newStatus || !session) return;
+    if (isReadOnlyBranch || !canUpdateStatus || !newStatus || !session) return;
     if (newStatus === SESSION_STATUS.CANCELLED) {
       setPendingCancelSessionId(session.id);
       setPendingCancelSession(session);
@@ -356,7 +371,7 @@ export default function DailyOperationsPage() {
   };
 
   const confirmCancel = () => {
-    if (!pendingCancelSessionId || !pendingCancelSession) return;
+    if (isReadOnlyBranch || !pendingCancelSessionId || !pendingCancelSession) return;
     const payload = buildStatusUpdatePayload(
       pendingCancelSession,
       SESSION_STATUS.CANCELLED,
@@ -637,7 +652,8 @@ export default function DailyOperationsPage() {
                             onClick={() =>
                               handleChangeStatus(session, nextRoutineStatus)
                             }
-                            disabled={updateStatus.isPending}
+                            disabled={isReadOnlyBranch || updateStatus.isPending}
+                            title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                             className="w-full sm:w-auto"
                           >
                             {getStatusActionLabel(nextRoutineStatus, t)}
@@ -657,7 +673,8 @@ export default function DailyOperationsPage() {
                                   SESSION_STATUS.CANCELLED,
                                 )
                               }
-                              disabled={updateStatus.isPending}
+                              disabled={isReadOnlyBranch || updateStatus.isPending}
+                              title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                               className="w-full text-destructive hover:text-destructive sm:w-auto"
                             >
                               {t("status.cancelled")}
@@ -717,6 +734,7 @@ export default function DailyOperationsPage() {
                                 time: formatHourLabel(hour),
                               })}
                               onClick={() =>
+                                !isReadOnlyBranch &&
                                 navigate(
                                   `/sessions?returnDate=${selectedDate}${shiftFilter ? `&returnShift=${shiftFilter}` : ""}`,
                                   {
@@ -729,7 +747,9 @@ export default function DailyOperationsPage() {
                                   },
                                 )
                               }
-                              className="group flex min-h-[52px] flex-1 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-card px-3 py-3 text-xs text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40"
+                              disabled={isReadOnlyBranch}
+                              title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                              className="group flex min-h-[52px] flex-1 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-card px-3 py-3 text-xs text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-card"
                             >
                               <span className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
                                 {t("dailyOps.freeSlot", { defaultValue: "Free" })}
@@ -846,7 +866,7 @@ export default function DailyOperationsPage() {
                               <div className="mt-1 max-w-full truncate text-[11px] text-muted-foreground">
                                 {t(`status.${session.status}`)} | {profileLabel}
                               </div>
-                              {canUpdateStatus && nextRoutineStatus && (
+                              {canUpdateStatus && !isReadOnlyBranch && nextRoutineStatus && (
                                 <div className="mt-1 max-w-full truncate text-[11px] font-medium text-foreground">
                                   {getStatusActionLabel(nextRoutineStatus, t)}
                                 </div>
@@ -872,7 +892,9 @@ export default function DailyOperationsPage() {
                                   <button
                                     type="button"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow hover:bg-background hover:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                    disabled={isReadOnlyBranch}
+                                    title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                                    className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow hover:bg-background hover:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                                   >
                                     <MoreHorizontal className="h-3 w-3" />
                                   </button>
@@ -886,7 +908,7 @@ export default function DailyOperationsPage() {
                                   }).map((statusKey) => (
                                     <DropdownMenuItem
                                       key={statusKey}
-                                      disabled={updateStatus.isPending}
+                                      disabled={isReadOnlyBranch || updateStatus.isPending}
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleChangeStatus(session, statusKey);
@@ -934,6 +956,10 @@ export default function DailyOperationsPage() {
         confirmText={t("status.cancelled")}
         onConfirm={confirmCancel}
         isLoading={updateStatus.isPending}
+        confirmProps={{
+          disabled: isReadOnlyBranch || updateStatus.isPending,
+          title: isReadOnlyBranch ? readOnlyTooltip : undefined,
+        }}
       />
     </div>
   );

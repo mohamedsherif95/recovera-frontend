@@ -12,6 +12,7 @@ import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { usePatients, useCreatePatient, useDeletePatient } from '@/hooks/usePatients';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { PERMISSIONS } from '@/lib/constants';
 import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
 import { CLINIC_PROFILE_WORKFLOWS } from '@/lib/clinicProfiles';
@@ -28,7 +29,7 @@ import {
   UserPlus,
 } from 'lucide-react';
 
-function IntakeModeButton({ active, description, icon: Icon, label, onClick }) {
+function IntakeModeButton({ active, description, disabled, icon: Icon, label, onClick }) {
   return (
     <button
       type="button"
@@ -38,8 +39,10 @@ function IntakeModeButton({ active, description, icon: Icon, label, onClick }) {
         active
           ? 'border-primary bg-primary/10 text-primary shadow-sm'
           : 'border-border bg-background hover:bg-muted/50',
+        disabled ? 'cursor-not-allowed opacity-60 hover:bg-background' : '',
       ].join(' ')}
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={active}
     >
       <span
@@ -64,6 +67,12 @@ export default function PatientsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, canAny } = usePermissions();
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+  } = useBranchAccessState();
+  const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
   const { supportsWorkflow, enabledProfiles } = useActiveBranchProfiles();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -86,6 +95,14 @@ export default function PatientsPage() {
   const deletePatient = useDeletePatient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [patientToDelete, setPatientToDelete] = useState(null);
+
+  useEffect(() => {
+    if (isReadOnlyBranch) {
+      setShowForm(false);
+      setDeleteDialogOpen(false);
+      setPatientToDelete(null);
+    }
+  }, [isReadOnlyBranch]);
 
   const canDelete = hasPermission(PERMISSIONS['patients:delete']);
   const supportsVisitCategories = supportsWorkflow(
@@ -192,9 +209,12 @@ export default function PatientsPage() {
                   size="icon"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isReadOnlyBranch) return;
                     setPatientToDelete(row);
                     setDeleteDialogOpen(true);
                   }}
+                  disabled={isReadOnlyBranch}
+                  title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
@@ -203,7 +223,15 @@ export default function PatientsPage() {
           ]
         : []),
     ],
-    [t, canDelete, supportsAssessmentTracking, supportsTreatmentPackages, supportsVisitCategories]
+    [
+      t,
+      canDelete,
+      supportsAssessmentTracking,
+      supportsTreatmentPackages,
+      supportsVisitCategories,
+      isReadOnlyBranch,
+      readOnlyTooltip,
+    ]
   );
 
   const patients = useMemo(() => {
@@ -220,6 +248,7 @@ export default function PatientsPage() {
   const enabledProfileCount = Array.isArray(enabledProfiles) ? enabledProfiles.length : 0;
 
   const handleCreate = (values) => {
+    if (isReadOnlyBranch) return;
     createPatient.mutate(values, {
       onSuccess: () => {
         setShowForm(false);
@@ -228,6 +257,7 @@ export default function PatientsPage() {
   };
 
   const handleCreateToggle = () => {
+    if (isReadOnlyBranch) return;
     setShowForm((prev) => {
       const next = !prev;
       if (next) {
@@ -238,7 +268,7 @@ export default function PatientsPage() {
   };
 
   const handleConfirmDelete = () => {
-    if (!patientToDelete) return;
+    if (isReadOnlyBranch || !patientToDelete) return;
     deletePatient.mutate(patientToDelete.id, {
       onSuccess: () => {
         setDeleteDialogOpen(false);
@@ -273,7 +303,12 @@ export default function PatientsPage() {
               <RefreshCcw className="h-4 w-4" />
             </Button>
             {hasPermission(PERMISSIONS['patients:create']) && (
-              <Button onClick={handleCreateToggle} className="w-full sm:w-auto">
+              <Button
+                onClick={handleCreateToggle}
+                disabled={isReadOnlyBranch}
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                className="w-full sm:w-auto"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 {t('patients.createPatient')}
               </Button>
@@ -303,7 +338,7 @@ export default function PatientsPage() {
         </div>
       </ImpactPanel>
 
-      {showForm && hasPermission(PERMISSIONS['patients:create']) && (
+      {showForm && !isReadOnlyBranch && hasPermission(PERMISSIONS['patients:create']) && (
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <IntakeModeButton
@@ -311,6 +346,7 @@ export default function PatientsPage() {
               icon={Plus}
               label={t('patients.newPatient')}
               description={t('patients.newPatientIntakeDescription')}
+              disabled={isReadOnlyBranch}
               onClick={() => setIntakeMode('new')}
             />
             <IntakeModeButton
@@ -318,6 +354,7 @@ export default function PatientsPage() {
               icon={UserPlus}
               label={t('patients.existingPatient')}
               description={t('patients.existingPatientIntakeDescription')}
+              disabled={isReadOnlyBranch}
               onClick={() => setIntakeMode('existing')}
             />
           </div>
@@ -389,10 +426,13 @@ export default function PatientsPage() {
                           size="icon"
                           onClick={(event) => {
                             event.stopPropagation();
+                            if (isReadOnlyBranch) return;
                             setPatientToDelete(row);
                             setDeleteDialogOpen(true);
                           }}
                           aria-label={t('patients.deleteTitle')}
+                          disabled={isReadOnlyBranch}
+                          title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                           className="shrink-0"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -472,6 +512,10 @@ export default function PatientsPage() {
         description={t('patients.deleteDescription')}
         onConfirm={handleConfirmDelete}
         isLoading={deletePatient.isPending}
+        confirmProps={{
+          disabled: isReadOnlyBranch || deletePatient.isPending,
+          title: isReadOnlyBranch ? readOnlyTooltip : undefined,
+        }}
       />
     </div>
   );

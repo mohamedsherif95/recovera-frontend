@@ -5,63 +5,25 @@ import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { AppFooter } from './AppFooter';
 import { useUIStore } from '@/store/uiStore';
-import { useAuthStore } from '@/store/authStore';
-import { useBranches } from '@/hooks/useBranches';
-import {
-  canOverrideBranchScope,
-  getAssignedBranches,
-  resolveEffectiveBranchId,
-  resolveEffectiveClinicId,
-} from '@/lib/branchScope';
-import { BRANCH_SUBSCRIPTION_ACCESS_STATUS } from '@/lib/constants';
+import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { cn } from '@/lib/utils';
 
 export function AppLayout() {
   const {
     sidebarOpen,
-    clinicOverrideId,
-    branchOverrideId,
     clearClinicOverride,
   } = useUIStore();
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const isRtl = i18n.language === 'ar';
-  const canOverrideBranch = canOverrideBranchScope(user);
-  const assignedBranches = getAssignedBranches(user);
-  const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
-  const { data: branchesData } = useBranches({
-    enabled: Boolean(
-      user &&
-        (canOverrideBranch ? effectiveClinicId : effectiveBranchId),
-    ),
-  });
-  const hasScopedBranchData = Boolean(
-    canOverrideBranch ? effectiveClinicId : effectiveBranchId,
-  );
-  const fetchedBranches = hasScopedBranchData
-    ? Array.isArray(branchesData)
-      ? branchesData
-      : Array.isArray(branchesData?.data)
-        ? branchesData.data
-        : []
-    : [];
-  const branches = fetchedBranches.length > 0 ? fetchedBranches : assignedBranches;
-  const currentBranch =
-    canOverrideBranch && !effectiveClinicId
-      ? null
-      : branches.find((branch) => Number(branch.id) === Number(effectiveBranchId)) ||
-        branches.find((branch) => branch.isDefault) ||
-        (!canOverrideBranch ? user?.branch : null) ||
-        null;
-  const branchAccessStatus =
-    currentBranch?.subscription?.accessStatus ||
-    currentBranch?.accessStatus ||
-    null;
-  const isReadOnlyBranch =
-    branchAccessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+    readOnlyDescription,
+    readOnlyDescriptionKey,
+  } = useBranchAccessState();
 
   useEffect(() => {
     clearClinicOverride();
@@ -145,13 +107,10 @@ export function AppLayout() {
         {isReadOnlyBranch && (
           <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
             <div className="font-semibold">
-              {t('app.readOnlyTitle', { defaultValue: 'Read-only branch' })}
+              {t(readOnlyTitleKey, { defaultValue: readOnlyTitle })}
             </div>
             <div className="mt-1 font-normal">
-              {t('app.readOnlyDescription', {
-                defaultValue:
-                  'This branch is currently in read-only mode. You can view existing records, but changes are disabled. Please contact your administrator.',
-              })}
+              {t(readOnlyDescriptionKey, { defaultValue: readOnlyDescription })}
             </div>
           </div>
         )}

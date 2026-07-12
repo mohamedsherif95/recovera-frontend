@@ -17,10 +17,21 @@ export function ConfirmDialog({
   description,
   confirmText,
   cancelText,
+  cancelProps = {},
+  confirmProps = {},
   variant = 'destructive',
   isLoading = false,
 }) {
   const { t } = useTranslation();
+  const {
+    disabled: cancelDisabled,
+    ...restCancelProps
+  } = cancelProps;
+  const {
+    disabled: confirmDisabled,
+    variant: confirmVariant,
+    ...restConfirmProps
+  } = confirmProps;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -30,10 +41,20 @@ export function ConfirmDialog({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading || cancelDisabled}
+            {...restCancelProps}
+          >
             {cancelText || t('common.cancel')}
           </Button>
-          <Button variant={variant} onClick={onConfirm} disabled={isLoading}>
+          <Button
+            variant={confirmVariant || variant}
+            onClick={onConfirm}
+            disabled={isLoading || confirmDisabled}
+            {...restConfirmProps}
+          >
             {isLoading ? t('common.loading') : confirmText || t('common.confirm')}
           </Button>
         </DialogFooter>

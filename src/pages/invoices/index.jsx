@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ import {
   useInvoices,
   useVoidInvoice,
 } from '@/hooks/useInvoices';
+import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
@@ -72,6 +73,17 @@ export default function InvoicesPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { can, currentUser } = usePermissions();
+  const {
+    isReadOnlyBranch,
+    readOnlyTitle,
+    readOnlyTitleKey,
+    readOnlyDescription,
+    readOnlyDescriptionKey,
+  } = useBranchAccessState();
+  const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
+  const readOnlyHelper = t(readOnlyDescriptionKey, {
+    defaultValue: readOnlyDescription,
+  });
 
   const canViewInvoices = can(PERMISSIONS['invoices:view']);
   const canCreateInvoices = can(PERMISSIONS['invoices:create']);
@@ -131,6 +143,12 @@ export default function InvoicesPage() {
 
   const [detailsInvoiceId, setDetailsInvoiceId] = useState(null);
   const [pendingVoidInvoice, setPendingVoidInvoice] = useState(null);
+
+  useEffect(() => {
+    if (isReadOnlyBranch) {
+      setPendingVoidInvoice(null);
+    }
+  }, [isReadOnlyBranch]);
 
   const patientLookup = usePatientLookupOptions({
     enabled: canViewInvoices,
@@ -220,6 +238,7 @@ export default function InvoicesPage() {
   };
 
   const handleCreateStatementInvoice = () => {
+    if (isReadOnlyBranch) return;
     if (!statementPatientId) {
       toast.error(
         t('reports.filterByPatient', {
@@ -246,7 +265,7 @@ export default function InvoicesPage() {
   };
 
   const handleVoidInvoice = () => {
-    if (!pendingVoidInvoice) return;
+    if (isReadOnlyBranch || !pendingVoidInvoice) return;
     voidInvoice.mutate(
       {
         invoiceId: pendingVoidInvoice.id,
@@ -420,6 +439,9 @@ export default function InvoicesPage() {
                 defaultValue: 'Statement Invoice Generator',
               })}
             </CardTitle>
+            {isReadOnlyBranch && (
+              <p className="text-sm text-muted-foreground">{readOnlyHelper}</p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -440,6 +462,7 @@ export default function InvoicesPage() {
                   selectedOption={statementPatientOption}
                   placeholder={t('reports.filterByPatient')}
                   searchPlaceholder={t('sessions.filters.searchPlaceholder')}
+                  disabled={isReadOnlyBranch}
                 />
               </div>
               <div className="space-y-1 xl:col-span-2">
@@ -459,7 +482,12 @@ export default function InvoicesPage() {
             <div className="flex justify-end">
               <Button
                 onClick={handleCreateStatementInvoice}
-                disabled={createStatementInvoice.isPending || !statementPatientId}
+                disabled={
+                  isReadOnlyBranch ||
+                  createStatementInvoice.isPending ||
+                  !statementPatientId
+                }
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
               >
                 {createStatementInvoice.isPending
                   ? t('common.loading')
@@ -572,7 +600,12 @@ export default function InvoicesPage() {
                               <Button
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => setPendingVoidInvoice(invoice)}
+                                onClick={() => {
+                                  if (isReadOnlyBranch) return;
+                                  setPendingVoidInvoice(invoice);
+                                }}
+                                disabled={isReadOnlyBranch}
+                                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
                               >
                                 {t('reports.voidInvoice', {
                                   defaultValue: 'Void',
@@ -735,6 +768,10 @@ export default function InvoicesPage() {
         })}
         confirmText={t('reports.voidInvoice', { defaultValue: 'Void' })}
         isLoading={voidInvoice.isPending}
+        confirmProps={{
+          disabled: isReadOnlyBranch || voidInvoice.isPending,
+          title: isReadOnlyBranch ? readOnlyTooltip : undefined,
+        }}
         onConfirm={handleVoidInvoice}
       />
     </div>

@@ -20,6 +20,10 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
+import {
+  ActionWeightItem,
+  ActionWeightPanel,
+} from '@/components/common/ActionWeightPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -468,6 +472,17 @@ function AdjustmentDialog({
     }
   }, [open]);
 
+  const numericAmount = Number(amount);
+  const hasValidAmount = amount !== '' && Number.isFinite(numericAmount) && numericAmount !== 0;
+  const adjustmentTone = numericAmount < 0 ? 'commercial' : 'warning';
+  const adjustmentType = numericAmount < 0
+    ? t('platformBilling.adjustmentDialog.credit', {
+        defaultValue: 'Credit',
+      })
+    : t('platformBilling.adjustmentDialog.charge', {
+        defaultValue: 'Charge',
+      });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -507,6 +522,54 @@ function AdjustmentDialog({
               onChange={(event) => setReason(event.target.value)}
             />
           </div>
+          <ActionWeightPanel
+            tone={hasValidAmount ? adjustmentTone : 'neutral'}
+            icon={ReceiptText}
+            title={t('platformBilling.adjustmentDialog.impactTitle', {
+              defaultValue: 'Adjustment impact',
+            })}
+            description={t('platformBilling.adjustmentDialog.impactDescription', {
+              defaultValue:
+                'Saved adjustments change the invoice total and balance. Generated artifacts may need regeneration before sharing.',
+            })}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ActionWeightItem
+                tone={hasValidAmount ? adjustmentTone : 'neutral'}
+                label={t('platformBilling.adjustmentDialog.amountPreview', {
+                  defaultValue: 'Amount preview',
+                })}
+                value={
+                  hasValidAmount
+                    ? t('platformBilling.adjustmentDialog.amountPreviewValue', {
+                        type: adjustmentType,
+                        amount: formatCurrency(Math.abs(numericAmount)),
+                        defaultValue: '{{type}} {{amount}}',
+                      })
+                    : t('platformBilling.adjustmentDialog.enterNonZeroAmount', {
+                        defaultValue: 'Enter a non-zero amount',
+                      })
+                }
+                helper={t('platformBilling.adjustmentDialog.amountHelper', {
+                  defaultValue:
+                    'Positive amounts add charges; negative amounts add credits.',
+                })}
+              />
+              <ActionWeightItem
+                tone={reason.trim().length >= 10 ? 'neutral' : 'warning'}
+                label={t('platformBilling.adjustmentDialog.auditLabel', {
+                  defaultValue: 'Audit requirement',
+                })}
+                value={t('platformBilling.adjustmentDialog.auditValue', {
+                  defaultValue: 'Reason required',
+                })}
+                helper={t('platformBilling.adjustmentDialog.auditHelper', {
+                  defaultValue:
+                    'Add at least 10 characters so the billing audit trail explains the change.',
+                })}
+              />
+            </div>
+          </ActionWeightPanel>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -514,7 +577,7 @@ function AdjustmentDialog({
           </Button>
           <Button
             onClick={() => onSubmit({ amount: Number(amount), reason })}
-            disabled={isLoading || !amount || reason.trim().length < 10}
+            disabled={isLoading || !hasValidAmount || reason.trim().length < 10}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('platformBilling.adjustmentDialog.submit', {
@@ -554,6 +617,11 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
     Number(maxAmount) > 0 &&
     numericAmount > Number(maxAmount);
   const invalidAmount = !Number.isFinite(numericAmount) || numericAmount <= 0;
+  const remainingBalance = Number(maxAmount || 0);
+  const projectedBalance =
+    Number.isFinite(numericAmount) && Number.isFinite(remainingBalance)
+      ? remainingBalance - numericAmount
+      : remainingBalance;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -646,6 +714,56 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
               onChange={(event) => setNotes(event.target.value)}
             />
           </div>
+          <ActionWeightPanel
+            className="sm:col-span-2"
+            tone={invalidAmount || exceedsBalance ? 'warning' : 'commercial'}
+            icon={WalletCards}
+            title={t('platformBilling.collectionDialog.impactTitle', {
+              defaultValue: 'Ledger impact',
+            })}
+            description={t('platformBilling.collectionDialog.impactDescription', {
+              defaultValue:
+                'This records an offline collection in the platform ledger and reduces the invoice balance.',
+            })}
+          >
+            <div className="grid gap-2 sm:grid-cols-3">
+              <ActionWeightItem
+                label={t('platformBilling.collectionDialog.currentBalance', {
+                  defaultValue: 'Current balance',
+                })}
+                value={formatCurrency(remainingBalance)}
+              />
+              <ActionWeightItem
+                tone={invalidAmount ? 'warning' : 'commercial'}
+                label={t('platformBilling.collectionDialog.enteredAmount', {
+                  defaultValue: 'Collection amount',
+                })}
+                value={
+                  invalidAmount
+                    ? t('platformBilling.collectionDialog.enterAmount', {
+                        defaultValue: 'Enter an amount',
+                      })
+                    : formatCurrency(numericAmount)
+                }
+              />
+              <ActionWeightItem
+                tone={exceedsBalance ? 'danger' : 'commercial'}
+                label={t('platformBilling.collectionDialog.projectedBalance', {
+                  defaultValue: 'Projected balance',
+                })}
+                value={formatCurrency(projectedBalance)}
+                helper={
+                  exceedsBalance
+                    ? t('platformBilling.collectionDialog.projectedBalanceBlocked', {
+                        defaultValue: 'Amount must stay within the open balance.',
+                      })
+                    : t('platformBilling.collectionDialog.projectedBalanceHelper', {
+                        defaultValue: 'Balance after this collection is recorded.',
+                      })
+                }
+              />
+            </div>
+          </ActionWeightPanel>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -674,7 +792,13 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
   );
 }
 
-function VoidDialog({ open, onOpenChange, onSubmit, isLoading }) {
+function VoidDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isLoading,
+  hasCollections = false,
+}) {
   const { t } = useTranslation();
   const [reason, setReason] = useState('');
 
@@ -698,15 +822,76 @@ function VoidDialog({ open, onOpenChange, onSubmit, isLoading }) {
             })}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <Label htmlFor="void-reason">
-            {t('platformBilling.reason', { defaultValue: 'Reason' })}
-          </Label>
-          <Textarea
-            id="void-reason"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
+        <div className="space-y-4">
+          <ActionWeightPanel
+            tone="danger"
+            icon={AlertTriangle}
+            title={t('platformBilling.voidDialog.impactTitle', {
+              defaultValue: 'Void impact',
+            })}
+            description={t('platformBilling.voidDialog.impactDescription', {
+              defaultValue:
+                'Voiding cancels this invoice package and keeps the action in the audit trail.',
+            })}
+          >
+            <div className="grid gap-2 sm:grid-cols-3">
+              <ActionWeightItem
+                tone="danger"
+                label={t('platformBilling.voidDialog.packageLabel', {
+                  defaultValue: 'Invoice package',
+                })}
+                value={t('platformBilling.voidDialog.packageValue', {
+                  defaultValue: 'Cancelled',
+                })}
+                helper={t('platformBilling.voidDialog.packageHelper', {
+                  defaultValue:
+                    'The PDF and workbook should no longer be treated as active billing artifacts.',
+                })}
+              />
+              <ActionWeightItem
+                tone={hasCollections ? 'warning' : 'commercial'}
+                label={t('platformBilling.voidDialog.lockLabel', {
+                  defaultValue: 'Branch-month lock',
+                })}
+                value={
+                  hasCollections
+                    ? t('platformBilling.voidDialog.lockHeld', {
+                        defaultValue: 'Stays locked',
+                      })
+                    : t('platformBilling.voidDialog.lockReleased', {
+                        defaultValue: 'Released',
+                      })
+                }
+                helper={t('platformBilling.voidDialog.lockHelper', {
+                  defaultValue:
+                    'The lock is released only when no collection records exist.',
+                })}
+              />
+              <ActionWeightItem
+                tone={reason.trim().length >= 10 ? 'neutral' : 'warning'}
+                label={t('platformBilling.voidDialog.auditLabel', {
+                  defaultValue: 'Audit reason',
+                })}
+                value={t('platformBilling.voidDialog.auditValue', {
+                  defaultValue: 'Required',
+                })}
+                helper={t('platformBilling.voidDialog.auditHelper', {
+                  defaultValue:
+                    'Add at least 10 characters so the cancellation is explainable later.',
+                })}
+              />
+            </div>
+          </ActionWeightPanel>
+          <div className="space-y-2">
+            <Label htmlFor="void-reason">
+              {t('platformBilling.reason', { defaultValue: 'Reason' })}
+            </Label>
+            <Textarea
+              id="void-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -884,6 +1069,22 @@ export default function PlatformBillingPage() {
     previewQuery,
   });
   const selectedArtifacts = selectedInvoicePackage?.artifacts || [];
+  const selectedCollections = Array.isArray(selectedInvoicePackage?.collections)
+    ? selectedInvoicePackage.collections
+    : null;
+  const selectedInvoiceHasCollections = selectedCollections
+    ? selectedCollections.length > 0
+    : Number(selectedInvoice?.collectedAmount || 0) > 0;
+  const selectedInvoiceVoidReason =
+    selectedInvoice?.voidReason ||
+    selectedInvoice?.voidedReason ||
+    selectedInvoice?.void_reason ||
+    '';
+  const selectedInvoiceVoidedBy =
+    selectedInvoice?.voidedBy?.fullName ||
+    selectedInvoice?.voidedBy?.name ||
+    selectedInvoice?.voidedByName ||
+    '';
   const latestInvoiceActivityTimestamp =
     getLatestInvoiceActivityTimestamp(selectedInvoicePackage);
   const pdfArtifact = getArtifactByType(selectedArtifacts, 'pdf');
@@ -915,7 +1116,7 @@ export default function PlatformBillingPage() {
     canManage &&
     selectedInvoice &&
     selectedInvoice.status !== 'voided' &&
-    Number(selectedInvoice.collectedAmount || 0) === 0;
+    !selectedInvoiceHasCollections;
   const activeInvoiceCanCollect =
     canManage &&
     activeInvoice &&
@@ -1800,6 +2001,36 @@ export default function PlatformBillingPage() {
                           value={formatCurrency(selectedInvoice.balanceAmount)}
                         />
                       </div>
+                      {(selectedInvoice.voidedAt ||
+                        selectedInvoiceVoidedBy ||
+                        selectedInvoiceVoidReason) && (
+                        <div className="mt-3 grid gap-3 border-t pt-3 sm:grid-cols-3">
+                          {selectedInvoice.voidedAt && (
+                            <ImpactMetric
+                              label={t('platformBilling.voidedMetadata.voidedAt', {
+                                defaultValue: 'Voided at',
+                              })}
+                              value={formatDateTime(selectedInvoice.voidedAt)}
+                            />
+                          )}
+                          {selectedInvoiceVoidedBy && (
+                            <ImpactMetric
+                              label={t('platformBilling.voidedMetadata.voidedBy', {
+                                defaultValue: 'Voided by',
+                              })}
+                              value={selectedInvoiceVoidedBy}
+                            />
+                          )}
+                          {selectedInvoiceVoidReason && (
+                            <ImpactMetric
+                              label={t('platformBilling.voidedMetadata.reason', {
+                                defaultValue: 'Void reason',
+                              })}
+                              value={selectedInvoiceVoidReason}
+                            />
+                          )}
+                        </div>
+                      )}
                     </ImpactPanel>
                   )}
 
@@ -1995,6 +2226,7 @@ export default function PlatformBillingPage() {
         onOpenChange={setVoidOpen}
         onSubmit={handleVoid}
         isLoading={voidInvoice.isPending}
+        hasCollections={selectedInvoiceHasCollections}
       />
     </div>
   );

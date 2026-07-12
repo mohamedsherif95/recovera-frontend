@@ -1769,6 +1769,11 @@
     "collectionImpactDescription": "سجل التحصيلات خارج المنصة بعد استلام المال حتى يبقى رصيد الفاتورة دقيقاً.",
     "voidedImpactDescription": "تم إلغاء هذه الفاتورة وتظل ظاهرة ضمن سجل الفوترة.",
     "voidImpactTitle": "أهلية الإلغاء",
+    "voidedMetadata": {
+      "voidedAt": "وقت الإلغاء",
+      "voidedBy": "ألغيت بواسطة",
+      "reason": "سبب الإلغاء"
+    },
     "lifecycle": {
       "label": "دورة الفوترة",
       "states": {
@@ -1886,6 +1891,17 @@
     "adjustmentDialog": {
       "title": "تسجيل تعديل مالي",
       "description": "استخدم المبالغ الموجبة للرسوم الإضافية والمبالغ السالبة للخصومات.",
+      "impactTitle": "تأثير التعديل",
+      "impactDescription": "التعديلات المحفوظة تغير إجمالي الفاتورة ورصيدها. وقد تحتاج المرفقات المنشأة إلى إعادة إنشاء قبل مشاركتها.",
+      "amountPreview": "معاينة المبلغ",
+      "amountPreviewValue": "{{type}} {{amount}}",
+      "charge": "رسوم",
+      "credit": "خصم",
+      "enterNonZeroAmount": "أدخل مبلغاً غير صفري",
+      "amountHelper": "المبالغ الموجبة تضيف رسوماً، والمبالغ السالبة تضيف خصومات.",
+      "auditLabel": "متطلب المراجعة",
+      "auditValue": "السبب مطلوب",
+      "auditHelper": "اكتب 10 أحرف على الأقل حتى يوضح سجل المراجعة سبب التغيير.",
       "submit": "حفظ التعديل"
     },
     "collectionDialog": {
@@ -1896,11 +1912,31 @@
       "reference": "المرجع",
       "remainingBalance": "الرصيد المتبقي: {{amount}}",
       "exceedsBalance": "لا يمكن أن يتجاوز مبلغ التحصيل الرصيد المتبقي.",
+      "impactTitle": "تأثير السجل المالي",
+      "impactDescription": "هذا يسجل تحصيلاً خارج المنصة في سجل المنصة المالي ويخفض رصيد الفاتورة.",
+      "currentBalance": "الرصيد الحالي",
+      "enteredAmount": "مبلغ التحصيل",
+      "enterAmount": "أدخل مبلغاً",
+      "projectedBalance": "الرصيد بعد التحصيل",
+      "projectedBalanceHelper": "الرصيد بعد تسجيل هذا التحصيل.",
+      "projectedBalanceBlocked": "يجب أن يبقى المبلغ داخل الرصيد المفتوح.",
       "submit": "تسجيل التحصيل"
     },
     "voidDialog": {
       "title": "إلغاء الفاتورة",
       "description": "إلغاء الفاتورة يحرر قفل الفرع-الشهر فقط عند عدم وجود تحصيلات.",
+      "impactTitle": "تأثير الإلغاء",
+      "impactDescription": "إلغاء الفاتورة يلغي حزمة الفاتورة ويحفظ الإجراء في سجل المراجعة.",
+      "packageLabel": "حزمة الفاتورة",
+      "packageValue": "ملغاة",
+      "packageHelper": "لا يجب اعتبار ملف PDF ودفتر البيانات مرفقات فوترة نشطة بعد ذلك.",
+      "lockLabel": "قفل الفرع-الشهر",
+      "lockHeld": "يبقى مقفلاً",
+      "lockReleased": "يتم تحريره",
+      "lockHelper": "لا يتحرر القفل إلا عند عدم وجود سجلات تحصيل.",
+      "auditLabel": "سبب المراجعة",
+      "auditValue": "مطلوب",
+      "auditHelper": "اكتب 10 أحرف على الأقل حتى يكون سبب الإلغاء واضحاً لاحقاً.",
       "submit": "إلغاء الفاتورة"
     }
   },

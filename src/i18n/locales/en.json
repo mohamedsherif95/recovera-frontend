@@ -908,6 +908,11 @@
     "collectionImpactDescription": "Record offline collections after money is received to keep the invoice balance accurate.",
     "voidedImpactDescription": "This invoice has been cancelled and remains visible for billing history.",
     "voidImpactTitle": "Void eligibility",
+    "voidedMetadata": {
+      "voidedAt": "Voided at",
+      "voidedBy": "Voided by",
+      "reason": "Void reason"
+    },
     "lifecycle": {
       "label": "Billing lifecycle",
       "states": {
@@ -1025,6 +1030,17 @@
     "adjustmentDialog": {
       "title": "Record adjustment",
       "description": "Use positive amounts for extra charges and negative amounts for credits.",
+      "impactTitle": "Adjustment impact",
+      "impactDescription": "Saved adjustments change the invoice total and balance. Generated artifacts may need regeneration before sharing.",
+      "amountPreview": "Amount preview",
+      "amountPreviewValue": "{{type}} {{amount}}",
+      "charge": "Charge",
+      "credit": "Credit",
+      "enterNonZeroAmount": "Enter a non-zero amount",
+      "amountHelper": "Positive amounts add charges; negative amounts add credits.",
+      "auditLabel": "Audit requirement",
+      "auditValue": "Reason required",
+      "auditHelper": "Add at least 10 characters so the billing audit trail explains the change.",
       "submit": "Save adjustment"
     },
     "collectionDialog": {
@@ -1035,11 +1051,31 @@
       "reference": "Reference",
       "remainingBalance": "Remaining balance: {{amount}}",
       "exceedsBalance": "Collection amount cannot exceed the remaining balance.",
+      "impactTitle": "Ledger impact",
+      "impactDescription": "This records an offline collection in the platform ledger and reduces the invoice balance.",
+      "currentBalance": "Current balance",
+      "enteredAmount": "Collection amount",
+      "enterAmount": "Enter an amount",
+      "projectedBalance": "Projected balance",
+      "projectedBalanceHelper": "Balance after this collection is recorded.",
+      "projectedBalanceBlocked": "Amount must stay within the open balance.",
       "submit": "Record collection"
     },
     "voidDialog": {
       "title": "Void invoice",
       "description": "Voiding releases the branch-month lock only when no collections exist.",
+      "impactTitle": "Void impact",
+      "impactDescription": "Voiding cancels this invoice package and keeps the action in the audit trail.",
+      "packageLabel": "Invoice package",
+      "packageValue": "Cancelled",
+      "packageHelper": "The PDF and workbook should no longer be treated as active billing artifacts.",
+      "lockLabel": "Branch-month lock",
+      "lockHeld": "Stays locked",
+      "lockReleased": "Released",
+      "lockHelper": "The lock is released only when no collection records exist.",
+      "auditLabel": "Audit reason",
+      "auditValue": "Required",
+      "auditHelper": "Add at least 10 characters so the cancellation is explainable later.",
       "submit": "Void invoice"
     }
   },

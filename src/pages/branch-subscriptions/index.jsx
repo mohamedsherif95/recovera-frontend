@@ -14,6 +14,10 @@ import {
   Save,
   ShieldCheck,
 } from 'lucide-react';
+import {
+  ActionWeightItem,
+  ActionWeightPanel,
+} from '@/components/common/ActionWeightPanel';
 import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -271,6 +275,30 @@ const getProfileListKey = (profiles) => asArray(profiles).slice().sort().join('|
 const isReadOnlyStatus = (status) =>
   status === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
 
+const toComparablePricingPayload = (term = {}) => ({
+  pricingModel: term.pricingModel || BRANCH_PRICING_MODELS.FLEXIBLE_USAGE,
+  baseMonthlyFee: toMoneyInteger(term.baseMonthlyFee),
+  packageName: String(term.packageName || '').trim() || null,
+  includedMonthlyVisits: toMoneyInteger(term.includedMonthlyVisits),
+  overageBlockSize:
+    term.overageBlockSize === null ||
+    term.overageBlockSize === undefined ||
+    term.overageBlockSize === ''
+      ? null
+      : Math.max(1, toMoneyInteger(term.overageBlockSize)),
+  overageBlockFee: toMoneyInteger(term.overageBlockFee),
+});
+
+const pricingPayloadsMatch = (left, right) =>
+  [
+    'pricingModel',
+    'baseMonthlyFee',
+    'packageName',
+    'includedMonthlyVisits',
+    'overageBlockSize',
+    'overageBlockFee',
+  ].every((key) => left[key] === right[key]);
+
 function ProfileChoiceCard({
   checked,
   current,
@@ -431,9 +459,16 @@ const SavingIcon = ({ isSaving }) =>
     <Save className="mr-2 h-4 w-4" />
   );
 
-function ReviewChangeRow({ label, from, to, t }) {
+function ReviewChangeRow({ label, from, to, t, tone = 'neutral' }) {
   return (
-    <div className="grid gap-2 rounded-md border p-3 text-sm sm:grid-cols-[8rem_1fr]">
+    <div
+      className={cn(
+        'grid gap-2 rounded-md border p-3 text-sm sm:grid-cols-[8rem_1fr]',
+        tone === 'warning' &&
+          'border-amber-200 bg-amber-50/70 dark:border-amber-900/70 dark:bg-amber-950/25',
+        tone === 'danger' && 'border-destructive/30 bg-destructive/10',
+      )}
+    >
       <div className="font-medium">{label}</div>
       <div className="grid gap-2 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
         <div>
@@ -491,10 +526,32 @@ function ChangeReviewDialog({
               label={row.label}
               from={row.from}
               to={row.to}
+              tone={row.tone}
               t={t}
             />
           ))}
         </div>
+
+        {action?.impactItems?.length > 0 && (
+          <ActionWeightPanel
+            tone={action.impactTone || 'warning'}
+            icon={AlertTriangle}
+            title={action.impactTitle}
+            description={action.impactDescription}
+          >
+            <div className="grid gap-2 sm:grid-cols-2">
+              {action.impactItems.map((item) => (
+                <ActionWeightItem
+                  key={`${item.label}-${item.value}`}
+                  label={item.label}
+                  value={item.value}
+                  helper={item.helper}
+                  tone={item.tone || action.impactTone || 'warning'}
+                />
+              ))}
+            </div>
+          </ActionWeightPanel>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="branch-subscription-change-reason">
@@ -773,6 +830,7 @@ export default function BranchSubscriptionsPage() {
 
   const openAccessReview = (event) => {
     event.preventDefault();
+    if (!hasAccessChanges || accessNotesMissing) return;
 
     setChangeReason('');
     setReviewAction({
@@ -790,6 +848,37 @@ export default function BranchSubscriptionsPage() {
               'Read-only access blocks mutating clinic actions while preserving login and viewing access.',
           })
         : null,
+      impactTone: readOnlyAccess ? 'danger' : 'warning',
+      impactTitle: readOnlyAccess
+        ? t('branchSubscriptions.review.accessImpactTitle', {
+            defaultValue: 'Access impact',
+          })
+        : null,
+      impactItems: readOnlyAccess
+        ? [
+            {
+              label: t('branchSubscriptions.review.accessRestriction', {
+                defaultValue: 'Operating restriction',
+              }),
+              value: statusLabel,
+              helper: t('branchSubscriptions.review.accessRestrictionHelper', {
+                defaultValue: 'Mutating branch actions will be blocked.',
+              }),
+              tone: 'danger',
+            },
+            {
+              label: t('branchSubscriptions.review.accessNotesRequired', {
+                defaultValue: 'Required access notes',
+              }),
+              value: form.accessNotes.trim(),
+              helper: t('branchSubscriptions.review.accessNotesRequiredHelper', {
+                defaultValue:
+                  'The review keeps the access rationale with the audit payload.',
+              }),
+              tone: 'warning',
+            },
+          ]
+        : [],
       variant: readOnlyAccess ? 'destructive' : 'default',
       confirmLabel: t('branchSubscriptions.confirmAccessChange', {
         defaultValue: 'Confirm access change',
@@ -815,7 +904,7 @@ export default function BranchSubscriptionsPage() {
 
   const openProfilesReview = (event) => {
     event.preventDefault();
-    if (!form.enabledProfiles.length) return;
+    if (!form.enabledProfiles.length || !hasProfileChanges) return;
 
     setChangeReason('');
     setReviewAction({
@@ -827,14 +916,55 @@ export default function BranchSubscriptionsPage() {
         defaultValue:
           'Profile changes affect available branch workflows and the fixed fee multiplier.',
       }),
-      warning: t('branchSubscriptions.review.profilesWarning', {
-        defaultValue:
-          'Profile availability changes apply to this branch after saving. Review operational impact before confirming.',
-      }),
+      warning: hasDestructiveProfileDisable
+        ? t('branchSubscriptions.review.profileDisableWarning', {
+            defaultValue:
+              'Disabling enabled profiles removes branch workflows after saving.',
+          })
+        : t('branchSubscriptions.review.profilesWarning', {
+            defaultValue:
+              'Profile availability changes apply to this branch after saving. Review operational impact before confirming.',
+          }),
+      impactTone: hasDestructiveProfileDisable ? 'danger' : 'warning',
+      impactTitle: hasDestructiveProfileDisable
+        ? t('branchSubscriptions.review.profileDisableImpactTitle', {
+            defaultValue: 'Profile disable impact',
+          })
+        : null,
+      impactItems: hasDestructiveProfileDisable
+        ? [
+            {
+              label: t('branchSubscriptions.review.profileDisableLabel', {
+                defaultValue: 'Profiles being disabled',
+              }),
+              value: formatProfiles(disabledProfiles, t),
+              helper: t('branchSubscriptions.review.profileDisableHelper', {
+                defaultValue:
+                  'These branch workflows will no longer be available after confirmation.',
+              }),
+              tone: 'danger',
+            },
+          ]
+        : [],
+      variant: hasDestructiveProfileDisable ? 'destructive' : 'default',
       confirmLabel: t('branchSubscriptions.confirmProfilesChange', {
         defaultValue: 'Confirm profile change',
       }),
       rows: [
+        ...(hasDestructiveProfileDisable
+          ? [
+              {
+                label: t('branchSubscriptions.review.disabledProfiles', {
+                  defaultValue: 'Disabled profiles',
+                }),
+                from: formatProfiles(disabledProfiles, t),
+                to: t('branchSubscriptions.review.disabledProfilesResult', {
+                  defaultValue: 'Removed from branch operations',
+                }),
+                tone: 'danger',
+              },
+            ]
+          : []),
         {
           label: t('branchSubscriptions.enabledProfiles', {
             defaultValue: 'Enabled profiles',
@@ -855,13 +985,9 @@ export default function BranchSubscriptionsPage() {
 
   const openPricingReview = (event) => {
     event.preventDefault();
-    if (!isPricingReady) return;
+    if (!isPricingReady || !hasPricingChanges) return;
 
-    const pricingPayload = buildPricingPayload();
-    const comparisonTerm =
-      normalizedSubscription.nextPricingTerm ||
-      normalizedSubscription.currentPricingTerm ||
-      {};
+    const pricingPayload = proposedPricingPayload;
 
     setChangeReason('');
     setReviewAction({
@@ -877,6 +1003,52 @@ export default function BranchSubscriptionsPage() {
         defaultValue:
           'Invoice generation will use these terms when the effective month is reached.',
       }),
+      impactTone: 'commercial',
+      impactTitle: t('branchSubscriptions.review.pricingImpactTitle', {
+        defaultValue: 'Commercial decision',
+      }),
+      impactDescription: t('branchSubscriptions.review.pricingImpactDescription', {
+        defaultValue:
+          'These terms assign branch operating capacity for the next billing month.',
+      }),
+      impactItems: [
+        {
+          label: t('branchSubscriptions.review.pricingSchedule', {
+            defaultValue: 'Scheduled terms',
+          }),
+          value: nextBillingMonthLabel,
+          helper: t('branchSubscriptions.review.pricingScheduleHelper', {
+            defaultValue: 'Used for next-month invoice calculations.',
+          }),
+          tone: 'commercial',
+        },
+        {
+          label: t('branchSubscriptions.review.pricingCapacity', {
+            defaultValue: 'Assigned capacity',
+          }),
+          value: isCapacityPackage
+            ? t('branchSubscriptions.summaryVisits', {
+                count: formatMoney(pricingPayload.includedMonthlyVisits),
+                defaultValue: '{{count}} visits',
+              })
+            : getPricingModelLabel(pricingPayload.pricingModel, t),
+          helper: t('branchSubscriptions.review.pricingCapacityHelper', {
+            month: nextBillingMonthLabel,
+            defaultValue: 'Committed for {{month}} billing.',
+          }),
+          tone: 'commercial',
+        },
+        {
+          label: t('branchSubscriptions.review.pricingOverage', {
+            defaultValue: 'Overage policy',
+          }),
+          value: isCapacityPackage ? capacityOveragePolicy : flexibleOveragePolicy,
+          helper: t('branchSubscriptions.review.pricingOverageHelper', {
+            defaultValue: 'Applied only after included capacity is used.',
+          }),
+          tone: 'commercial',
+        },
+      ],
       confirmLabel: t('branchSubscriptions.confirmPricingChange', {
         defaultValue: 'Confirm pricing change',
       }),
@@ -885,49 +1057,49 @@ export default function BranchSubscriptionsPage() {
           label: t('branchSubscriptions.effectiveMonth', {
             defaultValue: 'Effective month',
           }),
-          from: formatDate(comparisonTerm.effectiveMonth),
-          to: formatNextCalendarMonth(),
+          from: formatDate(comparisonPricingTerm.effectiveMonth),
+          to: nextBillingMonthLabel,
         },
         {
           label: t('branchSubscriptions.pricingModel', {
             defaultValue: 'Pricing model',
           }),
-          from: getPricingModelLabel(comparisonTerm.pricingModel, t),
+          from: getPricingModelLabel(comparisonPricingTerm.pricingModel, t),
           to: getPricingModelLabel(pricingPayload.pricingModel, t),
         },
         {
           label: t('branchSubscriptions.basePackageFee', {
             defaultValue: 'Base/package fee',
           }),
-          from: formatMoney(comparisonTerm.baseMonthlyFee),
+          from: formatMoney(comparisonPricingTerm.baseMonthlyFee),
           to: formatMoney(pricingPayload.baseMonthlyFee),
         },
         {
           label: t('branchSubscriptions.includedMonthlyVisits', {
             defaultValue: 'Included monthly visits',
           }),
-          from: formatMoney(comparisonTerm.includedMonthlyVisits),
+          from: formatMoney(comparisonPricingTerm.includedMonthlyVisits),
           to: formatMoney(pricingPayload.includedMonthlyVisits),
         },
         {
           label: t('branchSubscriptions.packageLabel', {
             defaultValue: 'Package label',
           }),
-          from: comparisonTerm.packageName || '--',
+          from: comparisonPricingTerm.packageName || '--',
           to: pricingPayload.packageName || '--',
         },
         {
           label: t('branchSubscriptions.overageBlockSize', {
             defaultValue: 'Overage block size',
           }),
-          from: formatMoney(comparisonTerm.overageBlockSize),
+          from: formatMoney(comparisonPricingTerm.overageBlockSize),
           to: formatMoney(pricingPayload.overageBlockSize),
         },
         {
           label: t('branchSubscriptions.overageBlockFee', {
             defaultValue: 'Overage block fee',
           }),
-          from: formatMoney(comparisonTerm.overageBlockFee),
+          from: formatMoney(comparisonPricingTerm.overageBlockFee),
           to: formatMoney(pricingPayload.overageBlockFee),
         },
       ],
@@ -973,31 +1145,80 @@ export default function BranchSubscriptionsPage() {
     !isFlexibleUsage ||
     (toMoneyInteger(form.overageBlockSize) > 0 &&
       toMoneyInteger(form.overageBlockFee) > 0);
+  const hasPackageOverageInputs =
+    form.overageBlockSize !== '' || form.overageBlockFee !== '';
+  const packageOverageIncomplete =
+    isCapacityPackage &&
+    hasPackageOverageInputs &&
+    (toMoneyInteger(form.overageBlockSize) <= 0 ||
+      toMoneyInteger(form.overageBlockFee) <= 0);
   const capacityPricingReady =
     !isCapacityPackage ||
     (form.packageName.trim().length > 0 &&
       toMoneyInteger(form.includedMonthlyVisits) > 0);
   const packageOverageReady =
-    !isCapacityPackage ||
-    (form.overageBlockSize === '' && form.overageBlockFee === '') ||
-    (toMoneyInteger(form.overageBlockSize) > 0 &&
-      toMoneyInteger(form.overageBlockFee) > 0);
+    !isCapacityPackage || !packageOverageIncomplete;
   const isPricingReady =
     flexiblePricingReady && capacityPricingReady && packageOverageReady;
+  const comparisonPricingTerm =
+    normalizedSubscription.nextPricingTerm ||
+    normalizedSubscription.currentPricingTerm ||
+    {};
+  const proposedPricingPayload = buildPricingPayload();
+  const comparisonPricingPayload =
+    toComparablePricingPayload(comparisonPricingTerm);
+  const hasPricingChanges =
+    !pricingPayloadsMatch(proposedPricingPayload, comparisonPricingPayload);
   const isSaving = updateSubscription.isPending;
   const readOnlyAccess = isReadOnlyStatus(form.accessStatus);
   const fixedFeeMultiplier = getFixedFeeMultiplier(form.enabledProfiles.length);
   const hasAccessChanges =
     form.accessStatus !== currentAccessStatus ||
     form.accessNotes.trim() !== currentAccessNotes.trim();
+  const requiresAccessNotes = !currentReadOnlyAccess && readOnlyAccess;
+  const accessNotesMissing =
+    requiresAccessNotes && form.accessNotes.trim().length === 0;
   const hasProfileChanges =
     getProfileListKey(form.enabledProfiles) !== getProfileListKey(currentProfiles);
+  const disabledProfiles = currentProfiles.filter(
+    (profile) => !form.enabledProfiles.includes(profile),
+  );
+  const hasDestructiveProfileDisable = disabledProfiles.length > 0;
   const accessImpactTone = readOnlyAccess
     ? 'danger'
     : hasAccessChanges
       ? 'warning'
       : 'neutral';
-  const profileImpactTone = hasProfileChanges ? 'warning' : 'neutral';
+  const profileImpactTone = hasDestructiveProfileDisable
+    ? 'danger'
+    : hasProfileChanges
+      ? 'warning'
+      : 'neutral';
+  const nextBillingMonthLabel = formatNextCalendarMonth();
+  const capacityOveragePolicy = packageOverageIncomplete
+    ? t('branchSubscriptions.summaryOverageIncomplete', {
+        defaultValue: 'Complete overage policy',
+      })
+    : hasPackageOverageInputs
+      ? t('branchSubscriptions.summaryOverageBlocks', {
+          size: formatMoney(toMoneyInteger(form.overageBlockSize)),
+          fee: formatMoney(toMoneyInteger(form.overageBlockFee)),
+          defaultValue: '{{size}} visits per {{fee}}',
+        })
+      : t('branchSubscriptions.summaryNoOverage', {
+          defaultValue: 'No overage billing configured',
+        });
+  const flexibleOveragePolicy =
+    toMoneyInteger(form.overageBlockSize) > 0 &&
+    toMoneyInteger(form.overageBlockFee) > 0
+      ? t('branchSubscriptions.summaryOverageBlocks', {
+          size: formatMoney(toMoneyInteger(form.overageBlockSize)),
+          fee: formatMoney(toMoneyInteger(form.overageBlockFee)),
+          defaultValue: '{{size}} visits per {{fee}}',
+        })
+      : t('branchSubscriptions.summaryOverageIncomplete', {
+          defaultValue: 'Complete overage policy',
+        });
 
   return (
     <div className="space-y-6">
@@ -1248,7 +1469,7 @@ export default function BranchSubscriptionsPage() {
                           label={t('branchSubscriptions.review.effectiveMonth', {
                             defaultValue: 'Effective month',
                           })}
-                          value={formatNextCalendarMonth()}
+                          value={nextBillingMonthLabel}
                         />
                         <ImpactMetric
                           label={t('branchSubscriptions.review.model', {
@@ -1420,6 +1641,71 @@ export default function BranchSubscriptionsPage() {
                             />
                           </div>
                         </div>
+                        <ActionWeightPanel
+                          tone="neutral"
+                          icon={CreditCard}
+                          title={t('branchSubscriptions.flexibleUsageSummaryTitle', {
+                            defaultValue: 'Flexible usage summary',
+                          })}
+                          description={t(
+                            'branchSubscriptions.flexibleUsageSummaryDescription',
+                            {
+                              defaultValue:
+                                'The branch keeps a flexible base, visit allowance, and billable overage blocks for the next billing month.',
+                            },
+                          )}
+                        >
+                          <div className="grid gap-2 sm:grid-cols-3">
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryBaseFee', {
+                                defaultValue: 'Base fee',
+                              })}
+                              value={
+                                form.baseMonthlyFee === ''
+                                  ? '--'
+                                  : formatMoney(toMoneyInteger(form.baseMonthlyFee))
+                              }
+                              helper={t(
+                                'branchSubscriptions.summaryScheduledMonthHelper',
+                                {
+                                  month: nextBillingMonthLabel,
+                                  defaultValue: 'Assigned for {{month}} billing.',
+                                },
+                              )}
+                            />
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryAllowance', {
+                                defaultValue: 'Allowance',
+                              })}
+                              value={
+                                form.includedMonthlyVisits === ''
+                                  ? '--'
+                                  : t('branchSubscriptions.summaryVisits', {
+                                      count: formatMoney(
+                                        toMoneyInteger(form.includedMonthlyVisits),
+                                      ),
+                                      defaultValue: '{{count}} visits',
+                                    })
+                              }
+                              helper={t('branchSubscriptions.summaryIncludedHelper', {
+                                defaultValue: 'Included monthly capacity',
+                              })}
+                            />
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryOveragePolicy', {
+                                defaultValue: 'Overage policy',
+                              })}
+                              value={flexibleOveragePolicy}
+                              helper={t(
+                                'branchSubscriptions.summaryFlexibleOverageHelper',
+                                {
+                                  defaultValue: 'Billable block after allowance',
+                                },
+                              )}
+                              tone={flexiblePricingReady ? 'neutral' : 'warning'}
+                            />
+                          </div>
+                        </ActionWeightPanel>
                       </div>
                     )}
 
@@ -1547,6 +1833,91 @@ export default function BranchSubscriptionsPage() {
                             />
                           </div>
                         </div>
+                        <ActionWeightPanel
+                          tone={packageOverageIncomplete ? 'warning' : 'commercial'}
+                          icon={CreditCard}
+                          title={t('branchSubscriptions.capacityDecisionTitle', {
+                            defaultValue: 'Next-month operating capacity',
+                          })}
+                          description={t(
+                            'branchSubscriptions.capacityDecisionDescription',
+                            {
+                              defaultValue:
+                                'This assigns the branch package, included visit capacity, and overage policy for the next billing month.',
+                            },
+                          )}
+                        >
+                          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryPackageLabel', {
+                                defaultValue: 'Package',
+                              })}
+                              value={
+                                form.packageName.trim() ||
+                                t('branchSubscriptions.summaryNoPackage', {
+                                  defaultValue: 'Package not named',
+                                })
+                              }
+                              helper={t('branchSubscriptions.summaryPackageHelper', {
+                                defaultValue: 'Operating capacity label',
+                              })}
+                              tone="commercial"
+                            />
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryFee', {
+                                defaultValue: 'Monthly fee',
+                              })}
+                              value={
+                                form.baseMonthlyFee === ''
+                                  ? '--'
+                                  : formatMoney(toMoneyInteger(form.baseMonthlyFee))
+                              }
+                              helper={t(
+                                'branchSubscriptions.summaryScheduledMonthHelper',
+                                {
+                                  month: nextBillingMonthLabel,
+                                  defaultValue: 'Assigned for {{month}} billing.',
+                                },
+                              )}
+                              tone="commercial"
+                            />
+                            <ActionWeightItem
+                              label={t(
+                                'branchSubscriptions.summaryIncludedCapacity',
+                                {
+                                  defaultValue: 'Included capacity',
+                                },
+                              )}
+                              value={
+                                form.includedMonthlyVisits === ''
+                                  ? '--'
+                                  : t('branchSubscriptions.summaryVisits', {
+                                      count: formatMoney(
+                                        toMoneyInteger(form.includedMonthlyVisits),
+                                      ),
+                                      defaultValue: '{{count}} visits',
+                                    })
+                              }
+                              helper={t('branchSubscriptions.summaryIncludedHelper', {
+                                defaultValue: 'Included monthly capacity',
+                              })}
+                              tone="commercial"
+                            />
+                            <ActionWeightItem
+                              label={t('branchSubscriptions.summaryOveragePolicy', {
+                                defaultValue: 'Overage policy',
+                              })}
+                              value={capacityOveragePolicy}
+                              helper={t('branchSubscriptions.summaryOverageHelper', {
+                                defaultValue:
+                                  'Billing rule after included capacity',
+                              })}
+                              tone={
+                                packageOverageIncomplete ? 'warning' : 'commercial'
+                              }
+                            />
+                          </div>
+                        </ActionWeightPanel>
                         <div className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground">
                           {t('branchSubscriptions.capacityOverageOptionalNotice', {
                             defaultValue:
@@ -1556,7 +1927,19 @@ export default function BranchSubscriptionsPage() {
                       </div>
                     )}
 
-                    {!isPricingReady && (
+                    {packageOverageIncomplete && (
+                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          {t('branchSubscriptions.capacityOverageIncompleteNotice', {
+                            defaultValue:
+                              'Complete both overage block size and fee, or leave both empty for no overage billing.',
+                          })}
+                        </span>
+                      </div>
+                    )}
+
+                    {!isPricingReady && !packageOverageIncomplete && (
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                         <span>
@@ -1568,12 +1951,23 @@ export default function BranchSubscriptionsPage() {
                       </div>
                     )}
 
+                    {isPricingReady && !hasPricingChanges && (
+                      <div className="rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+                        {t('branchSubscriptions.noPricingChangesNotice', {
+                          defaultValue:
+                            'Change at least one pricing value before review.',
+                        })}
+                      </div>
+                    )}
+
                     {canManage && (
                       <div className="flex justify-end">
                         <Button
                           type="submit"
                           className="w-full sm:w-auto"
-                          disabled={isSaving || !isPricingReady}
+                          disabled={
+                            isSaving || !isPricingReady || !hasPricingChanges
+                          }
                         >
                           <SavingIcon isSaving={isSaving} />
                           {t('branchSubscriptions.reviewNextMonthPricing', {
@@ -1691,6 +2085,17 @@ export default function BranchSubscriptionsPage() {
                         }
                         disabled={!canManage}
                       />
+                      {accessNotesMissing && (
+                        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span>
+                            {t('branchSubscriptions.accessNotesRequiredNotice', {
+                              defaultValue:
+                                'Add access notes before reviewing a move into read-only access.',
+                            })}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {canManage && (
@@ -1699,7 +2104,9 @@ export default function BranchSubscriptionsPage() {
                           type="submit"
                           variant={readOnlyAccess ? 'destructive' : 'default'}
                           className="w-full sm:w-auto"
-                          disabled={isSaving || !hasAccessChanges}
+                          disabled={
+                            isSaving || !hasAccessChanges || accessNotesMissing
+                          }
                         >
                           <SavingIcon isSaving={isSaving} />
                           {t('branchSubscriptions.reviewAccessChange', {
@@ -1774,6 +2181,19 @@ export default function BranchSubscriptionsPage() {
                       </div>
                     </ImpactPanel>
 
+                    {hasDestructiveProfileDisable && (
+                      <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          {t('branchSubscriptions.profileDisableHighImpactNotice', {
+                            profiles: formatProfiles(disabledProfiles, t),
+                            defaultValue:
+                              'Disabling {{profiles}} removes those workflows from this branch after saving.',
+                          })}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="grid gap-3 sm:grid-cols-2">
                       {CLINIC_PROFILE_OPTIONS.map((profile) => {
                         const enabled = form.enabledProfiles.includes(profile.value);
@@ -1808,6 +2228,9 @@ export default function BranchSubscriptionsPage() {
                       <div className="flex justify-end">
                         <Button
                           type="submit"
+                          variant={
+                            hasDestructiveProfileDisable ? 'destructive' : 'default'
+                          }
                           className="w-full sm:w-auto"
                           disabled={
                             isSaving || !hasEnabledProfiles || !hasProfileChanges

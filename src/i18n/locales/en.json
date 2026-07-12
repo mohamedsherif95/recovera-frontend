@@ -836,7 +836,7 @@
     },
     "profiles": {
       "physiotherapy": "Physiotherapy",
-      "medicalDoctor": "Medical doctor clinic",
+      "medicalDoctor": "Medical clinic",
       "dentist": "Dentist",
       "laserDermatology": "Laser and dermatology"
     },
@@ -1017,7 +1017,7 @@
     },
     "profiles": {
       "physiotherapy": "Physiotherapy",
-      "medicalDoctor": "Medical doctor",
+      "medicalDoctor": "Medical clinic",
       "dentist": "Dentist",
       "laserDermatology": "Laser and dermatology"
     },
@@ -1739,12 +1739,12 @@
         },
         {
           "id": "medical",
-          "title": "Medical doctor clinics",
+          "title": "Medical clinics",
           "short": "Clear consultations and follow-ups",
           "kicker": "The right context before every consultation",
           "description": "Organize appointments, complaints, diagnoses, prescriptions, and follow-up plans in a workflow that stays focused on the consultation.",
           "points": [
-            "Prepare the doctor with the patient history that matters",
+            "Prepare the provider with the patient history that matters",
             "Keep consultation notes and next steps together",
             "Make follow-up appointments easier for reception to coordinate",
             "Give owners a clearer picture of branch activity"
@@ -1950,7 +1950,7 @@
     },
     "providers": {
       "physiotherapy": "Therapist",
-      "medicalDoctor": "Doctor",
+      "medicalDoctor": "Clinician",
       "dentist": "Dentist",
       "laserDermatology": "Clinician"
     }

@@ -124,7 +124,7 @@ const PROFILE_LABELS = {
   },
   medical_doctor: {
     key: 'platformBilling.profiles.medicalDoctor',
-    defaultValue: 'Medical doctor',
+    defaultValue: 'Medical clinic',
   },
   dentist: {
     key: 'platformBilling.profiles.dentist',

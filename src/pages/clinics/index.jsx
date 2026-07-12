@@ -1247,7 +1247,7 @@ export default function ClinicsPage() {
               })}
               description={t('platformAdmin.clinicGroups.provisionDescription', {
                 defaultValue:
-                  'Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.',
+                  'Create a manager, branch manager, provider, or secretary under the selected clinic group. The temporary password must be changed on first login.',
               })}
             >
               <div className="grid gap-3 sm:grid-cols-3">

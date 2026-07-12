@@ -80,11 +80,11 @@ export const CLINIC_PROFILE_REGISTRY = {
   [CLINIC_PROFILES.MEDICAL_DOCTOR]: {
     code: CLINIC_PROFILES.MEDICAL_DOCTOR,
     labelKey: "branchSubscriptions.profiles.medicalDoctor",
-    labelDefault: "Medical doctor clinic",
+    labelDefault: "Medical clinic",
     visitLabelKey: "clinicProfiles.visits.medicalDoctor",
     visitLabelDefault: "Visit",
     providerLabelKey: "clinicProfiles.providers.medicalDoctor",
-    providerLabelDefault: "Doctor",
+    providerLabelDefault: "Clinician",
     workflowModules: [],
     detailFields: [
       {

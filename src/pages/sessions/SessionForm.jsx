@@ -93,6 +93,29 @@ function cleanProfileDetails(fields, values = {}) {
   }, {});
 }
 
+function resolvePatientProfileDefaults(patient, profile, supportsVisitCategories) {
+  const profileRecord = Array.isArray(patient?.profileRecords)
+    ? patient.profileRecords.find((record) => record?.profile === profile)
+    : null;
+  const profileSettings = profileRecord?.settings || {};
+  const legacyPhysiotherapyDefaults =
+    profile === CLINIC_PROFILES.PHYSIOTHERAPY
+      ? {
+          defaultSessionCost: patient?.defaultSessionCost,
+          categoryId: patient?.categoryId ?? patient?.category?.id,
+        }
+      : {};
+
+  return {
+    defaultSessionCost:
+      profileSettings.defaultSessionCost ??
+      legacyPhysiotherapyDefaults.defaultSessionCost,
+    categoryId: supportsVisitCategories
+      ? (profileSettings.categoryId ?? legacyPhysiotherapyDefaults.categoryId)
+      : undefined,
+  };
+}
+
 export function SessionForm({
   initialValues = DEFAULT_SESSION_VALUES,
   onSubmit,
@@ -475,22 +498,22 @@ export function SessionForm({
       return;
     }
 
-    const patientDefaultCost = selectedPatientForDefaults.defaultSessionCost;
-    const patientDefaultCategoryId = supportsVisitCategories
-      ? (selectedPatientForDefaults.categoryId ??
-        selectedPatientForDefaults.category?.id ??
-        undefined)
-      : undefined;
+    const patientDefaults = resolvePatientProfileDefaults(
+      selectedPatientForDefaults,
+      activeProfile,
+      supportsVisitCategories,
+    );
 
-    setValue("cost", patientDefaultCost ?? undefined, {
+    setValue("cost", patientDefaults.defaultSessionCost ?? undefined, {
       shouldDirty: false,
       shouldValidate: true,
     });
-    setValue("categoryId", patientDefaultCategoryId ?? undefined, {
+    setValue("categoryId", patientDefaults.categoryId ?? undefined, {
       shouldDirty: false,
       shouldValidate: true,
     });
   }, [
+    activeProfile,
     isEditing,
     selectedPatientForDefaults,
     setValue,

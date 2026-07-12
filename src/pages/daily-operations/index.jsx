@@ -4,12 +4,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { arSA, enUS } from "date-fns/locale";
 import {
+  Activity,
+  CalendarClock,
   MoreHorizontal,
   Stethoscope,
   BellRing,
   ClipboardCheck,
   CircleOff,
+  ListChecks,
+  Users,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import {
   getAllowedStatusTransitions,
   buildStatusUpdatePayload,
@@ -79,6 +85,19 @@ const STATUS_STYLES = {
   cancelled: "border-red-400 bg-red-100 dark:bg-red-900/30",
 };
 
+const STATUS_BADGE_STYLES = {
+  scheduled:
+    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
+  arrived:
+    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
+  in_progress:
+    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
+  completed:
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
+  cancelled:
+    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
+};
+
 const STATUS_ORDER = [
   "scheduled",
   "arrived",
@@ -86,6 +105,9 @@ const STATUS_ORDER = [
   "completed",
   "cancelled",
 ];
+
+const getStatusBadgeClass = (status) =>
+  STATUS_BADGE_STYLES[status] || "border-border bg-muted/30";
 
 const formatHourLabel = (hour) => {
   const [hStr] = hour.split(":");
@@ -95,6 +117,27 @@ const formatHourLabel = (hour) => {
   if (h === 0) h = 12;
   if (h > 12) h -= 12;
   return `${h} ${suffix}`;
+};
+
+const getStatusActionLabel = (statusKey, t) => {
+  if (statusKey === SESSION_STATUS.ARRIVED) {
+    return t("sessions.markArrival", { defaultValue: "Mark patient arrival" });
+  }
+  if (statusKey === SESSION_STATUS.IN_PROGRESS) {
+    return t("status.start");
+  }
+  if (statusKey === SESSION_STATUS.COMPLETED) {
+    return t("sessions.completeSession", { defaultValue: "Complete Visit" });
+  }
+  if (statusKey === SESSION_STATUS.CANCELLED) {
+    return t("status.cancelled");
+  }
+  return t(`status.${statusKey}`, { defaultValue: statusKey });
+};
+
+const getSlotSortIndex = (slot) => {
+  const index = HOURS.indexOf(slot);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
 };
 
 export default function DailyOperationsPage() {
@@ -120,6 +163,7 @@ export default function DailyOperationsPage() {
     }
     return undefined; // auto-detect based on day
   });
+  const [profileFilter, setProfileFilter] = useState("all");
 
   const { hasAnyRole } = useAuthStore();
   const canFilterShift = hasAnyRole([USER_ROLES.MANAGER, USER_ROLES.SECRETARY]);
@@ -177,8 +221,87 @@ export default function DailyOperationsPage() {
     },
   );
 
-  const sessions = useMemo(() => data?.sessions ?? [], [data?.sessions]);
-  const doctors = data?.doctors ?? [];
+  const rawSessions = useMemo(() => data?.sessions ?? [], [data?.sessions]);
+  const doctors = useMemo(() => data?.doctors ?? [], [data?.doctors]);
+  const doctorById = useMemo(() => {
+    const map = new Map();
+    doctors.forEach((doctor) => {
+      map.set(Number(doctor.id), doctor);
+    });
+    return map;
+  }, [doctors]);
+  const profileOptions = useMemo(() => {
+    const seen = new Set();
+    rawSessions.forEach((session) => {
+      const profile = session.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
+      seen.add(profile);
+    });
+    return Array.from(seen).sort();
+  }, [rawSessions]);
+  const effectiveProfileFilter =
+    profileFilter === "all" || profileOptions.includes(profileFilter)
+      ? profileFilter
+      : "all";
+  const sessions = useMemo(
+    () =>
+      rawSessions.filter((session) => {
+        if (effectiveProfileFilter === "all") return true;
+        return (
+          (session.profile || CLINIC_PROFILES.PHYSIOTHERAPY) ===
+          effectiveProfileFilter
+        );
+      }),
+    [effectiveProfileFilter, rawSessions],
+  );
+  const statusCounts = useMemo(
+    () =>
+      sessions.reduce((acc, session) => {
+        const status = session.status || "unknown";
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {}),
+    [sessions],
+  );
+  const activeCount =
+    (statusCounts[SESSION_STATUS.ARRIVED] || 0) +
+    (statusCounts[SESSION_STATUS.IN_PROGRESS] || 0);
+  const filteredProfileLabel =
+    effectiveProfileFilter === "all"
+      ? t("dailyOps.allProfiles", { defaultValue: "All profiles" })
+      : getClinicProfileLabel(effectiveProfileFilter, t);
+  const providerWorkload = useMemo(
+    () =>
+      doctors.map((doctor) => {
+        const providerSessions = sessions.filter(
+          (session) => Number(session.doctorId) === Number(doctor.id),
+        );
+        return {
+          ...doctor,
+          total: providerSessions.length,
+          active:
+            providerSessions.filter(
+              (session) =>
+                session.status === SESSION_STATUS.ARRIVED ||
+                session.status === SESSION_STATUS.IN_PROGRESS,
+            ).length || 0,
+        };
+      }),
+    [doctors, sessions],
+  );
+  const agendaSessions = useMemo(
+    () =>
+      [...sessions].sort((left, right) => {
+        const leftSlot = left.slot || left.sessionTime;
+        const rightSlot = right.slot || right.sessionTime;
+        const slotCompare =
+          getSlotSortIndex(leftSlot) - getSlotSortIndex(rightSlot);
+        if (slotCompare !== 0) return slotCompare;
+        return String(left.patientName || "").localeCompare(
+          String(right.patientName || ""),
+        );
+      }),
+    [sessions],
+  );
 
   const sessionsByDoctorSlot = useMemo(() => {
     const acc = {};
@@ -253,42 +376,108 @@ export default function DailyOperationsPage() {
 
   return (
     <div className="space-y-6">
+      <ImpactPanel
+        icon={Activity}
+        title={t("dailyOps.operationsWorkbenchTitle", {
+          defaultValue: "Daily operations workbench",
+        })}
+        description={t("dailyOps.operationsWorkbenchDescription", {
+          defaultValue:
+            "Monitor today's patient flow by provider, time, and clinic profile.",
+        })}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <ImpactMetric
+            label={t("dailyOps.visibleVisits", {
+              defaultValue: "Visible visits",
+            })}
+            value={sessions.length}
+          />
+          <ImpactMetric
+            label={t("dailyOps.activeFlow", {
+              defaultValue: "Arrived or in progress",
+            })}
+            value={activeCount}
+          />
+          <ImpactMetric
+            label={t("status.completed")}
+            value={statusCounts[SESSION_STATUS.COMPLETED] || 0}
+          />
+          <ImpactMetric
+            label={t("status.cancelled")}
+            value={statusCounts[SESSION_STATUS.CANCELLED] || 0}
+          />
+          <ImpactMetric
+            label={t("dailyOps.resourceCoverage", {
+              defaultValue: "Providers with visits",
+            })}
+            value={`${providerWorkload.filter((provider) => provider.total > 0).length}/${doctors.length || 0}`}
+          />
+        </div>
+      </ImpactPanel>
+
       <Card>
         <PageHeader
           title={t("dailyOps.title", { defaultValue: "Daily Operations" })}
           description={t("dailyOps.description", {
             defaultValue:
-              "Command center view of today's workload by doctor and hour.",
+              "Command center view of today's workload by provider and hour.",
           })}
-          className="mx-6 mt-4"
+          className="mx-4 mt-4 sm:mx-6"
           actions={
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="space-y-1 min-w-[220px]">
+            <div className="grid w-full gap-3 sm:grid-cols-2 xl:w-auto xl:grid-cols-none xl:flex xl:flex-wrap xl:items-end xl:justify-end">
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">
+                  {t("dailyOps.dateLabel", { defaultValue: "Select day" })}
+                </div>
                 <LocalizedDatePicker
                   id="operations-date"
                   value={selectedDate}
                   onChange={handleDateChange}
                 />
-                <div className="text-md text-muted-foreground mt-6">
+                <div className="text-xs text-muted-foreground">
                   {format(selectedDateObj, "PPPP", { locale })}
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-8">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => refetch()}
-                  disabled={isFetching}
+
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">
+                  {t("dailyOps.profileFilter", {
+                    defaultValue: "Clinic profile",
+                  })}
+                </div>
+                <Select
+                  value={effectiveProfileFilter}
+                  onValueChange={setProfileFilter}
                 >
-                  {t("dailyOps.refresh", { defaultValue: "Refresh" })}
-                </Button>
-                {canFilterShift && (
+                  <SelectTrigger className="h-9 w-full xl:w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">
+                      {t("dailyOps.allProfiles", {
+                        defaultValue: "All profiles",
+                      })}
+                    </SelectItem>
+                    {profileOptions.map((profile) => (
+                      <SelectItem key={profile} value={profile}>
+                        {getClinicProfileLabel(profile, t)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {canFilterShift && (
+                <div className="space-y-1">
+                  <div className="text-xs font-medium text-muted-foreground">
+                    {t("dailyOps.shiftFilter", { defaultValue: "Shift" })}
+                  </div>
                   <Select
                     value={shiftFilter || "auto"}
                     onValueChange={handleShiftChange}
                   >
-                    <SelectTrigger className="h-9 w-[180px]">
+                    <SelectTrigger className="h-9 w-full xl:w-[180px]">
                       <SelectValue
                         placeholder={t("dailyOps.shiftFilter", {
                           defaultValue: "Shift",
@@ -314,26 +503,174 @@ export default function DailyOperationsPage() {
                       </SelectItem>
                     </SelectContent>
                   </Select>
-                )}
-              </div>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="h-9 w-full xl:w-auto"
+              >
+                {isFetching
+                  ? t("common.loading")
+                  : t("dailyOps.refresh", { defaultValue: "Refresh" })}
+              </Button>
             </div>
           }
         />
         <CardContent className="p-0">
-          <div className="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-border">
-            {STATUS_ORDER.map((statusKey) => (
-              <div
-                key={statusKey}
-                className="flex items-center gap-2 text-xs text-muted-foreground"
-              >
-                <span
-                  className={`inline-block h-3 w-10 rounded-full border ${STATUS_STYLES[statusKey]}`}
-                />
-                <span>{t(`status.${statusKey}`)}</span>
-              </div>
-            ))}
+          <div className="space-y-3 border-b border-border px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="gap-1.5">
+                <ListChecks className="h-3.5 w-3.5" />
+                {filteredProfileLabel}
+              </Badge>
+              {STATUS_ORDER.map((statusKey) => (
+                <Badge
+                  key={statusKey}
+                  variant="outline"
+                  className={getStatusBadgeClass(statusKey)}
+                >
+                  {t(`status.${statusKey}`)}: {statusCounts[statusKey] || 0}
+                </Badge>
+              ))}
+            </div>
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+              {providerWorkload
+                .filter((provider) => provider.total > 0)
+                .slice(0, 4)
+                .map((provider) => (
+                  <div
+                    key={provider.id}
+                    className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2 text-xs"
+                  >
+                    <span className="min-w-0 truncate font-medium">
+                      {provider.name}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">
+                      {t("dailyOps.providerLoadValue", {
+                        defaultValue: "{{active}} active / {{total}} total",
+                        active: provider.active,
+                        total: provider.total,
+                      })}
+                    </span>
+                  </div>
+                ))}
+            </div>
           </div>
-          <div className="overflow-auto max-h-[calc(100vh-220px)]">
+          <div className="lg:hidden">
+            <div className="border-b bg-muted/20 px-4 py-3">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <CalendarClock className="h-4 w-4 text-primary" />
+                {t("dailyOps.mobileAgendaTitle", {
+                  defaultValue: "Today's agenda",
+                })}
+              </div>
+            </div>
+            {agendaSessions.length === 0 ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">
+                {t("dailyOps.noAgendaVisits", {
+                  defaultValue: "No visits match the selected filters.",
+                })}
+              </div>
+            ) : (
+              <div className="divide-y">
+                {agendaSessions.map((session) => {
+                  const sessionProfile =
+                    session.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
+                  const profileLabel = getClinicProfileLabel(sessionProfile, t);
+                  const provider = doctorById.get(Number(session.doctorId));
+                  const nextRoutineStatus = getAllowedStatusTransitions(
+                    session.status,
+                    {
+                      isAdmin,
+                    },
+                  ).find(
+                    (statusKey) => statusKey !== SESSION_STATUS.CANCELLED,
+                  );
+
+                  return (
+                    <div key={session.id} className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={getStatusBadgeClass(session.status)}
+                            >
+                              {t(`status.${session.status}`)}
+                            </Badge>
+                            <span className="font-mono text-xs text-muted-foreground">
+                              {formatHourLabel(session.slot || session.sessionTime)}
+                            </span>
+                          </div>
+                          <div className="mt-2 break-words text-base font-semibold">
+                            {session.patientName || "--"}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {session.patientCode || "--"} |{" "}
+                            {provider?.name || "--"} | {profileLabel}
+                          </div>
+                        </div>
+                        <Users className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
+                      </div>
+
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/sessions/${session.id}`)}
+                          className="w-full sm:w-auto"
+                        >
+                          {t("dailyOps.openVisit", {
+                            defaultValue: "Open visit",
+                          })}
+                        </Button>
+                        {canUpdateStatus && nextRoutineStatus && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() =>
+                              handleChangeStatus(session, nextRoutineStatus)
+                            }
+                            disabled={updateStatus.isPending}
+                            className="w-full sm:w-auto"
+                          >
+                            {getStatusActionLabel(nextRoutineStatus, t)}
+                          </Button>
+                        )}
+                        {canUpdateStatus &&
+                          getAllowedStatusTransitions(session.status, {
+                            isAdmin,
+                          }).includes(SESSION_STATUS.CANCELLED) && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                handleChangeStatus(
+                                  session,
+                                  SESSION_STATUS.CANCELLED,
+                                )
+                              }
+                              disabled={updateStatus.isPending}
+                              className="w-full text-destructive hover:text-destructive sm:w-auto"
+                            >
+                              {t("status.cancelled")}
+                            </Button>
+                          )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <div className="hidden overflow-auto lg:block max-h-[calc(100vh-260px)]">
             <table className="min-w-full text-sm" dir={isRtl ? "rtl" : "ltr"}>
               <thead className="sticky top-0 z-20 bg-muted/95 shadow-sm backdrop-blur supports-[backdrop-filter]:backdrop-blur-md">
                 <tr className="border-b text-xs uppercase text-muted-foreground">
@@ -373,6 +710,12 @@ export default function DailyOperationsPage() {
                           return (
                             <button
                               type="button"
+                              aria-label={t("dailyOps.createSlotAria", {
+                                defaultValue:
+                                  "Create visit for {{provider}} at {{time}}",
+                                provider: doctor.name,
+                                time: formatHourLabel(hour),
+                              })}
                               onClick={() =>
                                 navigate(
                                   `/sessions?returnDate=${selectedDate}${shiftFilter ? `&returnShift=${shiftFilter}` : ""}`,
@@ -386,8 +729,12 @@ export default function DailyOperationsPage() {
                                   },
                                 )
                               }
-                              className="flex-1 rounded-md border border-border bg-card px-3 py-3 min-h-[52px] flex items-center justify-center cursor-pointer hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40"
-                            />
+                              className="group flex min-h-[52px] flex-1 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-card px-3 py-3 text-xs text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40"
+                            >
+                              <span className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                                {t("dailyOps.freeSlot", { defaultValue: "Free" })}
+                              </span>
+                            </button>
                           );
                         }
 
@@ -414,6 +761,14 @@ export default function DailyOperationsPage() {
                           const matched = String(label).match(/\d+/);
                           return matched?.[0] || null;
                         })();
+                        const nextRoutineStatus = getAllowedStatusTransitions(
+                          session.status,
+                          {
+                            isAdmin,
+                          },
+                        ).find(
+                          (statusKey) => statusKey !== SESSION_STATUS.CANCELLED,
+                        );
 
                         return (
                           <div className="relative flex-1">
@@ -489,8 +844,13 @@ export default function DailyOperationsPage() {
                                 {session.patientCode}
                               </div>
                               <div className="mt-1 max-w-full truncate text-[11px] text-muted-foreground">
-                                {profileLabel}
+                                {t(`status.${session.status}`)} | {profileLabel}
                               </div>
+                              {canUpdateStatus && nextRoutineStatus && (
+                                <div className="mt-1 max-w-full truncate text-[11px] font-medium text-foreground">
+                                  {getStatusActionLabel(nextRoutineStatus, t)}
+                                </div>
+                              )}
                             </button>
                             {packageBadgeValue && (
                               <span
@@ -532,9 +892,7 @@ export default function DailyOperationsPage() {
                                         handleChangeStatus(session, statusKey);
                                       }}
                                     >
-                                      {statusKey === "in_progress"
-                                        ? t(`status.start`)
-                                        : t(`status.${statusKey}`)}
+                                      {getStatusActionLabel(statusKey, t)}
                                     </DropdownMenuItem>
                                   ))}
                                 </DropdownMenuContent>

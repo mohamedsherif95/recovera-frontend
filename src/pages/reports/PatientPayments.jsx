@@ -17,6 +17,7 @@ import {
 import { AsyncSearchableSelect } from '@/components/common/AsyncSearchableSelect';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DataTable } from '@/components/common/DataTable';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import DateRangePicker from '@/components/common/DateRangePicker';
 import { reportsApi } from '@/api/endpoints/reports';
 import { useAuthStore } from '@/store/authStore';
@@ -479,9 +480,49 @@ export default function IncomeReportPage() {
         title={t('reports.incomeReportTitle', { defaultValue: 'Income Report' })}
       />
 
+      <ImpactPanel
+        icon={Banknote}
+        tone="commercial"
+        title={t('reports.paymentWorkbenchTitle', {
+          defaultValue: 'Payments workbench',
+        })}
+        description={t('reports.paymentWorkbenchDescription', {
+          defaultValue:
+            'Review collected income, outstanding visit balances, patient statements, and the payment rows behind each number.',
+        })}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <ImpactMetric
+            label={t('reports.totalIncome', { defaultValue: 'Total Income' })}
+            value={summary ? formatCurrency(summary.totalIncome ?? 0) : undefined}
+          />
+          <ImpactMetric
+            label={t('reports.totalRemaining', { defaultValue: 'Total Remaining' })}
+            value={summary ? formatCurrency(summary.totalRemaining ?? 0) : undefined}
+          />
+          <ImpactMetric
+            label={t('reports.patientsWithPayments', {
+              defaultValue: 'Patients with payments',
+            })}
+            value={summary?.uniquePatients ?? undefined}
+          />
+          <ImpactMetric
+            label={t('reports.resultsMetric', { defaultValue: 'Results' })}
+            value={totalPaymentsCount}
+          />
+        </div>
+      </ImpactPanel>
+
       {/* Filters Card */}
       <Card>
-        <CardContent className="p-4 space-y-2">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">
+            {t('reports.paymentFiltersTitle', {
+              defaultValue: 'Payment filters',
+            })}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 p-4 pt-0">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
               <div className="w-full md:w-72 space-y-1">
@@ -564,10 +605,11 @@ export default function IncomeReportPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="grid gap-2 sm:flex sm:items-center">
               <Button
                 variant="outline"
                 size="sm"
+                className="justify-center"
                 onClick={() => {
                   refetchSummary();
                   refetchDetails();
@@ -584,6 +626,7 @@ export default function IncomeReportPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="justify-center"
                   onClick={handleCreateStatementInvoice}
                   disabled={createStatementInvoice.isPending || !selectedPatientId}
                 >
@@ -600,6 +643,7 @@ export default function IncomeReportPage() {
                 <Button
                   variant={showTotalIncome ? 'default' : 'secondary'}
                   size="sm"
+                  className="justify-center"
                   onClick={() => setShowTotalIncome((current) => !current)}
                   disabled={!summary}
                 >
@@ -835,8 +879,16 @@ export default function IncomeReportPage() {
 
       {/* Payments Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>{t('reports.paymentsList', { defaultValue: 'Payments List' })}</CardTitle>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="text-base">
+            {t('reports.paymentsList', { defaultValue: 'Payments List' })}
+          </CardTitle>
+          <Badge variant="secondary" className="w-fit">
+            {t('reports.resultCount', {
+              count: totalPaymentsCount,
+              defaultValue: '{{count}} results',
+            })}
+          </Badge>
         </CardHeader>
         <CardContent>
           {isDetailsLoading && !detailsData ? (
@@ -865,6 +917,94 @@ export default function IncomeReportPage() {
                   }
                 }}
                 direction={isRtl ? 'rtl' : 'ltr'}
+                mobileCard={(row) => {
+                  const isPackage = row.incomeType === 'package';
+                  const remaining =
+                    row.sessionRemaining ??
+                    Math.max((row.sessionCost ?? 0) - (row.sessionTotalPaid ?? 0), 0);
+                  const method = row.paymentMethod || row.method;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <div className="break-words font-semibold">
+                            {row.patientName || '--'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {row.paymentDate ? formatDate(row.paymentDate, 'PP') : '--'}
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            isPackage
+                              ? 'shrink-0 border-indigo-300 bg-indigo-100 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-200'
+                              : 'shrink-0 border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-200'
+                          }
+                        >
+                          {isPackage
+                            ? t('reports.packageIncome', { defaultValue: 'Package' })
+                            : t('reports.individualIncome', { defaultValue: 'Individual' })}
+                        </Badge>
+                      </div>
+
+                      <div className="grid gap-2 rounded-md bg-muted/40 p-2 text-xs sm:grid-cols-2">
+                        <div>
+                          <div className="text-muted-foreground">{t('payments.paid')}</div>
+                          <div className="font-semibold">{formatCurrency(row.amount ?? 0)}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('payments.remaining', { defaultValue: 'Remaining' })}
+                          </div>
+                          <div
+                            className={
+                              remaining > 0
+                                ? 'font-semibold text-red-600'
+                                : 'font-semibold text-green-600'
+                            }
+                          >
+                            {formatCurrency(remaining)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">{t('payments.method')}</div>
+                          <div className="flex items-center gap-1 font-medium">
+                            {getMethodIcon(method)}
+                            {getMethodLabel(method)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('payments.recordedBy', { defaultValue: 'Recorded by' })}
+                          </div>
+                          <div className="font-medium">
+                            {row.recordedBy?.fullName || row.recordedByName || '--'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {canViewInvoices && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-center"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            handleDownloadPaymentInvoice(row.id);
+                          }}
+                          disabled={invoiceLoadingPaymentId === row.id}
+                        >
+                          {invoiceLoadingPaymentId === row.id
+                            ? t('common.loading')
+                            : t('common.download', { defaultValue: 'Download' })}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                }}
               />
 
               <div className="mt-4 flex flex-col gap-3 border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">

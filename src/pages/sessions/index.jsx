@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable } from "@/components/common/DataTable";
 import { LocalizedDatePicker } from "@/components/common/LocalizedDatePicker";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import {
   useSessions,
   useCreateSession,
@@ -42,11 +43,13 @@ import {
 } from "@/lib/utils";
 import {
   Loader2,
+  CalendarClock,
   RefreshCcw,
   Trash2,
   Stethoscope,
   BellRing,
   ClipboardCheck,
+  Plus,
 } from "lucide-react";
 import { SessionForm } from "./SessionForm";
 import { useAuthStore } from "@/store/authStore";
@@ -55,6 +58,23 @@ import {
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
+
+const statusBadgeClasses = {
+  scheduled:
+    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
+  arrived:
+    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
+  in_progress:
+    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
+  completed:
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
+  cancelled:
+    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
+};
+
+function getStatusBadgeClass(status) {
+  return statusBadgeClasses[status] || "border-border bg-muted/30";
+}
 
 export default function SessionsPage() {
   const { t, i18n } = useTranslation();
@@ -167,6 +187,18 @@ export default function SessionsPage() {
 
   const totalSessions = data?.total ?? data?.meta?.total ?? sessions.length;
   const totalPages = totalSessions ? Math.ceil(totalSessions / pageSize) : 1;
+  const statusCounts = useMemo(
+    () =>
+      sessions.reduce((acc, session) => {
+        const status = session.status || "unknown";
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {}),
+    [sessions],
+  );
+  const activeVisitCount =
+    (statusCounts[SESSION_STATUS.ARRIVED] || 0) +
+    (statusCounts[SESSION_STATUS.IN_PROGRESS] || 0);
 
   const statusOptions = useMemo(() => {
     return Object.values(SESSION_STATUS);
@@ -368,18 +400,57 @@ export default function SessionsPage() {
         title={t("sessions.title")}
         onBack={returnDate ? handleCancelForm : undefined}
         actions={
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="outline" size="icon" onClick={() => refetch()}>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => refetch()}
+              className="w-full sm:w-9"
+              aria-label={t("common.refresh", { defaultValue: "Refresh" })}
+            >
               <RefreshCcw className="h-4 w-4" />
             </Button>
             {can(PERMISSIONS["sessions:create"]) && (
-              <Button onClick={() => setShowForm((prev) => !prev)}>
+              <Button
+                onClick={() => setShowForm((prev) => !prev)}
+                className="w-full sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
                 {t("sessions.createSession")}
               </Button>
             )}
           </div>
         }
       />
+
+      <ImpactPanel
+        icon={CalendarClock}
+        title={t("sessions.visitOperationsTitle")}
+        description={t("sessions.visitOperationsDescription")}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <ImpactMetric
+            label={t("sessions.operationsMetricVisible")}
+            value={sessions.length}
+          />
+          <ImpactMetric
+            label={t("sessions.operationsMetricWaiting")}
+            value={statusCounts[SESSION_STATUS.SCHEDULED] || 0}
+          />
+          <ImpactMetric
+            label={t("sessions.operationsMetricActive")}
+            value={activeVisitCount}
+          />
+          <ImpactMetric
+            label={t("sessions.operationsMetricCompleted")}
+            value={statusCounts[SESSION_STATUS.COMPLETED] || 0}
+          />
+          <ImpactMetric
+            label={t("sessions.operationsMetricCancelled")}
+            value={statusCounts[SESSION_STATUS.CANCELLED] || 0}
+          />
+        </div>
+      </ImpactPanel>
 
       {showForm && can(PERMISSIONS["sessions:create"]) && (
         <SessionForm
@@ -408,18 +479,18 @@ export default function SessionsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-b bg-muted/30 px-4 py-3 xl:flex-row xl:items-end xl:justify-between">
             <Input
               placeholder={t("sessions.filters.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full sm:max-w-xs"
+              className="h-9 w-full xl:max-w-xs"
             />
-            <div className="grid w-full gap-3 text-xs text-muted-foreground sm:w-auto sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
+            <div className="grid w-full gap-3 text-xs text-muted-foreground sm:grid-cols-2 xl:w-auto xl:flex xl:flex-wrap xl:items-center xl:justify-end">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
                 <span>{t("sessions.filters.statusLabel")}</span>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-8 w-full sm:w-[150px]">
+                  <SelectTrigger className="h-9 w-full sm:w-[150px]">
                     <SelectValue
                       placeholder={t("sessions.filters.statusAll")}
                     />
@@ -448,7 +519,7 @@ export default function SessionsPage() {
                     value={categoryFilter}
                     onValueChange={setCategoryFilter}
                   >
-                    <SelectTrigger className="h-8 w-full sm:w-[160px]">
+                    <SelectTrigger className="h-9 w-full sm:w-[160px]">
                       <SelectValue
                         placeholder={t("sessions.filters.categoryAll", {
                           defaultValue: "All categories",
@@ -586,7 +657,12 @@ export default function SessionsPage() {
                             {t("sessions.status")}
                           </div>
                           <div className="mt-1 flex items-center gap-2 font-medium">
+                            <Badge
+                              variant="outline"
+                              className={getStatusBadgeClass(row.status)}
+                            >
                             <span>{t(`status.${row.status}`)}</span>
+                            </Badge>
                             {supportsAssessmentTracking &&
                             row.isReassessment ? (
                               <ClipboardCheck

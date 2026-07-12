@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { PageHeader } from '@/components/common/PageHeader';
 import { SearchInput } from '@/components/common/SearchInput';
 import { DataTable } from '@/components/common/DataTable';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { usePatients, useCreatePatient, useDeletePatient } from '@/hooks/usePatients';
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -15,13 +17,54 @@ import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
 import { CLINIC_PROFILE_WORKFLOWS } from '@/lib/clinicProfiles';
 import { PatientForm } from './PatientForm';
 import { ExistingPatientIntake } from './ExistingPatientIntake';
-import { Loader2, Plus, RefreshCcw, Trash2, BellRing, CircleOff, UserPlus } from 'lucide-react';
+import {
+  BellRing,
+  CircleOff,
+  ClipboardList,
+  Loader2,
+  Plus,
+  RefreshCcw,
+  Trash2,
+  UserPlus,
+} from 'lucide-react';
+
+function IntakeModeButton({ active, description, icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      className={[
+        'flex min-h-[88px] min-w-0 flex-1 items-start gap-3 rounded-md border p-3 text-start transition',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        active
+          ? 'border-primary bg-primary/10 text-primary shadow-sm'
+          : 'border-border bg-background hover:bg-muted/50',
+      ].join(' ')}
+      onClick={onClick}
+      aria-pressed={active}
+    >
+      <span
+        className={[
+          'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md',
+          active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+        ].join(' ')}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold">{label}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+          {description}
+        </span>
+      </span>
+    </button>
+  );
+}
 
 export default function PatientsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, canAny } = usePermissions();
-  const { supportsWorkflow } = useActiveBranchProfiles();
+  const { supportsWorkflow, enabledProfiles } = useActiveBranchProfiles();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [intakeMode, setIntakeMode] = useState('new');
@@ -173,6 +216,8 @@ export default function PatientsPage() {
 
   const totalPatients = data?.total ?? data?.meta?.total ?? patients.length;
   const totalPages = totalPatients ? Math.ceil(totalPatients / pageSize) : 1;
+  const branchLinkedRows = patients.filter((patient) => patient.primaryBranch?.name).length;
+  const enabledProfileCount = Array.isArray(enabledProfiles) ? enabledProfiles.length : 0;
 
   const handleCreate = (values) => {
     createPatient.mutate(values, {
@@ -211,17 +256,24 @@ export default function PatientsPage() {
       <PageHeader
         title={t('patients.title')}
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
             <SearchInput
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('patients.searchPlaceholder')}
+              className="w-full sm:w-72"
             />
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              aria-label={t('common.refresh', { defaultValue: 'Refresh' })}
+              className="w-full sm:w-auto"
+            >
               <RefreshCcw className="h-4 w-4" />
             </Button>
             {hasPermission(PERMISSIONS['patients:create']) && (
-              <Button onClick={handleCreateToggle}>
+              <Button onClick={handleCreateToggle} className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 {t('patients.createPatient')}
               </Button>
@@ -230,27 +282,44 @@ export default function PatientsPage() {
         }
       />
 
+      <ImpactPanel
+        icon={ClipboardList}
+        title={t('patients.intakeDeskTitle')}
+        description={t('patients.intakeDeskDescription')}
+      >
+        <div className="grid gap-2 sm:grid-cols-3">
+          <ImpactMetric
+            label={t('patients.directoryMetricTotal')}
+            value={totalPatients}
+          />
+          <ImpactMetric
+            label={t('patients.directoryMetricBranchLinked')}
+            value={`${branchLinkedRows}/${patients.length || 0}`}
+          />
+          <ImpactMetric
+            label={t('patients.directoryMetricProfiles')}
+            value={enabledProfileCount || '--'}
+          />
+        </div>
+      </ImpactPanel>
+
       {showForm && hasPermission(PERMISSIONS['patients:create']) && (
-        <div className="space-y-3">
-          <div className="inline-flex rounded-md border bg-background p-1">
-            <Button
-              type="button"
-              size="sm"
-              variant={intakeMode === 'new' ? 'default' : 'ghost'}
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <IntakeModeButton
+              active={intakeMode === 'new'}
+              icon={Plus}
+              label={t('patients.newPatient')}
+              description={t('patients.newPatientIntakeDescription')}
               onClick={() => setIntakeMode('new')}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {t('patients.newPatient')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={intakeMode === 'existing' ? 'default' : 'ghost'}
+            />
+            <IntakeModeButton
+              active={intakeMode === 'existing'}
+              icon={UserPlus}
+              label={t('patients.existingPatient')}
+              description={t('patients.existingPatientIntakeDescription')}
               onClick={() => setIntakeMode('existing')}
-            >
-              <UserPlus className="mr-2 h-4 w-4" />
-              {t('patients.existingPatient')}
-            </Button>
+            />
           </div>
 
           {intakeMode === 'new' ? (
@@ -259,6 +328,7 @@ export default function PatientsPage() {
               onCancel={() => setShowForm(false)}
               isSubmitting={createPatient.isPending}
               showPhysiotherapySettings={showPhysiotherapyPatientSettings}
+              intakeContext="new"
             />
           ) : (
             <ExistingPatientIntake
@@ -292,8 +362,71 @@ export default function PatientsPage() {
                 getRowId={(row) => row.id}
                 direction={i18n.language === 'ar' ? 'rtl' : 'ltr'}
                 onRowClick={(row) => navigate(`/patients/${row.id}`)}
+                mobileCard={(row) => (
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">{row.patientCode || '--'}</Badge>
+                          {supportsAssessmentTracking && row.sessionsUntilReassessment === 0 && (
+                            <Badge variant="secondary">
+                              {t('patients.reassessmentDue')}
+                            </Badge>
+                          )}
+                          {supportsTreatmentPackages && row.isBalanceExhaustedAfterUse && (
+                            <Badge variant="secondary">
+                              {t('patients.balanceExhaustedAfterUse')}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="break-words text-base font-semibold">
+                          {row.fullName}
+                        </div>
+                      </div>
+                      {canDelete && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setPatientToDelete(row);
+                            setDeleteDialogOpen(true);
+                          }}
+                          aria-label={t('patients.deleteTitle')}
+                          className="shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+                      <span className="min-w-0">
+                        {t('patients.phone')}: {row.phone || '--'}
+                      </span>
+                      <span>
+                        {t('patients.age')}: {row.age != null ? row.age : '--'}
+                      </span>
+                      {supportsVisitCategories && (
+                        <span className="min-w-0">
+                          {t('patients.category', { defaultValue: 'Category' })}:{' '}
+                          {row.category?.name || '--'}
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        {t('patients.primaryBranch', { defaultValue: 'Primary branch' })}:{' '}
+                        {row.primaryBranch?.name || '--'}
+                      </span>
+                    </div>
+                    {row.job && (
+                      <div className="text-xs text-muted-foreground">
+                        {t('patients.job', { defaultValue: 'Job' })}: {row.job}
+                      </div>
+                    )}
+                  </div>
+                )}
+                mobileCardClassName="p-3"
               />
-              <div className="flex items-center justify-between border-t bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
+              <div className="flex flex-col gap-3 border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <span>
                   {t('common.paginationSummary', {
                     from: patients.length ? (page - 1) * pageSize + 1 : 0,
@@ -301,7 +434,7 @@ export default function PatientsPage() {
                     total: totalPatients,
                   })}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2 sm:justify-end">
                   <Button
                     variant="outline"
                     size="sm"

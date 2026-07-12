@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, Settings } from 'lucide-react';
+import { Menu, User, LogOut, Settings, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   canSwitchAssignedBranches,
@@ -99,6 +99,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             className="md:hidden"
+            aria-label={t('nav.mobileMenu', { defaultValue: 'Workspace menu' })}
             onClick={toggleMobileMenu}
           >
             <Menu className="h-5 w-5" />
@@ -109,6 +110,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             className="hidden md:flex"
+            aria-label={t('nav.toggleSidebar', { defaultValue: 'Toggle sidebar' })}
             onClick={toggleSidebar}
           >
             <Menu className="h-5 w-5" />
@@ -120,8 +122,8 @@ export function Header() {
             </span>
             <div className="hidden sm:block leading-tight">
               <h1 className="text-xl font-black tracking-tight text-primary">{t('app.name')}</h1>
-              <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">
-                Clinic service
+              <p className="text-[11px] font-semibold text-muted-foreground">
+                {t('app.workspaceSubtitle', { defaultValue: 'Clinic service' })}
               </p>
             </div>
           </Link>
@@ -183,13 +185,30 @@ export function Header() {
               {t('users.branch', { defaultValue: 'Branch' })}: {fixedBranchName}
             </div>
           )}
+          {isPlatformAdmin && (
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="hidden lg:inline-flex"
+            >
+              <Link to="/platform-admin">
+                <ShieldCheck className="h-4 w-4" />
+                {t('nav.platformAdmin')}
+              </Link>
+            </Button>
+          )}
           <LanguageSwitcher />
           <ThemeSwitcher />
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t('nav.profile')}
+              >
                 <User className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
@@ -213,6 +232,17 @@ export function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {isPlatformAdmin && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link to="/platform-admin" className="cursor-pointer">
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      {t('nav.platformAdmin')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem asChild>
                 <Link to="/profile" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />

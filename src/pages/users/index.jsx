@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -290,20 +291,6 @@ export default function UsersPage() {
   const getRoleNames = (user) =>
     user?.roles?.map((role) => role?.name).filter(Boolean) || [];
 
-  const getSearchableBranchLabels = (user) => {
-    const branchIds = getUserBranchIds(user);
-    if (!branchIds.length) return [];
-
-    return branchIds.map((branchId) =>
-      getBranchName(
-        branchId,
-        user.branchAssignments?.find(
-          (assignment) => Number(assignment.branchId) === Number(branchId),
-        )?.branch?.name || user.branch?.name,
-      ),
-    );
-  };
-
   const filteredUsers = useMemo(() => {
     const normalizedSearch = userSearch.trim().toLowerCase();
 
@@ -327,7 +314,17 @@ export default function UsersPage() {
           defaultValue: name,
         }),
       );
-      const branchLabels = getSearchableBranchLabels(user);
+      const branchLabels = assignedBranchIds.map((branchId) => {
+        const branch = currentBranches.find(
+          (item) => Number(item.id) === Number(branchId),
+        );
+        const fallback =
+          user.branchAssignments?.find(
+            (assignment) => Number(assignment.branchId) === Number(branchId),
+          )?.branch?.name || user.branch?.name;
+
+        return branch?.name || fallback || `#${branchId}`;
+      });
       const searchableText = [
         user.fullName,
         user.username,
@@ -685,7 +682,7 @@ export default function UsersPage() {
       });
   };
 
-  const columns = useMemo(() => {
+  const columns = (() => {
     const roleOptions = allRoles.filter((role) => role.name !== USER_ROLES.ADMIN);
 
     const renderRoleBadges = (row) => {
@@ -1216,17 +1213,7 @@ export default function UsersPage() {
         cell: (row) => renderStatusControl(row),
       },
     ];
-  }, [
-    t,
-    allRoles,
-    canManageRoles,
-    canToggleStatus,
-    currentBranches,
-    isPlatformAdminRoute,
-    toggleActive.isPending,
-    setUserShifts.isPending,
-    updateUser.isPending,
-  ]);
+  })();
 
   return (
     <div className="space-y-6">
@@ -1287,6 +1274,43 @@ export default function UsersPage() {
             </span>
           </CardContent>
         </Card>
+      )}
+
+      {isPlatformAdminRoute && !needsClinicSelection && (
+        <ImpactPanel
+          tone={userSummary.unassigned > 0 ? 'warning' : 'neutral'}
+          icon={UserCog}
+          title={t('platformAdmin.userAccess.impactTitle', {
+            defaultValue: 'Clinic-group access impact',
+          })}
+          description={t('platformAdmin.userAccess.impactDescription', {
+            defaultValue:
+              'User provisioning and branch reach determine who can operate each subscribed branch.',
+          })}
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            <ImpactMetric
+              label={t('platformAdmin.userAccess.metrics.unassignedUsers', {
+                defaultValue: 'Unassigned users',
+              })}
+              value={userSummary.unassigned}
+            />
+            <ImpactMetric
+              label={t('platformAdmin.userAccess.metrics.branchCoverage', {
+                defaultValue: 'Branch coverage',
+              })}
+              value={`${userSummary.coveredBranches}/${userSummary.branchCount}`}
+            />
+            <ImpactMetric
+              label={t('platformAdmin.userAccess.metrics.adminAccounts', {
+                defaultValue: 'Admin accounts',
+              })}
+              value={t('platformAdmin.userAccess.managedInGovernance', {
+                defaultValue: 'Managed in governance',
+              })}
+            />
+          </div>
+        </ImpactPanel>
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -1583,6 +1607,43 @@ export default function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">
+            {isPlatformAdminRoute && (
+              <ImpactPanel
+                tone="warning"
+                icon={UserPlus}
+                title={t('platformAdmin.userAccess.provisionImpactTitle', {
+                  defaultValue: 'Provisioning creates operational access',
+                })}
+                description={t('platformAdmin.userAccess.provisionImpactDescription', {
+                  defaultValue:
+                    'The account will receive clinic-group credentials, selected branch reach, and the chosen operational role.',
+                })}
+              >
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <ImpactMetric
+                    label={t('users.role', { defaultValue: 'Role' })}
+                    value={t(`users.${createForm.roleName}`, {
+                      defaultValue: createForm.roleName,
+                    })}
+                  />
+                  <ImpactMetric
+                    label={t('users.branches', { defaultValue: 'Branches' })}
+                    value={createForm.branchIds.length}
+                  />
+                  <ImpactMetric
+                    label={t('branches.primaryBranch', {
+                      defaultValue: 'Primary branch',
+                    })}
+                    value={
+                      createForm.primaryBranchId
+                        ? getBranchName(Number(createForm.primaryBranchId))
+                        : '--'
+                    }
+                  />
+                </div>
+              </ImpactPanel>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               {isPlatformAdmin && !isPlatformAdminRoute && (
                 <div className="space-y-2">
@@ -1794,6 +1855,7 @@ export default function UsersPage() {
             <DialogFooter>
               <Button
                 type="submit"
+                className="w-full sm:w-auto"
                 disabled={
                   createUser.isPending ||
                   (isPlatformAdminRoute && !platformAdminClinicId) ||
@@ -1829,6 +1891,29 @@ export default function UsersPage() {
           </DialogHeader>
 
           <div className="space-y-4">
+            <ImpactPanel
+              tone="warning"
+              icon={MapPin}
+              title={t('platformAdmin.userAccess.branchReachImpactTitle', {
+                defaultValue: 'Branch reach changes access',
+              })}
+              description={t('platformAdmin.userAccess.branchReachImpactDescription', {
+                defaultValue:
+                  'Assigned branches determine where this user can work inside the clinic group.',
+              })}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ImpactMetric
+                  label={t('users.user', { defaultValue: 'User' })}
+                  value={assignmentUser?.fullName || assignmentUser?.username || '--'}
+                />
+                <ImpactMetric
+                  label={t('users.branches', { defaultValue: 'Branches' })}
+                  value={assignmentForm.branchIds.length}
+                />
+              </div>
+            </ImpactPanel>
+
             <div className="grid gap-2 rounded-md border p-3">
               {currentBranches.map((branch) => {
                 const branchId = String(branch.id);
@@ -1895,6 +1980,7 @@ export default function UsersPage() {
             <Button
               type="button"
               onClick={handleSaveAssignments}
+              className="w-full sm:w-auto"
               disabled={updateUser.isPending || assignmentForm.branchIds.length === 0}
             >
               {updateUser.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Building2, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchInput } from '@/components/common/SearchInput';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { useDebounce } from '@/hooks/useDebounce';
 import {
   useAttachPatientToCurrentBranch,
@@ -53,10 +54,31 @@ export function ExistingPatientIntake({ onCancel, onAttached }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t('patients.useExistingPatient')}</CardTitle>
+      <CardHeader className="space-y-1">
+        <CardTitle>{t('patients.attachExistingPatientTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <ImpactPanel
+          icon={Building2}
+          title={t('patients.attachExistingPatientImpactTitle')}
+          description={t('patients.attachExistingPatientImpactDescription')}
+        >
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ImpactMetric
+              label={t('patients.attachScopeLabel')}
+              value={t('patients.attachScopeCompany')}
+            />
+            <ImpactMetric
+              label={t('patients.attachResultLabel')}
+              value={t('patients.attachResultBranch')}
+            />
+            <ImpactMetric
+              label={t('patients.attachRecordLabel')}
+              value={t('patients.attachRecordKept')}
+            />
+          </div>
+        </ImpactPanel>
+
         <SearchInput
           value={search}
           onChange={(event) => setSearch(event.target.value)}
@@ -90,7 +112,7 @@ export function ExistingPatientIntake({ onCancel, onAttached }) {
         )}
 
         {patients.length > 0 && (
-          <div className="divide-y rounded-md border">
+          <div className="divide-y rounded-md border bg-background">
             {patients.map((patient) => {
               const isAttaching =
                 attachPatient.isPending && attachingPatientId === patient.id;
@@ -98,14 +120,14 @@ export function ExistingPatientIntake({ onCancel, onAttached }) {
               return (
                 <div
                   key={patient.id}
-                  className="grid gap-3 p-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+                  className="grid gap-4 p-4 transition-colors hover:bg-muted/30 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
                 >
                   <div className="min-w-0 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline">{patient.patientCode || '--'}</Badge>
-                      <span className="font-medium">{patient.fullName}</span>
+                      <span className="break-words font-medium">{patient.fullName}</span>
                     </div>
-                    <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                       <span>
                         {t('patients.phone')}: {patient.phone || '--'}
                       </span>
@@ -122,6 +144,7 @@ export function ExistingPatientIntake({ onCancel, onAttached }) {
                     type="button"
                     onClick={() => handleAttach(patient.id)}
                     disabled={attachPatient.isPending}
+                    className="w-full md:w-auto"
                   >
                     {isAttaching ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -136,7 +159,7 @@ export function ExistingPatientIntake({ onCancel, onAttached }) {
           </div>
         )}
       </CardContent>
-      <CardFooter className="justify-end">
+      <CardFooter className="justify-end border-t bg-muted/20">
         <Button
           type="button"
           variant="ghost"

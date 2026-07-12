@@ -22,10 +22,12 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { usePermissions } from '@/hooks/usePermissions';
 import { usePlatformAdminOverview } from '@/hooks/usePlatformAdmin';
 import { useUIStore } from '@/store/uiStore';
 import { PERMISSIONS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 
 const modules = [
   {
@@ -273,6 +275,50 @@ export default function PlatformAdminPage() {
         </Card>
       ) : (
         <>
+          <ImpactPanel
+            tone={
+              Number(metrics.overdueInvoices || 0) > 0 ||
+              Number(metrics.branchesMissingPricing || 0) > 0
+                ? 'warning'
+                : 'neutral'
+            }
+            icon={Activity}
+            title={t('platformAdmin.operations.priorityTitle', {
+              defaultValue: 'Operating priorities',
+            })}
+            description={t('platformAdmin.operations.priorityDescription', {
+              defaultValue:
+                'Start with billing blockers, access blocks, and overdue invoices before routine setup review.',
+            })}
+          >
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <ImpactMetric
+                label={t('platformAdmin.metrics.readyToInvoice', {
+                  defaultValue: 'Ready to invoice',
+                })}
+                value={formatNumber(metrics.branchesReadyToInvoice)}
+              />
+              <ImpactMetric
+                label={t('platformAdmin.billingPosture.missingPricing', {
+                  defaultValue: 'Missing pricing',
+                })}
+                value={formatNumber(metrics.branchesMissingPricing)}
+              />
+              <ImpactMetric
+                label={t('platformAdmin.metrics.suspendedBranches', {
+                  defaultValue: 'Suspended branches',
+                })}
+                value={formatNumber(metrics.suspendedBranches)}
+              />
+              <ImpactMetric
+                label={t('platformAdmin.metrics.overdueInvoices', {
+                  defaultValue: 'Overdue invoices',
+                })}
+                value={formatNumber(metrics.overdueInvoices)}
+              />
+            </div>
+          </ImpactPanel>
+
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             {metricCards.map((metric) => {
               const Icon = metric.icon;
@@ -315,6 +361,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.openBilling', {
                 defaultValue: 'Open billing',
               })}
+              tone="commercial"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -352,6 +399,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              tone="warning"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -381,6 +429,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.openBilling', {
                 defaultValue: 'Open billing',
               })}
+              tone="danger"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -415,6 +464,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              tone="danger"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -446,6 +496,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.review', {
                 defaultValue: 'Review',
               })}
+              tone="commercial"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -484,6 +535,7 @@ export default function PlatformAdminPage() {
               reviewLabel={t('platformAdmin.queues.openAudit', {
                 defaultValue: 'Open audit',
               })}
+              tone="warning"
               onOpenItem={handleQueueItemOpen}
               renderItem={(item) => (
                 <>
@@ -665,12 +717,31 @@ function WorkQueueCard({
   reviewLabel = 'Review',
   onOpenItem,
   renderItem,
+  tone = 'neutral',
 }) {
+  const toneClasses = {
+    neutral: '',
+    commercial: 'border-emerald-200/80 bg-emerald-50/40 dark:border-emerald-900/60 dark:bg-emerald-950/10',
+    warning: 'border-amber-200/80 bg-amber-50/50 dark:border-amber-900/60 dark:bg-amber-950/15',
+    danger: 'border-destructive/30 bg-destructive/[0.04]',
+  };
+
   return (
-    <Card>
+    <Card className={cn(toneClasses[tone])}>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-base">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon
+          className={cn(
+            'h-4 w-4',
+            tone === 'danger'
+              ? 'text-destructive'
+              : tone === 'warning'
+                ? 'text-amber-700 dark:text-amber-300'
+                : tone === 'commercial'
+                  ? 'text-emerald-700 dark:text-emerald-300'
+                  : 'text-muted-foreground',
+          )}
+        />
       </CardHeader>
       <CardContent className="space-y-2">
         {items.length === 0 ? (

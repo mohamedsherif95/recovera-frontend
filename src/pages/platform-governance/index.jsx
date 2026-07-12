@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   UserCog,
 } from 'lucide-react';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -212,6 +213,18 @@ function UserIdentity({ user }) {
   );
 }
 
+function UserRoleBadges({ user, t }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {(user.roles || []).map((role) => (
+        <Badge key={role.id || role.name} variant="secondary">
+          {formatRole(role.name, t)}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 function RoleChangeDialog({
   pendingChange,
   onOpenChange,
@@ -251,16 +264,51 @@ function RoleChangeDialog({
         </DialogHeader>
 
         {user && (
-          <div className="rounded-md border bg-muted/30 p-3 text-sm">
-            <UserIdentity user={user} />
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(user.roles || []).map((role) => (
-                <Badge key={role.id || role.name} variant="secondary">
-                  {formatRole(role.name, t)}
-                </Badge>
-              ))}
+          <ImpactPanel
+            tone={isGrant ? 'warning' : 'danger'}
+            icon={isGrant ? KeyRound : AlertTriangle}
+            title={t('platformGovernance.dialog.impactTitle', {
+              defaultValue: 'Platform access impact',
+            })}
+            description={
+              isGrant
+                ? t('platformGovernance.dialog.grantImpact', {
+                    defaultValue:
+                      'Granting admin access gives this account platform-wide administrative reach.',
+                  })
+                : t('platformGovernance.dialog.removeImpact', {
+                    defaultValue:
+                      'Removing admin access takes this account out of platform administration.',
+                  })
+            }
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ImpactMetric
+                label={t('platformGovernance.dialog.targetAccount', {
+                  defaultValue: 'Target account',
+                })}
+                value={user.fullName || user.username || `#${user.id}`}
+              />
+              <ImpactMetric
+                label={t('platformGovernance.dialog.resultingAccess', {
+                  defaultValue: 'Resulting access',
+                })}
+                value={
+                  isGrant
+                    ? t('users.admin', { defaultValue: 'Admin' })
+                    : t('platformGovernance.dialog.nonAdminAccess', {
+                        defaultValue: 'Non-admin roles only',
+                      })
+                }
+              />
             </div>
-          </div>
+            <div className="mt-3 rounded-md border bg-background/80 p-3">
+              <UserIdentity user={user} />
+              <div className="mt-3">
+                <UserRoleBadges user={user} t={t} />
+              </div>
+            </div>
+          </ImpactPanel>
         )}
 
         <div className="space-y-2">
@@ -457,6 +505,7 @@ export default function PlatformGovernancePage() {
   const canMutateAdminRole = Boolean(adminRole);
   const isLoading =
     rolesQuery.isLoading || usersQuery.isLoading || candidatesQuery.isLoading;
+  const adminCustodyTone = adminUsers.length <= 1 ? 'warning' : 'neutral';
 
   return (
     <div className="space-y-6">
@@ -540,6 +589,41 @@ export default function PlatformGovernancePage() {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
+              <ImpactPanel
+                tone={adminCustodyTone}
+                icon={ShieldCheck}
+                title={t('platformGovernance.adminCustody.impactTitle', {
+                  defaultValue: 'Admin access is platform-wide',
+                })}
+                description={t('platformGovernance.adminCustody.impactDescription', {
+                  defaultValue:
+                    'Granting or removing this role changes who can operate the admin console across clinic groups.',
+                })}
+              >
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <ImpactMetric
+                    label={t('platformGovernance.metrics.adminAccounts', {
+                      defaultValue: 'Admin accounts',
+                    })}
+                    value={adminUsers.length}
+                  />
+                  <ImpactMetric
+                    label={t('platformGovernance.metrics.platformControls', {
+                      defaultValue: 'Platform controls',
+                    })}
+                    value={platformPermissions}
+                  />
+                  <ImpactMetric
+                    label={t('platformGovernance.adminCustody.auditRequirement', {
+                      defaultValue: 'Audit requirement',
+                    })}
+                    value={t('platformGovernance.adminCustody.reasonRequired', {
+                      defaultValue: 'Reason required',
+                    })}
+                  />
+                </div>
+              </ImpactPanel>
+
               {!canMutateAdminRole && (
                 <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -565,7 +649,8 @@ export default function PlatformGovernancePage() {
                   })}
                 </p>
               ) : (
-                <div className="overflow-x-auto rounded-md border">
+                <>
+                <div className="hidden overflow-x-auto rounded-md border md:block">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/60 text-left">
                       <tr>
@@ -628,6 +713,39 @@ export default function PlatformGovernancePage() {
                     </tbody>
                   </table>
                 </div>
+                <div className="grid gap-3 md:hidden">
+                  {adminUsers.map((user) => {
+                    const isSelf = Number(user.id) === Number(currentUser?.id);
+                    const isLastAdmin = adminUsers.length <= 1;
+                    return (
+                      <div key={user.id} className="rounded-md border p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <UserIdentity user={user} />
+                          <StatusBadge active={user.isActive !== false} />
+                        </div>
+                        <div className="mt-3 text-sm text-muted-foreground">
+                          {user.clinic?.name ||
+                            t('platformGovernance.platformClinic', {
+                              defaultValue: 'Platform',
+                            })}
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="mt-3 w-full"
+                          disabled={isSelf || isLastAdmin || !canMutateAdminRole}
+                          onClick={() => openRevokeDialog(user)}
+                        >
+                          {t('platformGovernance.actions.removeAdmin', {
+                            defaultValue: 'Remove admin',
+                          })}
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -647,6 +765,18 @@ export default function PlatformGovernancePage() {
               </Badge>
             </CardHeader>
             <CardContent className="space-y-4">
+              <ImpactPanel
+                tone="warning"
+                icon={KeyRound}
+                title={t('platformGovernance.grant.impactTitle', {
+                  defaultValue: 'Grant with deliberate custody',
+                })}
+                description={t('platformGovernance.grant.impactDescription', {
+                  defaultValue:
+                    'Only grant this role to accounts that should perform platform administration outside clinic workspaces.',
+                })}
+              />
+
               <Input
                 value={candidateSearch}
                 onChange={(event) => setCandidateSearch(event.target.value)}
@@ -691,6 +821,7 @@ export default function PlatformGovernancePage() {
                       <Button
                         type="button"
                         size="sm"
+                        className="w-full sm:w-auto"
                         disabled={
                           user.isActive === false || !canMutateAdminRole
                         }

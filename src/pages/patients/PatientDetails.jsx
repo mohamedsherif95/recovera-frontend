@@ -47,9 +47,11 @@ import {
   formatTimeWithDate,
 } from "@/lib/utils";
 import { PageHeader } from "@/components/common/PageHeader";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import {
   Activity,
   BellRing,
+  Building2,
   ClipboardCheck,
   FileText,
   Stethoscope,
@@ -749,6 +751,21 @@ export default function PatientDetailsPage() {
         : [],
     [patient?.branchRelationships],
   );
+  const currentBranchRelationship = useMemo(() => {
+    if (effectiveBranchId == null) return null;
+
+    return activeBranchRelationships.find(
+      (relationship) =>
+        Number(relationship?.branchId) === Number(effectiveBranchId),
+    );
+  }, [activeBranchRelationships, effectiveBranchId]);
+  const activeBranchNames = activeBranchRelationships
+    .map((relationship) => relationship?.branch?.name)
+    .filter(Boolean)
+    .join(", ");
+  const clinicalProfilesValue = clinicalProfiles.length
+    ? clinicalProfiles.map((profile) => getClinicProfileLabel(profile, t)).join(", ")
+    : t("patients.noEnabledClinicalProfiles");
   const canDeactivateRelationship = (relationship) =>
     canEdit &&
     !relationship?.isPrimary &&
@@ -981,6 +998,42 @@ export default function PatientDetailsPage() {
         }
       />
 
+      <ImpactPanel
+        icon={Building2}
+        title={t("patients.patientOperationalContextTitle")}
+        description={t("patients.patientOperationalContextDescription")}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <ImpactMetric
+            label={t("patients.contextCompanyRecord")}
+            value={patient.patientCode ? `#${patient.patientCode}` : "--"}
+          />
+          <ImpactMetric
+            label={t("patients.contextCurrentBranch")}
+            value={
+              currentBranchRelationship?.branch?.name ||
+              (effectiveBranchId == null
+                ? t("patients.noBranchScope")
+                : t("patients.notLinkedToCurrentBranch"))
+            }
+          />
+          <ImpactMetric
+            label={t("patients.contextBranchReach")}
+            value={
+              activeBranchRelationships.length
+                ? t("patients.branchReachCount", {
+                    count: activeBranchRelationships.length,
+                  })
+                : "--"
+            }
+          />
+          <ImpactMetric
+            label={t("patients.contextClinicalProfiles")}
+            value={clinicalProfilesValue}
+          />
+        </div>
+      </ImpactPanel>
+
       {canCreateSession && isCreatingSession && (
         <SessionForm
           initialValues={{
@@ -1051,97 +1104,107 @@ export default function PatientDetailsPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>{t("patients.companyPatientRecord")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div>
-              <span className="font-medium">{t("patients.fullName")}:</span>{" "}
-              {patient.fullName}
+          <CardContent className="space-y-4 text-sm">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ProfileMetric label={t("patients.fullName")} value={patient.fullName} />
+              <ProfileMetric
+                label={t("patients.patientId")}
+                value={patient.patientCode ? `#${patient.patientCode}` : "--"}
+              />
+              <ProfileMetric label={t("patients.phone")} value={patient.phone || "--"} />
+              <ProfileMetric
+                label={t("patients.age")}
+                value={patient.age != null ? patient.age : "--"}
+              />
+              <ProfileMetric
+                label={t("patients.job", { defaultValue: "Job" })}
+                value={patient.job || "--"}
+              />
+              <ProfileMetric
+                label={t("patients.referral", { defaultValue: "Referral" })}
+                value={patient.referral || "--"}
+              />
             </div>
-            <div>
-              <span className="font-medium">{t("patients.age")}:</span>{" "}
-              {patient.age ?? "--"}
-            </div>
-            <div>
-              <span className="font-medium">{t("patients.phone")}:</span>{" "}
-              {patient.phone || "--"}
-            </div>
-            <div>
-              <span className="font-medium">
-                {t("patients.job", { defaultValue: "Job" })}:
-              </span>{" "}
-              {patient.job || "--"}
-            </div>
-            <div>
-              <span className="font-medium">{t("patients.address")}:</span>{" "}
-              {patient.address || "--"}
-            </div>
-            <div>
-              <span className="font-medium">
-                {t("patients.referral", { defaultValue: "Referral" })}:
-              </span>{" "}
-              {patient.referral || "--"}
-            </div>
-            <div>
-              <span className="font-medium">
-                {t("patients.primaryBranch", {
-                  defaultValue: "Primary branch",
-                })}
-                :
-              </span>{" "}
-              {patient.primaryBranch?.name || "--"}
-            </div>
-            <div>
-              <span className="font-medium">
-                {t("patients.branchRelationships", {
-                  defaultValue: "Branch relationships",
-                })}
-                :
-              </span>{" "}
-              {activeBranchRelationships.length ? "" : "--"}
-            </div>
-            {activeBranchRelationships.length > 0 && (
-              <div className="space-y-2 pt-1">
-                {activeBranchRelationships.map((relationship) => (
-                  <div
-                    key={relationship.id}
-                    className="flex items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">
-                          {relationship.branch?.name || "--"}
-                        </span>
-                        {relationship.isPrimary && (
-                          <Badge variant="secondary">
-                            {t("patients.primaryBranch", {
-                              defaultValue: "Primary branch",
-                            })}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {relationship.relationshipType || "care"}
-                      </div>
-                    </div>
-                    {canDeactivateRelationship(relationship) && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setRelationshipToDeactivate(relationship)
-                        }
-                        disabled={deactivateRelationship.isPending}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        {t("patients.removeFromThisBranch", {
-                          defaultValue: "Remove from this branch",
-                        })}
-                      </Button>
-                    )}
-                  </div>
-                ))}
+
+            <div className="rounded-md border bg-muted/20 p-3">
+              <div className="text-xs font-medium uppercase text-muted-foreground">
+                {t("patients.address")}
               </div>
-            )}
+              <div className="mt-1 break-words">{patient.address || "--"}</div>
+            </div>
+
+            <div className="rounded-md border p-3">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-semibold">
+                    {t("patients.branchRelationships", {
+                      defaultValue: "Branch relationships",
+                    })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {activeBranchNames || "--"}
+                  </div>
+                </div>
+                <Badge variant="outline">
+                  {t("patients.branchReachCount", {
+                    count: activeBranchRelationships.length,
+                  })}
+                </Badge>
+              </div>
+
+              {activeBranchRelationships.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {activeBranchRelationships.map((relationship) => (
+                    <div
+                      key={relationship.id}
+                      className="flex flex-col gap-3 rounded-md border bg-background px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">
+                            {relationship.branch?.name || "--"}
+                          </span>
+                          {relationship.isPrimary && (
+                            <Badge variant="secondary">
+                              {t("patients.primaryBranch", {
+                                defaultValue: "Primary branch",
+                              })}
+                            </Badge>
+                          )}
+                          {currentBranchRelationship?.id === relationship.id && (
+                            <Badge variant="outline">
+                              {t("patients.currentBranch", {
+                                defaultValue: "Current branch",
+                              })}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {relationship.relationshipType || "care"}
+                        </div>
+                      </div>
+                      {canDeactivateRelationship(relationship) && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            setRelationshipToDeactivate(relationship)
+                          }
+                          disabled={deactivateRelationship.isPending}
+                          className="w-full justify-start text-destructive hover:text-destructive sm:w-auto"
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          {t("patients.removeFromThisBranch", {
+                            defaultValue: "Remove from this branch",
+                          })}
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

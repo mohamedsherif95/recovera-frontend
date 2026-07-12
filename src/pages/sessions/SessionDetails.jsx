@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import {
   useSession,
   useUpdateSession,
@@ -32,17 +33,16 @@ import { ProfileDetailsPanel } from "./ProfileDetailsPanel";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { PageHeader } from "@/components/common/PageHeader";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import {
-  ChevronDown,
+  CheckCircle2,
+  Clock3,
   Stethoscope,
   ClipboardCheck,
+  PlayCircle,
   Plus,
   Minus,
+  UserCheck,
+  WalletCards,
+  XCircle,
 } from "lucide-react";
 import {
   getAllowedStatusTransitions,
@@ -56,6 +56,46 @@ import {
   getClinicProfileLabel,
   getClinicProfileProviderLabel,
 } from "@/lib/clinicProfiles";
+
+const statusBadgeClasses = {
+  scheduled:
+    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
+  arrived:
+    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
+  in_progress:
+    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
+  completed:
+    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
+  cancelled:
+    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
+};
+
+const getStatusBadgeClass = (status) =>
+  statusBadgeClasses[status] || "border-border bg-muted/30";
+
+const getStatusActionLabel = (statusKey, t) => {
+  if (statusKey === SESSION_STATUS.ARRIVED) {
+    return t("sessions.markArrival", { defaultValue: "Mark patient arrival" });
+  }
+  if (statusKey === SESSION_STATUS.IN_PROGRESS) {
+    return t("status.start");
+  }
+  if (statusKey === SESSION_STATUS.COMPLETED) {
+    return t("sessions.completeSession", { defaultValue: "Complete Visit" });
+  }
+  if (statusKey === SESSION_STATUS.CANCELLED) {
+    return t("status.cancelled");
+  }
+  return t(`status.${statusKey}`, { defaultValue: statusKey });
+};
+
+const getStatusActionIcon = (statusKey) => {
+  if (statusKey === SESSION_STATUS.ARRIVED) return UserCheck;
+  if (statusKey === SESSION_STATUS.IN_PROGRESS) return PlayCircle;
+  if (statusKey === SESSION_STATUS.COMPLETED) return CheckCircle2;
+  if (statusKey === SESSION_STATUS.CANCELLED) return XCircle;
+  return Clock3;
+};
 
 export default function SessionDetailsPage() {
   const { id } = useParams();
@@ -136,6 +176,49 @@ export default function SessionDetailsPage() {
   const updateNotes = useUpdateSessionNotes();
   const updateStatus = useUpdateSessionStatus();
   const deleteSession = useDeleteSession();
+  const allowedStatusTransitions = useMemo(
+    () =>
+      getAllowedStatusTransitions(session?.status, {
+        isAdmin,
+      }),
+    [isAdmin, session?.status],
+  );
+  const routineStatusTransitions = allowedStatusTransitions.filter(
+    (statusKey) => statusKey !== SESSION_STATUS.CANCELLED,
+  );
+  const canCancelVisit = allowedStatusTransitions.includes(
+    SESSION_STATUS.CANCELLED,
+  );
+
+  const handleStatusTransition = (statusKey) => {
+    if (!session || !statusKey) return;
+
+    if (statusKey === SESSION_STATUS.CANCELLED) {
+      setPendingStatus(statusKey);
+      setCancelConfirmOpen(true);
+      return;
+    }
+
+    const payload = buildStatusUpdatePayload(session, statusKey);
+    updateStatus.mutate(
+      { sessionId: session.id, data: payload },
+      {
+        onSuccess: (updatedSession) => {
+          if (statusKey === SESSION_STATUS.COMPLETED) {
+            if (!updatedSession.paidInFull) {
+              const totalPaid =
+                updatedSession.payments?.reduce(
+                  (sum, p) => sum + Number(p.amount),
+                  0,
+                ) || 0;
+              const remaining = updatedSession.cost - totalPaid;
+              navigate(`/payments?sessionId=${session.id}&amount=${remaining}`);
+            }
+          }
+        },
+      },
+    );
+  };
 
   const patient = useMemo(() => {
     const rawPatient = session?.patient || {};
@@ -464,6 +547,112 @@ export default function SessionDetailsPage() {
       </CardContent>
     </Card>
   );
+
+  const renderStatusWorkbench = () => {
+    const isCompleted = session.status === SESSION_STATUS.COMPLETED;
+    const isCancelled = session.status === SESSION_STATUS.CANCELLED;
+    const nextRoutineStatus = routineStatusTransitions[0];
+    const tone = isCancelled ? "danger" : isCompleted ? "commercial" : "neutral";
+
+    return (
+      <ImpactPanel
+        icon={Clock3}
+        tone={tone}
+        title={t("sessions.statusWorkbenchTitle")}
+        description={t("sessions.statusWorkbenchDescription")}
+      >
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <ImpactMetric
+            label={t("sessions.currentStatus")}
+            value={
+              <Badge
+                variant="outline"
+                className={getStatusBadgeClass(session.status)}
+              >
+                {session.status ? t(`status.${session.status}`) : "--"}
+              </Badge>
+            }
+          />
+          <ImpactMetric
+            label={t("sessions.nextOperationalAction")}
+            value={
+              nextRoutineStatus
+                ? getStatusActionLabel(nextRoutineStatus, t)
+                : t("sessions.noStatusTransitions")
+            }
+          />
+          <ImpactMetric
+            label={t("sessions.completionBillingImpact")}
+            value={
+              isCompleted
+                ? t("sessions.billingImpactAlreadyCompleted")
+                : t("sessions.billingImpactOnCompletion")
+            }
+          />
+          <ImpactMetric
+            label={t("payments.paidInFull")}
+            value={
+              session.paidInFull == null
+                ? "--"
+                : session.paidInFull
+                  ? t("common.yes")
+                  : t("common.no")
+            }
+          />
+        </div>
+
+        <div className="mt-3 flex items-start gap-2 rounded-md border bg-background/70 p-3 text-xs text-muted-foreground">
+          <WalletCards className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <span>{t("sessions.completionPaymentHint")}</span>
+        </div>
+
+        {canUpdateStatus ? (
+          allowedStatusTransitions.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              {routineStatusTransitions.map((statusKey) => {
+                const ActionIcon = getStatusActionIcon(statusKey);
+                const isCompletion = statusKey === SESSION_STATUS.COMPLETED;
+
+                return (
+                  <Button
+                    key={statusKey}
+                    type="button"
+                    variant={isCompletion ? "default" : "secondary"}
+                    onClick={() => handleStatusTransition(statusKey)}
+                    disabled={updateStatus.isPending}
+                    className="w-full sm:w-auto"
+                  >
+                    <ActionIcon className="mr-2 h-4 w-4" />
+                    {getStatusActionLabel(statusKey, t)}
+                  </Button>
+                );
+              })}
+              {canCancelVisit && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleStatusTransition(SESSION_STATUS.CANCELLED)}
+                  disabled={updateStatus.isPending}
+                  className="w-full border-destructive/40 text-destructive hover:text-destructive sm:w-auto"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  {getStatusActionLabel(SESSION_STATUS.CANCELLED, t)}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              {t("sessions.noStatusTransitions")}
+            </p>
+          )
+        ) : (
+          <p className="mt-3 text-sm text-muted-foreground">
+            {t("sessions.statusPermissionHint")}
+          </p>
+        )}
+      </ImpactPanel>
+    );
+  };
 
   const renderProgramNotesCard = () => (
     <Card>
@@ -863,7 +1052,7 @@ export default function SessionDetailsPage() {
     <div className="space-y-6">
       <PageHeader
         title={t("visitDetails.title", { defaultValue: "Visit details" })}
-        description={`${profileLabel} · ${t("sessions.date")}: ${
+        description={`${profileLabel} | ${t("sessions.date")}: ${
           session.sessionDate || "--"
         }`}
         onBack={() => navigate(-1)}
@@ -879,70 +1068,6 @@ export default function SessionDetailsPage() {
                 {t("common.delete")}
               </Button>
             )}
-            {canUpdateStatus &&
-              getAllowedStatusTransitions(session.status, {
-                isAdmin,
-              }).length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      disabled={updateStatus.isPending}
-                    >
-                      {t("sessions.changeStatus", {
-                        defaultValue: "Change status",
-                      })}
-                      <ChevronDown className="ms-1 h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {getAllowedStatusTransitions(session.status, {
-                      isAdmin,
-                    }).map((statusKey) => (
-                      <DropdownMenuItem
-                        key={statusKey}
-                        onClick={() => {
-                          if (statusKey === SESSION_STATUS.CANCELLED) {
-                            setPendingStatus(statusKey);
-                            setCancelConfirmOpen(true);
-                          } else {
-                            const payload = buildStatusUpdatePayload(
-                              session,
-                              statusKey,
-                            );
-                            updateStatus.mutate(
-                              { sessionId: session.id, data: payload },
-                              {
-                                onSuccess: (updatedSession) => {
-                                  if (statusKey === SESSION_STATUS.COMPLETED) {
-                                    if (!updatedSession.paidInFull) {
-                                      const totalPaid =
-                                        updatedSession.payments?.reduce(
-                                          (sum, p) => sum + Number(p.amount),
-                                          0,
-                                        ) || 0;
-                                      const remaining =
-                                        updatedSession.cost - totalPaid;
-                                      navigate(
-                                        `/payments?sessionId=${session.id}&amount=${remaining}`,
-                                      );
-                                    }
-                                  }
-                                },
-                              },
-                            );
-                          }
-                        }}
-                      >
-                        {statusKey === SESSION_STATUS.IN_PROGRESS
-                          ? t("status.start")
-                          : t(`status.${statusKey}`)}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
           </>
         }
       />
@@ -957,6 +1082,8 @@ export default function SessionDetailsPage() {
           })}
         </div>
       )}
+
+      {renderStatusWorkbench()}
 
       {isDoctorOnly ? (
         <>

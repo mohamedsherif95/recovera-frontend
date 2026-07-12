@@ -31,6 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -342,7 +343,7 @@ function ArtifactStatusRow({
         : 'destructive';
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-1 border-b px-3 py-3 last:border-b-0">
+    <div className="flex flex-col gap-3 border-b px-3 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
         <div className="rounded-md border bg-background p-2">
           <Icon className="h-4 w-4" />
@@ -369,10 +370,11 @@ function ArtifactStatusRow({
       <Button
         variant="outline"
         size="sm"
+        className="w-full sm:w-auto"
         onClick={() => onDownload(artifactType)}
         disabled={!artifact}
       >
-        <Download className=" h-4 w-4" />
+        <Download className="h-4 w-4" />
         {t('platformBilling.artifacts.download', { defaultValue: 'Download' })}
       </Button>
     </div>
@@ -886,6 +888,16 @@ export default function PlatformBillingPage() {
     getLatestInvoiceActivityTimestamp(selectedInvoicePackage);
   const pdfArtifact = getArtifactByType(selectedArtifacts, 'pdf');
   const excelArtifact = getArtifactByType(selectedArtifacts, 'excel');
+  const artifactFreshnessStates = [pdfArtifact, excelArtifact].map((artifact) =>
+    getArtifactFreshness(artifact, latestInvoiceActivityTimestamp),
+  );
+  const artifactPanelTone =
+    selectedInvoice &&
+    artifactFreshnessStates.some((freshness) =>
+      ['missing', 'stale'].includes(freshness),
+    )
+      ? 'warning'
+      : 'neutral';
   const resolvedCollectionInvoice =
     selectedInvoice?.id === collectionTargetInvoice?.id
       ? selectedInvoice
@@ -904,6 +916,11 @@ export default function PlatformBillingPage() {
     selectedInvoice &&
     selectedInvoice.status !== 'voided' &&
     Number(selectedInvoice.collectedAmount || 0) === 0;
+  const activeInvoiceCanCollect =
+    canManage &&
+    activeInvoice &&
+    activeInvoice.status !== 'voided' &&
+    Number(activeInvoice.balanceAmount || 0) > 0;
 
   useEffect(() => {
     if (!invoices.length) {
@@ -1252,76 +1269,164 @@ export default function PlatformBillingPage() {
                         value={formatNumber(calculation.overageBlockCount)}
                       />
                     </div>
-                    {activeInvoice ? (
-                      <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                        <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
-                          <span>
-                            {t('platformBilling.activeInvoiceNotice', {
+                    <ImpactPanel
+                      tone={activeInvoice ? 'commercial' : 'warning'}
+                      icon={activeInvoice ? CheckCircle2 : FileText}
+                      title={
+                        activeInvoice
+                          ? t('platformBilling.activePackageImpactTitle', {
+                              defaultValue: 'Issued invoice package',
+                            })
+                          : t('platformBilling.issuePackageImpactTitle', {
+                              defaultValue: 'Issue invoice package',
+                            })
+                      }
+                      description={
+                        activeInvoice
+                          ? t('platformBilling.activeInvoiceNotice', {
                               defaultValue:
                                 'This branch-month already has an active invoice package. Use invoice detail to download artifacts or record collections.',
-                            })}
-                          </span>
-                          {canManage &&
-                            activeInvoice.status !== 'voided' && (
+                            })
+                          : t('platformBilling.generationNotice', {
+                              defaultValue:
+                                'Generation locks this branch-month and creates the invoice PDF plus the Excel data sheet.',
+                            })
+                      }
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {activeInvoice ? (
+                          <>
+                            <ImpactMetric
+                              label={t('platformBilling.table.invoice', {
+                                defaultValue: 'Invoice',
+                              })}
+                              value={activeInvoice.invoiceNumber}
+                            />
+                            <ImpactMetric
+                              label={t('platformBilling.table.status', {
+                                defaultValue: 'Status',
+                              })}
+                              value={getInvoiceStatusLabel(activeInvoice.status, t)}
+                            />
+                            <ImpactMetric
+                              label={t('platformBilling.table.balance', {
+                                defaultValue: 'Balance',
+                              })}
+                              value={formatCurrency(activeInvoice.balanceAmount)}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <ImpactMetric
+                              label={t('platformBilling.metrics.total', {
+                                defaultValue: 'Total',
+                              })}
+                              value={formatCurrency(calculation.totalAmount)}
+                            />
+                            <ImpactMetric
+                              label={t('platformBilling.metrics.billableVisits', {
+                                defaultValue: 'Billable visits',
+                              })}
+                              value={formatNumber(calculation.billableVisitCount)}
+                            />
+                            <ImpactMetric
+                              label={t('platformBilling.artifacts.title', {
+                                defaultValue: 'Current artifacts',
+                              })}
+                              value={t('platformBilling.artifacts.packageValue', {
+                                defaultValue: 'PDF + data sheet',
+                              })}
+                            />
+                          </>
+                        )}
+                      </div>
+
+                      {(canManage || activeInvoice) && (
+                        <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:items-center">
+                          {activeInvoice ? (
+                            <>
+                              {activeInvoiceCanCollect && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                  onClick={() => openCollectionDialog(activeInvoice)}
+                                >
+                                  <WalletCards className="h-4 w-4" />
+                                  {t('platformBilling.recordCollection', {
+                                    defaultValue: 'Record collection',
+                                  })}
+                                </Button>
+                              )}
+                              {activeInvoice.status === 'paid' && (
+                                <Badge variant="default" className="justify-center">
+                                  <ReceiptText className="mr-1 h-3 w-3" />
+                                  {t('platformBilling.fullyCollected', {
+                                    defaultValue: 'Fully collected',
+                                  })}
+                                </Badge>
+                              )}
                               <Button
                                 type="button"
+                                variant="outline"
                                 size="sm"
-                                disabled= {Number(activeInvoice.balanceAmount || 0) <= 0}
-                                onClick={() => openCollectionDialog(activeInvoice)}
+                                className="w-full sm:w-auto"
+                                onClick={() => setSelectedInvoiceId(activeInvoice.id)}
                               >
-                                <WalletCards className="mr-2 h-4 w-4" />
-                                {t('platformBilling.recordCollection', {
-                                  defaultValue: 'Record collection',
+                                <FileCheck2 className="h-4 w-4" />
+                                {t('platformBilling.invoiceDetail', {
+                                  defaultValue: 'Invoice detail',
                                 })}
                               </Button>
-                            )}
+                              {canManage && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full sm:w-auto"
+                                  onClick={() => setAdjustmentOpen(true)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  {t('platformBilling.adjustmentDialog.title', {
+                                    defaultValue: 'Record adjustment',
+                                  })}
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            canManage && (
+                              <>
+                                <Button
+                                  onClick={handleGenerate}
+                                  className="w-full sm:w-auto"
+                                  disabled={generateInvoice.isPending || !calculation}
+                                >
+                                  {generateInvoice.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <FileText className="h-4 w-4" />
+                                  )}
+                                  {t('platformBilling.generatePackage', {
+                                    defaultValue: 'Generate PDF + data sheet',
+                                  })}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="w-full sm:w-auto"
+                                  onClick={() => setAdjustmentOpen(true)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                  {t('platformBilling.adjustmentDialog.title', {
+                                    defaultValue: 'Record adjustment',
+                                  })}
+                                </Button>
+                              </>
+                            )
+                          )}
                         </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>
-                          {t('platformBilling.generationNotice', {
-                            defaultValue:
-                              'Generation locks this branch-month and creates the invoice PDF plus the Excel data sheet.',
-                          })}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      {canManage && (
-                        <>
-                          <Button
-                            onClick={handleGenerate}
-                            disabled={
-                              generateInvoice.isPending ||
-                              Boolean(activeInvoice) ||
-                              !calculation
-                            }
-                          >
-                            {generateInvoice.isPending ? (
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                              <FileText className="mr-2 h-4 w-4" />
-                            )}
-                            {t('platformBilling.generatePackage', {
-                              defaultValue: 'Generate PDF + data sheet',
-                            })}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setAdjustmentOpen(true)}
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            {t('platformBilling.adjustment', {
-                              defaultValue: 'Adjustment',
-                            })}
-                          </Button>
-                        </>
                       )}
-                    </div>
+                    </ImpactPanel>
                   </>
                 )}
               </CardContent>
@@ -1414,38 +1519,63 @@ export default function PlatformBillingPage() {
                               defaultValue: 'Balance',
                             })}
                           </th>
+                          <th className="px-3 py-2 text-right font-medium">
+                            {t('common.actions', { defaultValue: 'Actions' })}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {invoices.map((invoice) => (
-                          <tr
-                            key={invoice.id}
-                            className={`cursor-pointer border-t hover:bg-muted/40 ${
-                              Number(selectedInvoiceId) === Number(invoice.id)
-                                ? 'bg-muted/50'
-                                : ''
-                            }`}
-                            onClick={() => setSelectedInvoiceId(invoice.id)}
-                          >
-                            <td className="px-3 py-2 font-medium">
-                              {invoice.invoiceNumber}
-                            </td>
-                            <td className="px-3 py-2">
-                              {formatMonth(invoice.billingMonth)}
-                            </td>
-                            <td className="px-3 py-2">
-                              <Badge variant={statusBadgeVariant(invoice.status)}>
-                                {getInvoiceStatusLabel(invoice.status, t)}
-                              </Badge>
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(invoice.totalAmount)}
-                            </td>
-                            <td className="px-3 py-2 text-right">
-                              {formatCurrency(invoice.balanceAmount)}
-                            </td>
-                          </tr>
-                        ))}
+                        {invoices.map((invoice) => {
+                          const selected =
+                            Number(selectedInvoiceId) === Number(invoice.id);
+
+                          return (
+                            <tr
+                              key={invoice.id}
+                              className={`cursor-pointer border-t hover:bg-muted/40 ${
+                                selected ? 'bg-muted/50' : ''
+                              }`}
+                              onClick={() => setSelectedInvoiceId(invoice.id)}
+                            >
+                              <td className="px-3 py-2 font-medium">
+                                {invoice.invoiceNumber}
+                              </td>
+                              <td className="px-3 py-2">
+                                {formatMonth(invoice.billingMonth)}
+                              </td>
+                              <td className="px-3 py-2">
+                                <Badge variant={statusBadgeVariant(invoice.status)}>
+                                  {getInvoiceStatusLabel(invoice.status, t)}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {formatCurrency(invoice.totalAmount)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                {formatCurrency(invoice.balanceAmount)}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <Button
+                                  type="button"
+                                  variant={selected ? 'secondary' : 'outline'}
+                                  size="sm"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setSelectedInvoiceId(invoice.id);
+                                  }}
+                                >
+                                  {selected
+                                    ? t('platformBilling.selectedInvoice', {
+                                        defaultValue: 'Selected',
+                                      })
+                                    : t('platformBilling.openInvoiceDetail', {
+                                        defaultValue: 'Open',
+                                      })}
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1522,20 +1652,32 @@ export default function PlatformBillingPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold">
-                        {t('platformBilling.artifacts.title', {
-                          defaultValue: 'Current artifacts',
-                        })}
-                      </p>
+                  <ImpactPanel
+                    tone={artifactPanelTone}
+                    icon={Download}
+                    title={t('platformBilling.artifacts.title', {
+                      defaultValue: 'Current artifacts',
+                    })}
+                    description={
+                      artifactPanelTone === 'warning'
+                        ? t('platformBilling.artifacts.reviewDescription', {
+                            defaultValue:
+                              'Review artifact freshness before sending files to the branch.',
+                          })
+                        : t('platformBilling.artifacts.downloadDescription', {
+                            defaultValue:
+                              'Download the generated PDF or data sheet for this invoice.',
+                          })
+                    }
+                  >
+                    <div className="mb-3 flex justify-start">
                       <Badge variant="outline">
                         {t('platformBilling.artifacts.currentVersion', {
                           defaultValue: 'Latest generated version',
                         })}
                       </Badge>
                     </div>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border bg-background/80">
                       <ArtifactStatusRow
                         artifact={pdfArtifact}
                         artifactType="pdf"
@@ -1559,59 +1701,164 @@ export default function PlatformBillingPage() {
                         t={t}
                       />
                     </div>
-                  </div>
+                  </ImpactPanel>
 
-                  <div className="rounded-md border bg-muted/20 p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        size="sm"
-                        disabled={!canCollectSelectedInvoice}
-                        onClick={() => openCollectionDialog(selectedInvoice)}
-                      >
-                        <WalletCards className="mr-2 h-4 w-4" />
-                        {t('platformBilling.recordCollection', {
-                          defaultValue: 'Record collection',
-                        })}
-                      </Button>
-                      {canManage && selectedInvoice.status === 'paid' && (
-                        <Badge variant="default">
-                          <ReceiptText className="mr-1 h-3 w-3" />
-                          {t('platformBilling.fullyCollected', {
-                            defaultValue: 'Fully collected',
+                  {selectedInvoice.status !== 'voided' ? (
+                    <ImpactPanel
+                      tone="commercial"
+                      icon={
+                        selectedInvoice.status === 'paid'
+                          ? ReceiptText
+                          : WalletCards
+                      }
+                      title={
+                        selectedInvoice.status === 'paid'
+                          ? t('platformBilling.fullyCollected', {
+                              defaultValue: 'Fully collected',
+                            })
+                          : t('platformBilling.collectionImpactTitle', {
+                              defaultValue: 'Collection status',
+                            })
+                      }
+                      description={
+                        selectedInvoice.status === 'paid'
+                          ? t('platformBilling.collectionPaidDescription', {
+                              defaultValue:
+                                'The invoice balance is closed and collection history remains in the ledger.',
+                            })
+                          : t('platformBilling.collectionImpactDescription', {
+                              defaultValue:
+                                'Recording a collection reduces the invoice balance and preserves the payment trail.',
+                            })
+                      }
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <ImpactMetric
+                          label={t('platformBilling.table.balance', {
+                            defaultValue: 'Balance',
                           })}
-                        </Badge>
-                      )}
-                      {canManage && selectedInvoice.status === 'voided' && (
-                        <Badge variant="destructive">
-                          {t('platformBilling.voidedInvoice', {
-                            defaultValue: 'Voided invoice',
+                          value={formatCurrency(selectedInvoice.balanceAmount)}
+                        />
+                        <ImpactMetric
+                          label={t('platformBilling.metrics.collected', {
+                            defaultValue: 'Collected',
                           })}
-                        </Badge>
+                          value={formatCurrency(selectedInvoice.collectedAmount)}
+                        />
+                        <ImpactMetric
+                          label={t('platformBilling.table.status', {
+                            defaultValue: 'Status',
+                          })}
+                          value={getInvoiceStatusLabel(selectedInvoice.status, t)}
+                        />
+                      </div>
+                      {canManage && selectedInvoice.status !== 'paid' && (
+                        <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap">
+                          <Button
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            disabled={!canCollectSelectedInvoice}
+                            onClick={() => openCollectionDialog(selectedInvoice)}
+                          >
+                            <WalletCards className="h-4 w-4" />
+                            {t('platformBilling.recordCollection', {
+                              defaultValue: 'Record collection',
+                            })}
+                          </Button>
+                        </div>
                       )}
-                      {canManage && selectedInvoice.status !== 'voided' && (
+                    </ImpactPanel>
+                  ) : (
+                    <ImpactPanel
+                      tone="danger"
+                      icon={AlertTriangle}
+                      title={t('platformBilling.voidedInvoice', {
+                        defaultValue: 'Voided invoice',
+                      })}
+                      description={t('platformBilling.voidedImpactDescription', {
+                        defaultValue:
+                          'This invoice package is cancelled and retained for billing history.',
+                      })}
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <ImpactMetric
+                          label={t('platformBilling.table.status', {
+                            defaultValue: 'Status',
+                          })}
+                          value={getInvoiceStatusLabel(selectedInvoice.status, t)}
+                        />
+                        <ImpactMetric
+                          label={t('platformBilling.metrics.total', {
+                            defaultValue: 'Total',
+                          })}
+                          value={formatCurrency(selectedInvoice.totalAmount)}
+                        />
+                        <ImpactMetric
+                          label={t('platformBilling.table.balance', {
+                            defaultValue: 'Balance',
+                          })}
+                          value={formatCurrency(selectedInvoice.balanceAmount)}
+                        />
+                      </div>
+                    </ImpactPanel>
+                  )}
+
+                  {canManage && selectedInvoice.status !== 'voided' && (
+                    <ImpactPanel
+                      tone={canVoidSelectedInvoice ? 'danger' : 'neutral'}
+                      icon={canVoidSelectedInvoice ? AlertTriangle : LockKeyhole}
+                      title={t('platformBilling.voidImpactTitle', {
+                        defaultValue: 'Void invoice package',
+                      })}
+                      description={
+                        canVoidSelectedInvoice
+                          ? t('platformBilling.voidDialog.description', {
+                              defaultValue:
+                                'Voiding releases the branch-month lock only when no collections exist.',
+                            })
+                          : t('platformBilling.voidLockedNotice', {
+                              defaultValue:
+                                'Void is locked after collection records exist.',
+                            })
+                      }
+                    >
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <ImpactMetric
+                          label={t('platformBilling.metrics.collected', {
+                            defaultValue: 'Collected',
+                          })}
+                          value={formatCurrency(selectedInvoice.collectedAmount)}
+                        />
+                        <ImpactMetric
+                          label={t('platformBilling.table.balance', {
+                            defaultValue: 'Balance',
+                          })}
+                          value={formatCurrency(selectedInvoice.balanceAmount)}
+                        />
+                      </div>
+                      <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:items-center">
                         <Button
                           variant="destructive"
                           size="sm"
+                          className="w-full sm:w-auto"
                           onClick={() => setVoidOpen(true)}
                           disabled={!canVoidSelectedInvoice}
                         >
-                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          <AlertTriangle className="h-4 w-4" />
                           {t('platformBilling.void', { defaultValue: 'Void' })}
                         </Button>
-                      )}
-                    </div>
-                    {canManage &&
-                      selectedInvoice.status !== 'voided' &&
-                      !canVoidSelectedInvoice && (
-                        <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                          <LockKeyhole className="h-3.5 w-3.5" />
-                          {t('platformBilling.voidLockedNotice', {
-                            defaultValue:
-                              'Void is locked after collection records exist.',
-                          })}
-                        </p>
-                      )}
-                  </div>
+                        {!canVoidSelectedInvoice && (
+                          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <LockKeyhole className="h-3.5 w-3.5" />
+                            {t('platformBilling.voidLockedNotice', {
+                              defaultValue:
+                                'Void is locked after collection records exist.',
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </ImpactPanel>
+                  )}
 
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">

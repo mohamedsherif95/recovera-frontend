@@ -136,7 +136,7 @@ export function AppLayout() {
 
       <main
         className={cn(
-          'flex-1 transition-all duration-300 pt-4 px-2 md:px-4',
+          'min-w-0 flex-1 px-3 pb-24 pt-4 transition-all duration-300 sm:px-4 md:pb-4 lg:px-6',
           isRtl
             ? (sidebarOpen ? 'md:mr-64' : 'md:mr-16')
             : (sidebarOpen ? 'md:ml-64' : 'md:ml-16')
@@ -144,7 +144,15 @@ export function AppLayout() {
       >
         {isReadOnlyBranch && (
           <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            This branch is currently in read-only mode. You can view existing records, but changes are disabled. Please contact your administrator.
+            <div className="font-semibold">
+              {t('app.readOnlyTitle', { defaultValue: 'Read-only branch' })}
+            </div>
+            <div className="mt-1 font-normal">
+              {t('app.readOnlyDescription', {
+                defaultValue:
+                  'This branch is currently in read-only mode. You can view existing records, but changes are disabled. Please contact your administrator.',
+              })}
+            </div>
           </div>
         )}
         <Outlet />

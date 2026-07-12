@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import {
   Dialog,
   DialogContent,
@@ -177,6 +178,43 @@ export default function PlatformAdminAuditPage() {
           </Button>
         </div>
       </div>
+
+      <ImpactPanel
+        tone="neutral"
+        icon={FileSearch}
+        title={t('platformAdmin.audit.scopeTitle', {
+          defaultValue: 'Audit review scope',
+        })}
+        description={t('platformAdmin.audit.scopeDescription', {
+          defaultValue:
+            'Every listed event is tied back to its actor, target, reason, request, and workbench context.',
+        })}
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ImpactMetric
+            label={t('platformAdmin.adminScope', { defaultValue: 'Admin scope' })}
+            value={scopeLabel}
+          />
+          <ImpactMetric
+            label={t('platformAdmin.audit.eventsTitle', {
+              defaultValue: 'Platform events',
+            })}
+            value={total.toLocaleString()}
+          />
+          <ImpactMetric
+            label={t('platformAdmin.audit.filterState', {
+              defaultValue: 'Filter state',
+            })}
+            value={
+              hasFilters
+                ? t('platformAdmin.audit.filtered', { defaultValue: 'Filtered' })
+                : t('platformAdmin.audit.unfiltered', {
+                    defaultValue: 'Unfiltered',
+                  })
+            }
+          />
+        </div>
+      </ImpactPanel>
 
       <Card>
         <CardHeader className="pb-3">
@@ -367,7 +405,19 @@ export default function PlatformAdminAuditPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-hidden rounded-md border">
+              <div className="grid gap-3 lg:hidden">
+                {events.map((event) => (
+                  <AuditEventCard
+                    key={event.id}
+                    event={event}
+                    onInspect={() => setSelectedEvent(event)}
+                    onOpenWorkbench={() => handleOpenWorkbench(event)}
+                    t={t}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden overflow-hidden rounded-md border lg:block">
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[980px] text-sm">
                     <thead className="bg-muted/50">
@@ -547,6 +597,86 @@ function AuditEventRow({ event, onInspect, onOpenWorkbench, t }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+function AuditEventCard({ event, onInspect, onOpenWorkbench, t }) {
+  const AreaIcon = areaIcons[event.area] || FileSearch;
+  const actionLabel = t(`platformAdmin.audit.actionLabels.${event.actionKey}`, {
+    defaultValue: event.actionLabel || event.actionKey,
+  });
+
+  return (
+    <div className="rounded-md border p-3 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Badge variant="outline" className="gap-1.5">
+            <AreaIcon className="h-3.5 w-3.5" />
+            {t(`platformAdmin.audit.areas.${event.area}`, {
+              defaultValue: event.area,
+            })}
+          </Badge>
+          <p className="mt-2 font-semibold">{actionLabel}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatDateTime(event.createdAt)}
+          </p>
+        </div>
+        <Badge
+          variant={event.status === 'error' ? 'destructive' : 'secondary'}
+          className="shrink-0 capitalize"
+        >
+          {t(`platformAdmin.audit.status.${event.status}`, {
+            defaultValue: event.status || '--',
+          })}
+        </Badge>
+      </div>
+
+      <div className="mt-3 grid gap-3">
+        <DetailItem
+          label={t('reports.columns.target', { defaultValue: 'Target' })}
+          value={formatTarget(event)}
+        />
+        <DetailItem
+          label={t('platformAdmin.audit.columns.actor', {
+            defaultValue: 'Actor',
+          })}
+          value={event.actor?.name || '--'}
+          helper={event.actor?.email}
+        />
+        <DetailBlock
+          label={t('platformAdmin.audit.columns.reason', {
+            defaultValue: 'Reason',
+          })}
+          value={event.reason || '--'}
+        />
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={onInspect}
+        >
+          <Eye className="h-4 w-4" />
+          {t('platformAdmin.audit.inspect', {
+            defaultValue: 'Inspect event',
+          })}
+        </Button>
+        <Button asChild size="sm" className="flex-1">
+          <Link
+            to={event.workbenchHref || '/platform-admin'}
+            onClick={onOpenWorkbench}
+          >
+            <ExternalLink className="h-4 w-4" />
+            {t('platformAdmin.audit.openWorkbench', {
+              defaultValue: 'Open workbench',
+            })}
+          </Link>
+        </Button>
+      </div>
+    </div>
   );
 }
 

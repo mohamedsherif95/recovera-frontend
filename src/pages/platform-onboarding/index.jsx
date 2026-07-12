@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
-  ArrowRight,
   Building2,
   CheckCircle2,
   ClipboardCheck,
@@ -15,6 +14,7 @@ import {
   UserRound,
   Workflow,
 } from 'lucide-react';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -440,6 +440,10 @@ export default function PlatformOnboardingPage() {
     : '';
   const accessLabel = getAccessLabel(form.accessStatus, t);
   const nextMonth = formatNextMonth();
+  const completedReadinessCount = readiness.filter((check) => check.ok).length;
+  const launchImpactTone = canSubmit ? 'commercial' : 'warning';
+  const managerIdentity =
+    form.managerFullName || form.managerUsername || form.managerEmail || '--';
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col gap-6">
@@ -675,13 +679,29 @@ export default function PlatformOnboardingPage() {
                   disabled={onboardingMutation.isPending}
                 />
               </div>
-              <div className="rounded-md bg-muted/40 p-3 text-sm text-muted-foreground md:col-span-2">
-                <KeyRound className="mr-2 inline h-4 w-4" />
-                {t('platformOnboarding.manager.passwordRule', {
+              <ImpactPanel
+                className="md:col-span-2"
+                tone="warning"
+                icon={KeyRound}
+                title={t('platformOnboarding.manager.impactTitle', {
+                  defaultValue: 'Manager access provisioned at launch',
+                })}
+                description={t('platformOnboarding.manager.passwordRule', {
                   defaultValue:
                     'Temporary password must include uppercase, lowercase, and a number. The manager must change it on first login.',
                 })}
-              </div>
+              >
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <ImpactMetric
+                    label={t('users.manager', { defaultValue: 'Manager' })}
+                    value={managerIdentity}
+                  />
+                  <ImpactMetric
+                    label={t('users.branch', { defaultValue: 'Branch' })}
+                    value={form.branchName || '--'}
+                  />
+                </div>
+              </ImpactPanel>
             </CardContent>
           </Card>
 
@@ -860,56 +880,83 @@ export default function PlatformOnboardingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3 text-sm">
-              <ReviewRow
-                label={t('platformOnboarding.company.name', {
-                  defaultValue: 'Company name',
-                })}
-                value={form.companyName || '--'}
-              />
-              <ReviewRow
-                label={t('platformOnboarding.branch.name', {
-                  defaultValue: 'Branch name',
-                })}
-                value={form.branchName || '--'}
-              />
-              <ReviewRow
-                label={t('users.manager', { defaultValue: 'Manager' })}
-                value={form.managerFullName || '--'}
-              />
-              <ReviewRow
-                label={t('platformOnboarding.commercial.enabledProfiles', {
-                  defaultValue: 'Enabled clinic profiles',
-                })}
-                value={selectedProfilesLabel || '--'}
-              />
-              <ReviewRow
-                label={t('branchSubscriptions.pricingModel', {
-                  defaultValue: 'Pricing model',
-                })}
-                value={pricingLabel}
-              />
-              <ReviewRow
-                label={t('platformOnboarding.review.month', {
-                  defaultValue: 'Effective month',
-                })}
-                value={nextMonth}
-              />
-              <ReviewRow
-                label={t('branchSubscriptions.accessStatus', {
-                  defaultValue: 'Access status',
-                })}
-                value={accessLabel}
-              />
-              <ReviewRow
-                label={t('platformOnboarding.review.baseFee', {
-                  defaultValue: 'Base fee',
-                })}
-                value={formatMoney(form.baseMonthlyFee)}
-              />
-            </div>
+            <ImpactPanel
+              tone={launchImpactTone}
+              icon={ClipboardCheck}
+              title={t('platformOnboarding.review.impactTitle', {
+                defaultValue: 'Launch creates the tenant, branch, manager, and terms',
+              })}
+              description={
+                canSubmit
+                  ? t('platformOnboarding.review.impactReady', {
+                      defaultValue:
+                        'This action opens the branch as the subscribed client unit and schedules its first billing terms.',
+                    })
+                  : t('platformOnboarding.review.impactBlocked', {
+                      defaultValue:
+                        'Complete the checklist to unlock the launch action.',
+                    })
+              }
+            >
+              <div className="grid gap-3">
+                <ImpactMetric
+                  label={t('platformOnboarding.company.name', {
+                    defaultValue: 'Company name',
+                  })}
+                  value={form.companyName || '--'}
+                />
+                <ImpactMetric
+                  label={t('platformOnboarding.branch.name', {
+                    defaultValue: 'Branch name',
+                  })}
+                  value={form.branchName || '--'}
+                />
+                <ImpactMetric
+                  label={t('users.manager', { defaultValue: 'Manager' })}
+                  value={managerIdentity}
+                />
+                <ImpactMetric
+                  label={t('platformOnboarding.commercial.enabledProfiles', {
+                    defaultValue: 'Enabled clinic profiles',
+                  })}
+                  value={selectedProfilesLabel || '--'}
+                />
+                <ImpactMetric
+                  label={t('branchSubscriptions.pricingModel', {
+                    defaultValue: 'Pricing model',
+                  })}
+                  value={pricingLabel}
+                />
+                <ImpactMetric
+                  label={t('platformOnboarding.review.effectiveAccess', {
+                    defaultValue: 'Effective access',
+                  })}
+                  value={`${accessLabel} / ${nextMonth}`}
+                />
+                <ImpactMetric
+                  label={t('platformOnboarding.review.baseFee', {
+                    defaultValue: 'Base fee',
+                  })}
+                  value={formatMoney(form.baseMonthlyFee)}
+                />
+              </div>
+            </ImpactPanel>
 
             <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase text-muted-foreground">
+                <span>
+                  {t('platformOnboarding.readiness.title', {
+                    defaultValue: 'Readiness',
+                  })}
+                </span>
+                <span>
+                  {t('platformOnboarding.readiness.count', {
+                    completed: completedReadinessCount,
+                    total: readiness.length,
+                    defaultValue: '{{completed}}/{{total}} ready',
+                  })}
+                </span>
+              </div>
               {readiness.map((check) => (
                 <div
                   key={check.id}
@@ -936,34 +983,35 @@ export default function PlatformOnboardingPage() {
             )}
 
             {result && (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50/70 p-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100">
-                <p className="font-semibold">
-                  {t('platformOnboarding.result.title', {
-                    defaultValue: 'Onboarding complete',
-                  })}
-                </p>
-                <p className="mt-1">
-                  {result.clinic?.name} / {result.branch?.name}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button asChild size="sm" variant="outline">
+              <ImpactPanel
+                tone="commercial"
+                icon={CheckCircle2}
+                title={t('platformOnboarding.result.title', {
+                  defaultValue: 'Onboarding complete',
+                })}
+                description={`${result.clinic?.name || '--'} / ${
+                  result.branch?.name || '--'
+                }`}
+              >
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm">
                     <Link to="/platform-admin/branch-subscriptions">
+                      <CreditCard className="h-4 w-4" />
                       {t('platformOnboarding.result.openSubscription', {
                         defaultValue: 'Open subscription',
                       })}
-                      <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                   <Button asChild size="sm" variant="outline">
                     <Link to="/platform-admin/users">
+                      <UserRound className="h-4 w-4" />
                       {t('platformOnboarding.result.openUsers', {
                         defaultValue: 'Open users',
                       })}
-                      <ArrowRight className="h-4 w-4" />
                     </Link>
                   </Button>
                 </div>
-              </div>
+              </ImpactPanel>
             )}
 
             <Button
@@ -984,15 +1032,6 @@ export default function PlatformOnboardingPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function ReviewRow({ label, value }) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="max-w-[12rem] text-right font-medium">{value}</span>
     </div>
   );
 }

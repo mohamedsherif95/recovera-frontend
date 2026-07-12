@@ -25,6 +25,7 @@ import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { AsyncSearchableSelect } from "@/components/common/AsyncSearchableSelect";
 import { LocalizedDatePicker } from "@/components/common/LocalizedDatePicker";
 import { TimePicker } from "@/components/common/TimePicker";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import { useSessionCategories } from "@/hooks/useSessions";
 import { useActiveBranchProfiles } from "@/hooks/useActiveBranchProfiles";
 import { useAuthStore } from "@/store/authStore";
@@ -47,6 +48,12 @@ import {
   isPackageCategoryName,
 } from "@/lib/sessionCategory";
 import { getProfileDetailFields } from "@/lib/sessionProfileDetails";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Stethoscope,
+} from "lucide-react";
 
 const DEFAULT_SESSION_VALUES = {
   doctorId: undefined,
@@ -175,6 +182,9 @@ export function SessionForm({
   const selectedPatientId = watch("patientId");
   const selectedCost = watch("cost");
   const selectedProfile = watch("profile");
+  const selectedSessionDate = watch("sessionDate");
+  const selectedSessionTime = watch("sessionTime");
+  const selectedVisitType = watch("visitType");
   const activeProfile =
     selectedProfile && enabledProfiles.includes(selectedProfile)
       ? selectedProfile
@@ -590,9 +600,36 @@ export function SessionForm({
     };
   }, [patientOptions, selectedPatientId]);
 
+  const contextPatientLabel = fixedPatient
+    ? `${fixedPatient.fullName || t("patients.unknownPatient")} ${
+        fixedPatient.patientCode ? `(#${fixedPatient.patientCode})` : ""
+      }`.trim()
+    : selectedPatientOption?.label ||
+      t("sessions.contextNotSelected", { defaultValue: "Not selected yet" });
+  const contextProviderLabel =
+    (lockDoctor ? lockedDoctorLabel : selectedDoctorOption?.label) ||
+    t("sessions.contextNotSelected", { defaultValue: "Not selected yet" });
+  const contextScheduleLabel =
+    selectedSessionDate || selectedSessionTime
+      ? `${selectedSessionDate || "--"} ${selectedSessionTime || "--"}`
+      : t("sessions.contextNotScheduled", {
+          defaultValue: "Not scheduled yet",
+        });
+  const contextCommercialLabel = supportsVisitCategories
+    ? selectedCategory?.name ||
+      t("sessions.contextCategoryPending", {
+        defaultValue: "Category pending",
+      })
+    : t("sessions.contextProfileDriven", { defaultValue: "Profile driven" });
+  const contextVisitTypeLabel =
+    selectedVisitType?.trim() ||
+    (isAssessmentTypeSelected
+      ? t("sessions.isAssessment", { defaultValue: "Assessment" })
+      : activeVisitLabel);
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-1">
         <CardTitle>
           {isEditing
             ? `${t("common.edit")} ${activeVisitLabel}`
@@ -601,6 +638,47 @@ export function SessionForm({
       </CardHeader>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <CardContent className="grid gap-4 md:grid-cols-2">
+          <ImpactPanel
+            icon={CalendarClock}
+            title={
+              isEditing
+                ? t("sessions.formEditContextTitle")
+                : t("sessions.formCreateContextTitle")
+            }
+            description={
+              isEditing
+                ? t("sessions.formEditContextDescription")
+                : t("sessions.formCreateContextDescription")
+            }
+            className="md:col-span-2"
+          >
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <ImpactMetric
+                label={t("sessions.contextPatient")}
+                value={contextPatientLabel}
+              />
+              <ImpactMetric
+                label={activeProviderLabel}
+                value={contextProviderLabel}
+              />
+              <ImpactMetric
+                label={t("sessions.contextSchedule")}
+                value={contextScheduleLabel}
+              />
+              <ImpactMetric
+                label={t("sessions.contextVisitSetup")}
+                value={contextCommercialLabel}
+              />
+            </div>
+          </ImpactPanel>
+
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              {t("sessions.sectionPeople")}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="doctorId">{activeProviderLabel}</Label>
             {lockDoctor ? (
@@ -734,6 +812,13 @@ export function SessionForm({
             </div>
           )}
 
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 border-t pt-4 text-sm font-semibold">
+              <CalendarClock className="h-4 w-4 text-primary" />
+              {t("sessions.sectionTiming")}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="sessionDate">{t("sessions.date")}</Label>
             <Controller
@@ -784,6 +869,16 @@ export function SessionForm({
                 {t(errors.sessionTime.message)}
               </p>
             )}
+          </div>
+
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 border-t pt-4 text-sm font-semibold">
+              <Stethoscope className="h-4 w-4 text-primary" />
+              {t("sessions.sectionVisitSetup")}
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {contextVisitTypeLabel}
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -871,10 +966,10 @@ export function SessionForm({
                     <Button
                       type="button"
                       variant={active ? "default" : "outline"}
-                      className={`inline-flex items-center gap-4 rounded-full border-2 px-5 py-3 text-base ${
+                      className={`inline-flex min-h-11 w-full items-center justify-between gap-4 rounded-md border px-4 py-3 text-start sm:w-auto ${
                         active
-                          ? "border-primary text-white bg-primary/5"
-                          : "border-border text-muted-foreground bg-background"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:bg-muted/50"
                       }`}
                       onClick={() => {
                         if (active && isAssessmentCategorySelected) {
@@ -902,19 +997,38 @@ export function SessionForm({
                       }
                       aria-pressed={active}
                     >
-                      <span className="font-medium">
-                        {t("sessions.isAssessment", {
-                          defaultValue: "Assessment",
-                        })}
+                      <span className="flex min-w-0 flex-col">
+                        <span className="font-medium">
+                          {t("sessions.isAssessment", {
+                            defaultValue: "Assessment",
+                          })}
+                        </span>
+                        <span
+                          className={`text-xs ${
+                            active
+                              ? "text-primary-foreground/80"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {t("sessions.assessmentToggleHint", {
+                            defaultValue:
+                              "Use when this visit opens or reviews the care plan.",
+                          })}
+                        </span>
                       </span>
                       <span
-                        className={`flex h-6 w-6 items-center justify-center rounded-full border transition-all duration-150 ${
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-all duration-150 ${
                           active
-                            ? "border-primary bg-primary text-primary-foreground scale-110"
+                            ? "border-primary-foreground/40 bg-primary-foreground/15 text-primary-foreground"
                             : "border-border bg-background text-muted-foreground"
                         }`}
                       >
-                        {active ? "✓" : ""}
+                        {active ? (
+                          <CheckCircle2
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        ) : null}
                       </span>
                     </Button>
                   );
@@ -956,11 +1070,11 @@ export function SessionForm({
                   const isNew = Boolean(field.value);
                   return (
                     <div className="space-y-2">
-                      <div className="inline-flex rounded-full border bg-background p-1">
+                      <div className="grid gap-2 rounded-md border bg-background p-1 sm:inline-grid sm:grid-cols-2">
                         <Button
                           type="button"
                           variant={isNew ? "default" : "ghost"}
-                          className="rounded-full px-4"
+                          className="justify-center rounded-md px-4"
                           onClick={() => field.onChange(true)}
                           disabled={isSubmitting}
                           aria-pressed={isNew}
@@ -972,7 +1086,7 @@ export function SessionForm({
                         <Button
                           type="button"
                           variant={!isNew ? "default" : "ghost"}
-                          className="rounded-full px-4"
+                          className="justify-center rounded-md px-4"
                           onClick={() => field.onChange(false)}
                           disabled={
                             isSubmitting ||
@@ -1054,13 +1168,14 @@ export function SessionForm({
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
-          {isEditing && (
+        <CardFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {onCancel && (
             <Button
               type="button"
               variant="ghost"
               onClick={onCancel}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               {t("common.cancel")}
             </Button>
@@ -1068,6 +1183,7 @@ export function SessionForm({
           <Button
             type="submit"
             disabled={isSubmitting || packageValidation.isInvalid}
+            className="w-full sm:w-auto"
           >
             {isSubmitting ? t("common.loading") : t("common.save")}
           </Button>

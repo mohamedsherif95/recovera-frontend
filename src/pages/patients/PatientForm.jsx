@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
 import { SearchableSelect } from '@/components/common/SearchableSelect';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { useSessionCategories } from '@/hooks/useSessions';
+import { ClipboardList } from 'lucide-react';
 
 const defaultValues = {
   fullName: '',
@@ -28,6 +30,7 @@ export function PatientForm({
   onCancel,
   isSubmitting,
   isEditing,
+  intakeContext = 'new',
   showPhysiotherapySettings = true,
   showDefaultSessionCost = true,
 }) {
@@ -84,13 +87,57 @@ export function PatientForm({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="space-y-1">
         <CardTitle>
           {isEditing ? t('patients.editPatient') : t('patients.createPatient')}
         </CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <CardContent className="grid gap-4 md:grid-cols-2">
+          <ImpactPanel
+            icon={ClipboardList}
+            title={
+              isEditing
+                ? t('patients.editPatientContextTitle')
+                : t('patients.newPatientContextTitle')
+            }
+            description={
+              isEditing
+                ? t('patients.editPatientContextDescription')
+                : t('patients.newPatientContextDescription')
+            }
+            className="md:col-span-2"
+          >
+            <div className="grid gap-2 sm:grid-cols-3">
+              <ImpactMetric
+                label={t('patients.contextCompanyRecord')}
+                value={
+                  isEditing
+                    ? t('patients.contextCompanyRecordExisting')
+                    : t('patients.contextCompanyRecordCreated')
+                }
+              />
+              <ImpactMetric
+                label={t('patients.contextBranchRelationship')}
+                value={
+                  intakeContext === 'existing'
+                    ? t('patients.contextBranchRelationshipAttached')
+                    : isEditing
+                      ? t('patients.contextBranchRelationshipExisting')
+                      : t('patients.contextBranchRelationshipCreated')
+                }
+              />
+              <ImpactMetric
+                label={t('patients.contextProfileSettings')}
+                value={
+                  showPhysiotherapySettings
+                    ? t('patients.contextProfileSettingsEnabled')
+                    : t('patients.contextProfileSettingsLater')
+                }
+              />
+            </div>
+          </ImpactPanel>
+
           <div className="space-y-2">
             <Label htmlFor="fullName">{t('patients.fullName')}</Label>
             <Input id="fullName" {...register('fullName')} disabled={isSubmitting} />
@@ -135,7 +182,7 @@ export function PatientForm({
           </div>
 
           {showPhysiotherapySettings && (
-            <div className="space-y-4 border-t pt-4 md:col-span-2">
+            <div className="space-y-4 rounded-md border bg-muted/15 p-4 md:col-span-2">
               <h3 className="text-sm font-semibold">
                 {t('patients.physiotherapyClinicalSettings', {
                   defaultValue: 'Physiotherapy clinical settings',
@@ -205,13 +252,13 @@ export function PatientForm({
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-end gap-2">
-          {isEditing && (
+        <CardFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          {onCancel && (
             <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
               {t('common.cancel')}
             </Button>
           )}
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
             {isSubmitting ? t('common.loading') : t('common.save')}
           </Button>
         </CardFooter>

@@ -11,10 +11,13 @@ import {
   Receipt,
   RefreshCcw,
   Search,
+  Settings2,
   ShieldCheck,
+  Workflow,
 } from 'lucide-react';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/common/DataTable';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -77,10 +80,13 @@ export default function BranchesPage() {
     ? platformAdminClinicId
     : resolveEffectiveClinicId(user, clinicOverrideId);
   const needsClinicSelection = Boolean(isPlatformAdmin && !effectiveClinicId);
-  const platformScopeOptions =
-    isPlatformAdminRoute && effectiveClinicId
-      ? { platformClinicId: effectiveClinicId }
-      : {};
+  const platformScopeOptions = useMemo(
+    () =>
+      isPlatformAdminRoute && effectiveClinicId
+        ? { platformClinicId: effectiveClinicId }
+        : {},
+    [effectiveClinicId, isPlatformAdminRoute],
+  );
 
   const [branchDialogOpen, setBranchDialogOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState(null);
@@ -131,9 +137,10 @@ export default function BranchesPage() {
     return [];
   }, [branchesData]);
 
-  const credits = Array.isArray(branchCreditsData?.data)
-    ? branchCreditsData.data
-    : [];
+  const credits = useMemo(
+    () => (Array.isArray(branchCreditsData?.data) ? branchCreditsData.data : []),
+    [branchCreditsData],
+  );
   const creditsMeta = branchCreditsData?.meta || {
     page: 1,
     totalPages: 1,
@@ -296,41 +303,12 @@ export default function BranchesPage() {
             className: 'text-right',
             cellClassName: 'text-right',
             cell: (row) => (
-              <div className="flex flex-wrap justify-end gap-2">
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/platform-admin/branch-subscriptions?branchId=${row.id}`}>
-                    <CreditCard className="h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.openSubscription', {
-                      defaultValue: 'Subscription',
-                    })}
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/platform-admin/billing?branchId=${row.id}`}>
-                    <Receipt className="h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.openBilling', {
-                      defaultValue: 'Billing',
-                    })}
-                  </Link>
-                </Button>
-                <Button asChild size="sm" variant="outline">
-                  <Link to={`/platform-admin/audit?branchId=${row.id}`}>
-                    <FileSearch className="h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.openAudit', {
-                      defaultValue: 'Audit',
-                    })}
-                  </Link>
-                </Button>
-                {canUpdateBranches && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openEditDialog(row)}
-                  >
-                    {t('common.edit', { defaultValue: 'Edit' })}
-                  </Button>
-                )}
-              </div>
+              <BranchWorkbenchActions
+                branch={row}
+                canUpdateBranches={canUpdateBranches}
+                onEdit={openEditDialog}
+                t={t}
+              />
             ),
           },
         ];
@@ -434,7 +412,7 @@ export default function BranchesPage() {
           ),
       },
     ],
-    [canReconcileCredits, reconcileBranchCredit, t],
+    [canReconcileCredits, platformScopeOptions, reconcileBranchCredit, t],
   );
 
   const branchMetricCards = isPlatformAdminRoute
@@ -544,34 +522,6 @@ export default function BranchesPage() {
                 }`}
               />
             </Button>
-            {isPlatformAdminRoute && !needsClinicSelection && (
-              <>
-                <Button variant="outline" asChild>
-                  <Link to="/platform-admin/branch-subscriptions">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.subscriptions', {
-                      defaultValue: 'Subscriptions',
-                    })}
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/platform-admin/billing">
-                    <Receipt className="mr-2 h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.openBilling', {
-                      defaultValue: 'Billing',
-                    })}
-                  </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/platform-admin/audit">
-                    <FileSearch className="mr-2 h-4 w-4" />
-                    {t('platformAdmin.branchAdministration.openAudit', {
-                      defaultValue: 'Audit',
-                    })}
-                  </Link>
-                </Button>
-              </>
-            )}
             {canCreateBranches && !needsClinicSelection && (
               <Button onClick={openCreateDialog}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -593,21 +543,73 @@ export default function BranchesPage() {
       )}
 
       {isPlatformAdminRoute && !needsClinicSelection && (
-        <Card className="border-primary/15 bg-muted/20">
-          <CardContent className="flex flex-col gap-2 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-medium">
-              {t('platformAdmin.branchAdministration.clientUnitTitle', {
-                defaultValue: 'Branch is the subscribed client unit.',
-              })}
-            </span>
-            <span className="text-muted-foreground">
-              {t('platformAdmin.branchAdministration.clientUnitDescription', {
-                defaultValue:
-                  'Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.',
-              })}
-            </span>
-          </CardContent>
-        </Card>
+        <ImpactPanel
+          tone={
+            summary.branchesWithoutProfiles || summary.readOnlyBranches
+              ? 'warning'
+              : 'commercial'
+          }
+          icon={Workflow}
+          title={t('platformAdmin.branchAdministration.clientUnitTitle', {
+            defaultValue: 'Branch is the subscribed client unit.',
+          })}
+          description={t(
+            'platformAdmin.branchAdministration.clientUnitDescription',
+            {
+              defaultValue:
+                'Pricing, suspension, invoice generation, and collections stay in dedicated branch workbenches.',
+            },
+          )}
+        >
+          <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <ImpactMetric
+                label={t('branches.totalBranches', {
+                  defaultValue: 'Total branches',
+                })}
+                value={summary.totalBranches}
+              />
+              <ImpactMetric
+                label={t('platformAdmin.branchAdministration.readOnlyBranches', {
+                  defaultValue: 'Read-only branches',
+                })}
+                value={summary.readOnlyBranches}
+              />
+              <ImpactMetric
+                label={t('platformAdmin.branchAdministration.missingProfiles', {
+                  defaultValue: 'Without profiles',
+                })}
+                value={summary.branchesWithoutProfiles}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 xl:justify-end">
+              <Button asChild>
+                <Link to="/platform-admin/branch-subscriptions">
+                  <CreditCard className="h-4 w-4" />
+                  {t('platformAdmin.branchAdministration.subscriptions', {
+                    defaultValue: 'Subscriptions',
+                  })}
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/platform-admin/billing">
+                  <Receipt className="h-4 w-4" />
+                  {t('platformAdmin.branchAdministration.openBilling', {
+                    defaultValue: 'Billing',
+                  })}
+                </Link>
+              </Button>
+              <Button asChild variant="ghost">
+                <Link to="/platform-admin/audit">
+                  <FileSearch className="h-4 w-4" />
+                  {t('platformAdmin.branchAdministration.openAudit', {
+                    defaultValue: 'Audit',
+                  })}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </ImpactPanel>
       )}
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -930,9 +932,9 @@ export default function BranchesPage() {
             </DialogTitle>
             <DialogDescription>
               {isPlatformAdminRoute
-                ? t('platformAdmin.branchAdministration.dialogDescription', {
+                ? t('platformAdmin.branchAdministration.dialogSummary', {
                     defaultValue:
-                      'This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.',
+                      'Update branch identity and operating state.',
                   })
                 : t('branches.dialogDescription', {
                     defaultValue:
@@ -941,6 +943,45 @@ export default function BranchesPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBranchSubmit} className="space-y-4">
+            <ImpactPanel
+              tone={branchForm.isActive === 'false' ? 'warning' : 'neutral'}
+              icon={Settings2}
+              title={t('platformAdmin.branchAdministration.recordImpactTitle', {
+                defaultValue: 'Branch record change',
+              })}
+              description={t(
+                'platformAdmin.branchAdministration.dialogDescription',
+                {
+                  defaultValue:
+                    'This changes the branch record only. Commercial terms and access status are managed from branch subscriptions.',
+                },
+              )}
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ImpactMetric
+                  label={t('platformAdmin.table.action', {
+                    defaultValue: 'Action',
+                  })}
+                  value={
+                    editingBranch
+                      ? t('common.edit', { defaultValue: 'Edit' })
+                      : t('branches.createBranch', {
+                          defaultValue: 'Create branch',
+                        })
+                  }
+                />
+                <ImpactMetric
+                  label={t('platformAdmin.branchAdministration.operatingStatus', {
+                    defaultValue: 'Operating status',
+                  })}
+                  value={
+                    branchForm.isActive === 'true'
+                      ? t('users.active', { defaultValue: 'Active' })
+                      : t('users.inactive', { defaultValue: 'Inactive' })
+                  }
+                />
+              </div>
+            </ImpactPanel>
             <div className="space-y-2">
               <Label htmlFor="branch-name">
                 {t('users.branch', { defaultValue: 'Branch' })}
@@ -1029,6 +1070,85 @@ export default function BranchesPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function BranchWorkbenchActions({ branch, canUpdateBranches, onEdit, t }) {
+  const profiles = getEnabledProfiles(branch);
+  const accessStatus = branch.subscription?.accessStatus;
+  const missingSubscription = !branch.subscription;
+  const missingProfiles = profiles.length === 0;
+  const isReadOnly =
+    accessStatus === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+  const needsSubscriptionSetup = missingSubscription || missingProfiles;
+  const summary = missingSubscription
+    ? t('platformAdmin.branchAdministration.actionSummaryMissingSubscription', {
+        defaultValue: 'Set pricing, profiles, and access before billing runs.',
+      })
+    : missingProfiles
+      ? t('platformAdmin.branchAdministration.actionSummaryMissingProfiles', {
+          defaultValue: 'Profiles need setup before paid workflows are available.',
+        })
+      : isReadOnly
+        ? t('platformAdmin.branchAdministration.actionSummaryReadOnly', {
+            defaultValue:
+              'Access is blocked from the subscription workbench; billing and audit remain available.',
+          })
+        : t('platformAdmin.branchAdministration.actionSummaryReady', {
+            defaultValue: 'Routine billing, access, and audit workbenches.',
+          });
+
+  return (
+    <div className="flex min-w-[320px] flex-col items-end gap-1.5">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          asChild
+          size="sm"
+          variant={needsSubscriptionSetup ? 'default' : 'outline'}
+        >
+          <Link to={`/platform-admin/branch-subscriptions?branchId=${branch.id}`}>
+            <CreditCard className="h-4 w-4" />
+            {t('platformAdmin.branchAdministration.openSubscription', {
+              defaultValue: 'Subscription',
+            })}
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline">
+          <Link to={`/platform-admin/billing?branchId=${branch.id}`}>
+            <Receipt className="h-4 w-4" />
+            {t('platformAdmin.branchAdministration.openBilling', {
+              defaultValue: 'Billing',
+            })}
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/platform-admin/audit?branchId=${branch.id}`}>
+            <FileSearch className="h-4 w-4" />
+            {t('platformAdmin.branchAdministration.openAudit', {
+              defaultValue: 'Audit',
+            })}
+          </Link>
+        </Button>
+        {canUpdateBranches && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(branch);
+            }}
+          >
+            <Settings2 className="h-4 w-4" />
+            {t('platformAdmin.branchAdministration.editRecord', {
+              defaultValue: 'Record',
+            })}
+          </Button>
+        )}
+      </div>
+      <p className="max-w-[22rem] text-right text-[11px] leading-4 text-muted-foreground">
+        {summary}
+      </p>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
   Save,
   ShieldCheck,
 } from 'lucide-react';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -269,6 +270,75 @@ const getProfileListKey = (profiles) => asArray(profiles).slice().sort().join('|
 
 const isReadOnlyStatus = (status) =>
   status === BRANCH_SUBSCRIPTION_ACCESS_STATUS.SUSPENDED;
+
+function ProfileChoiceCard({
+  checked,
+  current,
+  disabled,
+  id,
+  label,
+  onToggle,
+  t,
+}) {
+  const changeState = current
+    ? checked
+      ? 'unchangedEnabled'
+      : 'willDisable'
+    : checked
+      ? 'willEnable'
+      : 'unchangedDisabled';
+  const badgeText = t(`branchSubscriptions.profileStates.${changeState}`, {
+    defaultValue:
+      {
+        unchangedEnabled: 'Enabled now',
+        willDisable: 'Will be disabled',
+        willEnable: 'Will be enabled',
+        unchangedDisabled: 'Not enabled',
+      }[changeState],
+  });
+  const badgeVariant =
+    changeState === 'willDisable'
+      ? 'destructive'
+      : changeState === 'willEnable'
+        ? 'default'
+        : changeState === 'unchangedEnabled'
+          ? 'secondary'
+          : 'outline';
+
+  return (
+    <label
+      className={cn(
+        'flex min-h-24 cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+        checked
+          ? 'border-primary bg-primary/5 shadow-sm'
+          : 'bg-background hover:bg-accent/60',
+        current && !checked && 'border-destructive/40 bg-destructive/[0.03]',
+        disabled && 'cursor-not-allowed opacity-70',
+      )}
+    >
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={onToggle}
+        disabled={disabled}
+        className="mt-1"
+      />
+      <span className="min-w-0 flex-1 space-y-2">
+        <span className="block font-semibold leading-5">{label}</span>
+        <Badge
+          variant={badgeVariant}
+          className={cn(
+            'max-w-full whitespace-normal text-left leading-5',
+            changeState === 'willDisable' &&
+              'border-destructive/20 bg-destructive text-destructive-foreground',
+          )}
+        >
+          {badgeText}
+        </Badge>
+      </span>
+    </label>
+  );
+}
 
 const TermSummaryPanel = ({ title, term, t }) => {
   return (
@@ -922,6 +992,12 @@ export default function BranchSubscriptionsPage() {
     form.accessNotes.trim() !== currentAccessNotes.trim();
   const hasProfileChanges =
     getProfileListKey(form.enabledProfiles) !== getProfileListKey(currentProfiles);
+  const accessImpactTone = readOnlyAccess
+    ? 'danger'
+    : hasAccessChanges
+      ? 'warning'
+      : 'neutral';
+  const profileImpactTone = hasProfileChanges ? 'warning' : 'neutral';
 
   return (
     <div className="space-y-6">
@@ -1156,6 +1232,41 @@ export default function BranchSubscriptionsPage() {
                   </div>
                 ) : (
                   <form className="space-y-5" onSubmit={handlePricingSubmit}>
+                    <ImpactPanel
+                      tone="commercial"
+                      icon={CalendarClock}
+                      title={t('branchSubscriptions.pricingImpactTitle', {
+                        defaultValue: 'Scheduled billing terms',
+                      })}
+                      description={t('branchSubscriptions.pricingImpactDescription', {
+                        defaultValue:
+                          'These values are prepared now and used when invoices are generated for the next billing month.',
+                      })}
+                    >
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.effectiveMonth', {
+                            defaultValue: 'Effective month',
+                          })}
+                          value={formatNextCalendarMonth()}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.model', {
+                            defaultValue: 'Model',
+                          })}
+                          value={getPricingModelLabel(form.pricingModel, t)}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.invoiceImpact', {
+                            defaultValue: 'Invoice impact',
+                          })}
+                          value={t('branchSubscriptions.review.nextInvoices', {
+                            defaultValue: 'Future invoices',
+                          })}
+                        />
+                      </div>
+                    </ImpactPanel>
+
                     <div className="space-y-2">
                       <Label>
                         {t('branchSubscriptions.pricingModel', {
@@ -1445,39 +1556,6 @@ export default function BranchSubscriptionsPage() {
                       </div>
                     )}
 
-                    <div className="grid gap-3 rounded-md border bg-muted/20 p-3 text-sm md:grid-cols-3">
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t('branchSubscriptions.review.effectiveMonth', {
-                            defaultValue: 'Effective month',
-                          })}
-                        </div>
-                        <div className="font-medium">{formatNextCalendarMonth()}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t('branchSubscriptions.review.model', {
-                            defaultValue: 'Model',
-                          })}
-                        </div>
-                        <div className="font-medium">
-                          {getPricingModelLabel(form.pricingModel, t)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t('branchSubscriptions.review.invoiceImpact', {
-                            defaultValue: 'Invoice impact',
-                          })}
-                        </div>
-                        <div className="font-medium">
-                          {t('branchSubscriptions.review.nextInvoices', {
-                            defaultValue: 'Future invoices',
-                          })}
-                        </div>
-                      </div>
-                    </div>
-
                     {!isPricingReady && (
                       <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -1494,6 +1572,7 @@ export default function BranchSubscriptionsPage() {
                       <div className="flex justify-end">
                         <Button
                           type="submit"
+                          className="w-full sm:w-auto"
                           disabled={isSaving || !isPricingReady}
                         >
                           <SavingIcon isSaving={isSaving} />
@@ -1530,6 +1609,40 @@ export default function BranchSubscriptionsPage() {
                 </CardHeader>
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleAccessSubmit}>
+                    <ImpactPanel
+                      tone={accessImpactTone}
+                      icon={readOnlyAccess ? AlertTriangle : ShieldCheck}
+                      title={t('branchSubscriptions.accessImpactTitle', {
+                        defaultValue: 'Branch operating access',
+                      })}
+                      description={
+                        readOnlyAccess
+                          ? t('branchSubscriptions.readOnlyNotice', {
+                              defaultValue:
+                                'Read-only blocks mutating clinic actions while preserving login and viewing access.',
+                            })
+                          : t('branchSubscriptions.activeAccessNotice', {
+                              defaultValue:
+                                'Active access allows permitted branch users to continue normal clinic operations.',
+                            })
+                      }
+                    >
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.currentAccess', {
+                            defaultValue: 'Current access',
+                          })}
+                          value={currentStatusLabel}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.proposedAccess', {
+                            defaultValue: 'Proposed access',
+                          })}
+                          value={statusLabel}
+                        />
+                      </div>
+                    </ImpactPanel>
+
                     <div className="space-y-2">
                       <Label>
                         {t('branchSubscriptions.accessStatus', {
@@ -1561,37 +1674,6 @@ export default function BranchSubscriptionsPage() {
                       </Select>
                     </div>
 
-                    <div className="grid gap-3 rounded-md border bg-muted/20 p-3 text-sm sm:grid-cols-2">
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t('branchSubscriptions.review.currentAccess', {
-                            defaultValue: 'Current access',
-                          })}
-                        </div>
-                        <div className="font-medium">{currentStatusLabel}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t('branchSubscriptions.review.proposedAccess', {
-                            defaultValue: 'Proposed access',
-                          })}
-                        </div>
-                        <div className="font-medium">{statusLabel}</div>
-                      </div>
-                    </div>
-
-                    {readOnlyAccess && (
-                      <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <span>
-                          {t('branchSubscriptions.readOnlyNotice', {
-                            defaultValue:
-                              'Read-only blocks mutating clinic actions while preserving login and viewing access.',
-                          })}
-                        </span>
-                      </div>
-                    )}
-
                     <div className="space-y-2">
                       <Label htmlFor="access-notes">
                         {t('branchSubscriptions.accessNotes', {
@@ -1616,6 +1698,7 @@ export default function BranchSubscriptionsPage() {
                         <Button
                           type="submit"
                           variant={readOnlyAccess ? 'destructive' : 'default'}
+                          className="w-full sm:w-auto"
                           disabled={isSaving || !hasAccessChanges}
                         >
                           <SavingIcon isSaving={isSaving} />
@@ -1643,75 +1726,44 @@ export default function BranchSubscriptionsPage() {
                 </CardHeader>
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleProfilesSubmit}>
-                    <div className="rounded-md border">
-                      {CLINIC_PROFILE_OPTIONS.map((profile) => {
-                        const enabled = form.enabledProfiles.includes(profile.value);
-                        return (
-                          <div
-                            key={profile.value}
-                            className="border-b p-3 last:border-b-0"
-                          >
-                            <label className="flex min-h-10 items-center gap-3 text-sm font-medium">
-                              <Checkbox
-                                checked={enabled}
-                                onCheckedChange={() => toggleProfile(profile.value)}
-                                disabled={!canManage}
-                              />
-                              <span>
-                                {t(profile.labelKey, {
-                                  defaultValue: profile.labelDefault,
-                                })}
-                              </span>
-                            </label>
-                          </div>
-                        );
+                    <ImpactPanel
+                      tone={profileImpactTone}
+                      icon={Layers3}
+                      title={t('branchSubscriptions.profileImpactTitle', {
+                        defaultValue: 'Workflow and fixed-fee impact',
                       })}
-                    </div>
-
-                    <div className="grid gap-3 rounded-md border bg-muted/20 p-3 text-sm">
+                      description={t('branchSubscriptions.profileImpactDescription', {
+                        defaultValue:
+                          'Profile availability changes which workflows the branch can use and updates the fixed monthly fee multiplier.',
+                      })}
+                    >
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {t('branchSubscriptions.review.currentProfiles', {
-                              defaultValue: 'Current profiles',
-                            })}
-                          </div>
-                          <div className="font-medium">
-                            {formatProfiles(currentProfiles, t)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {t('branchSubscriptions.review.proposedProfiles', {
-                              defaultValue: 'Proposed profiles',
-                            })}
-                          </div>
-                          <div className="font-medium">
-                            {formatProfiles(form.enabledProfiles, t)}
-                          </div>
-                        </div>
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.currentProfiles', {
+                            defaultValue: 'Current profiles',
+                          })}
+                          value={formatProfiles(currentProfiles, t)}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.proposedProfiles', {
+                            defaultValue: 'Proposed profiles',
+                          })}
+                          value={formatProfiles(form.enabledProfiles, t)}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.currentMultiplier', {
+                            defaultValue: 'Current multiplier',
+                          })}
+                          value={currentFixedFeeMultiplier}
+                        />
+                        <ImpactMetric
+                          label={t('branchSubscriptions.review.proposedMultiplier', {
+                            defaultValue: 'Proposed multiplier',
+                          })}
+                          value={fixedFeeMultiplier}
+                        />
                       </div>
-                      <div className="grid gap-3 border-t pt-3 sm:grid-cols-2">
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {t('branchSubscriptions.review.currentMultiplier', {
-                              defaultValue: 'Current multiplier',
-                            })}
-                          </div>
-                          <div className="font-medium">
-                            {currentFixedFeeMultiplier}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {t('branchSubscriptions.review.proposedMultiplier', {
-                              defaultValue: 'Proposed multiplier',
-                            })}
-                          </div>
-                          <div className="font-medium">{fixedFeeMultiplier}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-2 border-t pt-3 text-muted-foreground">
+                      <div className="mt-3 flex items-start gap-2 border-t pt-3 text-sm text-muted-foreground">
                         <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                         <span>
                           {t('branchSubscriptions.fixedFeeRule', {
@@ -1720,6 +1772,27 @@ export default function BranchSubscriptionsPage() {
                           })}
                         </span>
                       </div>
+                    </ImpactPanel>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {CLINIC_PROFILE_OPTIONS.map((profile) => {
+                        const enabled = form.enabledProfiles.includes(profile.value);
+                        const current = currentProfiles.includes(profile.value);
+                        return (
+                          <ProfileChoiceCard
+                            key={profile.value}
+                            id={`branch-subscription-profile-${profile.value}`}
+                            checked={enabled}
+                            current={current}
+                            disabled={!canManage}
+                            label={t(profile.labelKey, {
+                              defaultValue: profile.labelDefault,
+                            })}
+                            onToggle={() => toggleProfile(profile.value)}
+                            t={t}
+                          />
+                        );
+                      })}
                     </div>
 
                     {!hasEnabledProfiles && (
@@ -1735,7 +1808,7 @@ export default function BranchSubscriptionsPage() {
                       <div className="flex justify-end">
                         <Button
                           type="submit"
-                          variant="outline"
+                          className="w-full sm:w-auto"
                           disabled={
                             isSaving || !hasEnabledProfiles || !hasProfileChanges
                           }

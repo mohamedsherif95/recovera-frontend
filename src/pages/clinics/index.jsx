@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -19,6 +19,7 @@ import {
   Users,
   Workflow,
 } from 'lucide-react';
+import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { PageHeader } from '@/components/common/PageHeader';
 import { DataTable } from '@/components/common/DataTable';
 import { Button } from '@/components/ui/button';
@@ -102,6 +103,140 @@ function AdminMetric({ label, value, helper, icon: Icon = Building2, tone = 'def
         {helper && <div className="mt-1 text-xs text-muted-foreground">{helper}</div>}
       </CardContent>
     </Card>
+  );
+}
+
+function ClinicWorkbenchActions({ clinic, onSelectScope, t }) {
+  const branchStats = clinic.branchStats || {};
+  const hasNoBranches = (branchStats.totalBranches || 0) === 0;
+  const hasSubscriptionGaps =
+    (branchStats.missingSubscriptions || 0) > 0 ||
+    (branchStats.branchesWithoutProfiles || 0) > 0 ||
+    (branchStats.branchesMissingPricing || 0) > 0;
+  const primaryWorkbench = hasNoBranches ? 'branches' : 'subscriptions';
+  const summary = hasNoBranches
+    ? t('platformAdmin.clinicGroups.workbenchSummaryNoBranches', {
+        defaultValue:
+          'Start with branch records before subscriptions can carry billing.',
+      })
+    : hasSubscriptionGaps
+      ? t('platformAdmin.clinicGroups.workbenchSummarySubscriptionGaps', {
+          defaultValue:
+            'Finish profiles, access, and next-month pricing before handoff.',
+        })
+      : t('platformAdmin.clinicGroups.workbenchSummaryReady', {
+          defaultValue: 'Scope operational workbenches to this company group.',
+        });
+
+  return (
+    <div className="flex min-w-[340px] flex-col gap-1.5">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={primaryWorkbench === 'branches' ? 'default' : 'outline'}
+          asChild
+        >
+          <Link to="/platform-admin/branches" onClick={() => onSelectScope(clinic)}>
+            <Workflow className="h-4 w-4" />
+            {t('platformAdmin.clinicGroups.openBranches', {
+              defaultValue: 'Branches',
+            })}
+          </Link>
+        </Button>
+        <Button
+          size="sm"
+          variant={primaryWorkbench === 'subscriptions' ? 'default' : 'outline'}
+          asChild
+        >
+          <Link
+            to="/platform-admin/branch-subscriptions"
+            onClick={() => onSelectScope(clinic)}
+          >
+            <CreditCard className="h-4 w-4" />
+            {t('platformAdmin.clinicGroups.openSubscriptions', {
+              defaultValue: 'Subscriptions',
+            })}
+          </Link>
+        </Button>
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/platform-admin/billing" onClick={() => onSelectScope(clinic)}>
+            <Receipt className="h-4 w-4" />
+            {t('platformAdmin.clinicGroups.openBilling', {
+              defaultValue: 'Billing',
+            })}
+          </Link>
+        </Button>
+        <Button size="sm" variant="ghost" asChild>
+          <Link to="/platform-admin/users" onClick={() => onSelectScope(clinic)}>
+            <Users className="h-4 w-4" />
+            {t('platformAdmin.clinicGroups.openUsers', {
+              defaultValue: 'Users',
+            })}
+          </Link>
+        </Button>
+        <Button size="sm" variant="ghost" asChild>
+          <Link to="/platform-admin/audit" onClick={() => onSelectScope(clinic)}>
+            <FileSearch className="h-4 w-4" />
+            {t('platformAdmin.clinicGroups.openAudit', {
+              defaultValue: 'Audit',
+            })}
+          </Link>
+        </Button>
+      </div>
+      <p className="max-w-[24rem] text-[11px] leading-4 text-muted-foreground">
+        {summary}
+      </p>
+    </div>
+  );
+}
+
+function ClinicSetupActions({ clinic, onEditClinic, onProvisionUser, t }) {
+  const managerUsers = Number(clinic.userStats?.managerUsers || 0);
+  const needsManager = managerUsers === 0;
+  const summary = needsManager
+    ? t('platformAdmin.clinicGroups.setupSummaryNoManager', {
+        defaultValue:
+          'No manager yet; provision one before operational handoff.',
+      })
+    : t('platformAdmin.clinicGroups.setupSummaryReady', {
+        defaultValue:
+          'Provision adds active user access; settings update tenant metadata.',
+      });
+
+  return (
+    <div className="flex min-w-[250px] flex-col gap-1.5">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          variant={needsManager ? 'default' : 'outline'}
+          onClick={(event) => {
+            event.stopPropagation();
+            onProvisionUser(clinic);
+          }}
+        >
+          <UserPlus className="h-4 w-4" />
+          {t('platformAdmin.clinicGroups.provisionUser', {
+            defaultValue: 'Provision user',
+          })}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEditClinic(clinic);
+          }}
+        >
+          <Settings2 className="h-4 w-4" />
+          {t('platformAdmin.clinicGroups.companySettings', {
+            defaultValue: 'Company settings',
+          })}
+        </Button>
+      </div>
+      <p className="max-w-[18rem] text-[11px] leading-4 text-muted-foreground">
+        {summary}
+      </p>
+    </div>
   );
 }
 
@@ -229,6 +364,15 @@ export default function ClinicsPage() {
   }, [branchOptionsData]);
 
   const selectedRole = provisionableRoles.find((role) => role.name === userForm.roleName);
+  const selectedProvisionClinic = clinics.find(
+    (clinic) => String(clinic.id) === String(userForm.clinicId),
+  );
+  const selectedProvisionBranch = branchOptions.find(
+    (branch) => String(branch.id) === String(userForm.branchId),
+  );
+  const selectedProvisionRoleLabel = userForm.roleName
+    ? t(`users.${userForm.roleName}`, { defaultValue: userForm.roleName })
+    : '--';
 
   useEffect(() => {
     if (!userDialogOpen) return;
@@ -262,7 +406,7 @@ export default function ClinicsPage() {
     setClinicDialogOpen(true);
   };
 
-  const openEditClinic = (clinic) => {
+  const openEditClinic = useCallback((clinic) => {
     setEditingClinic(clinic);
     setClinicForm({
       name: clinic.name || '',
@@ -272,7 +416,7 @@ export default function ClinicsPage() {
       changeReason: '',
     });
     setClinicDialogOpen(true);
-  };
+  }, []);
 
   const updateClinicField = (field, value) => {
     setClinicForm((current) => ({
@@ -319,13 +463,13 @@ export default function ClinicsPage() {
       });
   };
 
-  const openProvisionUser = (clinic) => {
+  const openProvisionUser = useCallback((clinic) => {
     setUserForm({
       ...emptyUserForm,
       clinicId: clinic?.id ? String(clinic.id) : '',
     });
     setUserDialogOpen(true);
-  };
+  }, []);
 
   const toggleUserShift = (shift) => {
     setUserForm((current) => ({
@@ -388,10 +532,10 @@ export default function ClinicsPage() {
       });
   };
 
-  const selectClinicScope = (clinic) => {
+  const selectClinicScope = useCallback((clinic) => {
     if (!clinic?.id) return;
     setPlatformAdminClinicId(Number(clinic.id));
-  };
+  }, [setPlatformAdminClinicId]);
 
   const columns = useMemo(
     () => [
@@ -620,63 +764,11 @@ export default function ClinicsPage() {
           defaultValue: 'Scoped workbenches',
         }),
         cell: (clinic) => (
-          <div className="flex min-w-[320px] flex-wrap gap-2">
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/platform-admin/branches"
-                onClick={() => selectClinicScope(clinic)}
-              >
-                <Workflow className="h-4 w-4" />
-                {t('platformAdmin.clinicGroups.openBranches', {
-                  defaultValue: 'Branches',
-                })}
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/platform-admin/branch-subscriptions"
-                onClick={() => selectClinicScope(clinic)}
-              >
-                <CreditCard className="h-4 w-4" />
-                {t('platformAdmin.clinicGroups.openSubscriptions', {
-                  defaultValue: 'Subscriptions',
-                })}
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/platform-admin/billing"
-                onClick={() => selectClinicScope(clinic)}
-              >
-                <Receipt className="h-4 w-4" />
-                {t('platformAdmin.clinicGroups.openBilling', {
-                  defaultValue: 'Billing',
-                })}
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/platform-admin/users"
-                onClick={() => selectClinicScope(clinic)}
-              >
-                <Users className="h-4 w-4" />
-                {t('platformAdmin.clinicGroups.openUsers', {
-                  defaultValue: 'Users',
-                })}
-              </Link>
-            </Button>
-            <Button size="sm" variant="outline" asChild>
-              <Link
-                to="/platform-admin/audit"
-                onClick={() => selectClinicScope(clinic)}
-              >
-                <FileSearch className="h-4 w-4" />
-                {t('platformAdmin.clinicGroups.openAudit', {
-                  defaultValue: 'Audit',
-                })}
-              </Link>
-            </Button>
-          </div>
+          <ClinicWorkbenchActions
+            clinic={clinic}
+            onSelectScope={selectClinicScope}
+            t={t}
+          />
         ),
       },
       {
@@ -685,37 +777,16 @@ export default function ClinicsPage() {
           defaultValue: 'Setup actions',
         }),
         cell: (clinic) => (
-          <div className="flex min-w-[230px] flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(event) => {
-                event.stopPropagation();
-                openEditClinic(clinic);
-              }}
-            >
-              <Settings2 className="h-4 w-4" />
-              {t('platformAdmin.clinicGroups.companySettings', {
-                defaultValue: 'Company settings',
-              })}
-            </Button>
-            <Button
-              size="sm"
-              onClick={(event) => {
-                event.stopPropagation();
-                openProvisionUser(clinic);
-              }}
-            >
-              <UserPlus className="h-4 w-4" />
-              {t('platformAdmin.clinicGroups.provisionUser', {
-                defaultValue: 'Provision user',
-              })}
-            </Button>
-          </div>
+          <ClinicSetupActions
+            clinic={clinic}
+            onEditClinic={openEditClinic}
+            onProvisionUser={openProvisionUser}
+            t={t}
+          />
         ),
       },
     ],
-    [setPlatformAdminClinicId, t],
+    [openEditClinic, openProvisionUser, selectClinicScope, t],
   );
 
   return (
@@ -729,17 +800,9 @@ export default function ClinicsPage() {
             'Company-level tenants. Branch subscriptions, billing, and access controls are managed per branch.',
         })}
         actions={
-          <>
-            <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCcw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-            </Button>
-            <Button onClick={openCreateClinic}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('platformAdmin.clinicGroups.createClinicGroup', {
-                defaultValue: 'Create clinic group',
-              })}
-            </Button>
-          </>
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCcw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
         }
       />
 
@@ -793,21 +856,54 @@ export default function ClinicsPage() {
         />
       </div>
 
-      <Card className="border-primary/15 bg-muted/20">
-        <CardContent className="flex flex-col gap-2 p-4 text-sm md:flex-row md:items-center md:justify-between">
-          <div className="font-medium">
-            {t('platformAdmin.clinicGroups.tenantBoundaryTitle', {
-              defaultValue: 'Company groups own people and patients.',
-            })}
+      <ImpactPanel
+        tone={clinicSummary.needsSetup > 0 ? 'warning' : 'commercial'}
+        icon={Building2}
+        title={t('platformAdmin.clinicGroups.tenantBoundaryTitle', {
+          defaultValue: 'Company groups own people and patients.',
+        })}
+        description={t('platformAdmin.clinicGroups.tenantBoundaryDescription', {
+          defaultValue:
+            'Branches remain the subscribed client units for profiles, pricing, access blocks, invoices, and collections.',
+        })}
+      >
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <ImpactMetric
+              label={t('platformAdmin.clinicGroups.metrics.active', {
+                defaultValue: 'Active',
+              })}
+              value={clinicSummary.active}
+            />
+            <ImpactMetric
+              label={t('platformAdmin.clinicGroups.metrics.needsSetup', {
+                defaultValue: 'Next-month setup',
+              })}
+              value={clinicSummary.needsSetup}
+            />
+            <ImpactMetric
+              label={t('platformAdmin.clinicGroups.metrics.openBalance', {
+                defaultValue: 'Open balance',
+              })}
+              value={formatCurrency(clinicSummary.outstandingBalance)}
+            />
           </div>
-          <div className="text-muted-foreground">
-            {t('platformAdmin.clinicGroups.tenantBoundaryDescription', {
-              defaultValue:
-                'Branches remain the subscribed client units for profiles, pricing, access blocks, invoices, and collections.',
-            })}
+          <div className="flex flex-wrap gap-2 xl:justify-end">
+            <Button onClick={openCreateClinic}>
+              <Plus className="h-4 w-4" />
+              {t('platformAdmin.clinicGroups.createClinicGroup', {
+                defaultValue: 'Create clinic group',
+              })}
+            </Button>
+            <Button variant="outline" onClick={() => openProvisionUser()}>
+              <UserPlus className="h-4 w-4" />
+              {t('platformAdmin.clinicGroups.provisionUser', {
+                defaultValue: 'Provision user',
+              })}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </ImpactPanel>
 
       <Card className="border-primary/15 shadow-sm">
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -997,13 +1093,51 @@ export default function ClinicsPage() {
                   })}
             </DialogTitle>
             <DialogDescription>
-              {t('platformAdmin.clinicGroups.dialogDescription', {
+              {t('platformAdmin.clinicGroups.dialogSummary', {
                 defaultValue:
-                  'Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.',
+                  'Update company-level identity and admin notes.',
               })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleClinicSubmit} className="space-y-4">
+            <ImpactPanel
+              tone={clinicForm.status === 'suspended' ? 'warning' : 'neutral'}
+              icon={Building2}
+              title={t('platformAdmin.clinicGroups.tenantRecordImpactTitle', {
+                defaultValue: 'Tenant record change',
+              })}
+              description={t('platformAdmin.clinicGroups.dialogDescription', {
+                defaultValue:
+                  'Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.',
+              })}
+            >
+              <div className="grid gap-3 sm:grid-cols-3">
+                <ImpactMetric
+                  label={t('platformAdmin.table.action', {
+                    defaultValue: 'Action',
+                  })}
+                  value={
+                    editingClinic
+                      ? t('common.edit', { defaultValue: 'Edit' })
+                      : t('platformAdmin.clinicGroups.createClinicGroup', {
+                          defaultValue: 'Create clinic group',
+                        })
+                  }
+                />
+                <ImpactMetric
+                  label={t('clinics.status')}
+                  value={
+                    clinicForm.status === 'active'
+                      ? t('clinics.active')
+                      : t('clinics.suspended')
+                  }
+                />
+                <ImpactMetric
+                  label={t('clinics.slug')}
+                  value={clinicForm.slug || '--'}
+                />
+              </div>
+            </ImpactPanel>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="clinic-name">{t('clinics.name')}</Label>
@@ -1098,13 +1232,46 @@ export default function ClinicsPage() {
               })}
             </DialogTitle>
             <DialogDescription>
-              {t('platformAdmin.clinicGroups.provisionDescription', {
+              {t('platformAdmin.clinicGroups.provisionSummary', {
                 defaultValue:
-                  'Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.',
+                  'Create a scoped account with a forced first-login password change.',
               })}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUserSubmit} className="space-y-4">
+            <ImpactPanel
+              tone="warning"
+              icon={UserPlus}
+              title={t('platformAdmin.clinicGroups.userAccessImpactTitle', {
+                defaultValue: 'Provision active user access',
+              })}
+              description={t('platformAdmin.clinicGroups.provisionDescription', {
+                defaultValue:
+                  'Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.',
+              })}
+            >
+              <div className="grid gap-3 sm:grid-cols-3">
+                <ImpactMetric
+                  label={t('users.clinic')}
+                  value={selectedProvisionClinic?.name || '--'}
+                />
+                <ImpactMetric
+                  label={t('users.role')}
+                  value={selectedProvisionRoleLabel}
+                />
+                <ImpactMetric
+                  label={t('users.branch', { defaultValue: 'Branch' })}
+                  value={
+                    selectedProvisionBranch?.name ||
+                    (selectedProvisionClinic
+                      ? t('platformAdmin.clinicGroups.noBranchScope', {
+                          defaultValue: 'No branch scope',
+                        })
+                      : '--')
+                  }
+                />
+              </div>
+            </ImpactPanel>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>{t('users.clinic')}</Label>

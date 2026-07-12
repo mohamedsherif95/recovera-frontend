@@ -15,6 +15,8 @@ export function DataTable({
   headerClassName,
   bodyClassName,
   direction = 'ltr',
+  mobileCard,
+  mobileCardClassName,
 }) {
   const resolveRowId = (row, index) => {
     if (getRowId) return getRowId(row, index);
@@ -24,8 +26,45 @@ export function DataTable({
 
   const isRtl = direction === 'rtl';
 
+  const clickable = typeof onRowClick === 'function';
+
   return (
-    <div className={cn('overflow-x-auto', className)}>
+    <>
+      {mobileCard && (
+        <div className={cn('grid gap-3 md:hidden', mobileCardClassName)}>
+          {data.map((row, index) => {
+            const id = resolveRowId(row, index);
+
+            return (
+              <div
+                key={id}
+                role={clickable ? 'button' : undefined}
+                tabIndex={clickable ? 0 : undefined}
+                className={cn(
+                  'rounded-md border bg-card p-3 text-sm shadow-sm',
+                  clickable &&
+                    'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                )}
+                onClick={clickable ? () => onRowClick(row) : undefined}
+                onKeyDown={
+                  clickable
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          onRowClick(row);
+                        }
+                      }
+                    : undefined
+                }
+              >
+                {mobileCard(row)}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className={cn('overflow-x-auto', mobileCard && 'hidden md:block', className)}>
       <table className="w-full text-sm">
         <thead>
           <tr
@@ -45,7 +84,6 @@ export function DataTable({
         <tbody className={bodyClassName}>
           {data.map((row, index) => {
             const id = resolveRowId(row, index);
-            const clickable = typeof onRowClick === 'function';
             return (
               <tr
                 key={id}
@@ -66,5 +104,6 @@ export function DataTable({
         </tbody>
       </table>
     </div>
+    </>
   );
 }

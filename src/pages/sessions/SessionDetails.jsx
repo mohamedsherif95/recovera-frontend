@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, Navigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
@@ -17,7 +18,12 @@ import {
 } from "@/hooks/useSessions";
 import { useSessionPayments, useDeletePayment } from "@/hooks/usePayments";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PERMISSIONS, SESSION_STATUS, USER_ROLES } from "@/lib/constants";
+import {
+  CLINIC_PROFILES,
+  PERMISSIONS,
+  SESSION_STATUS,
+  USER_ROLES,
+} from "@/lib/constants";
 import { StatBox } from "@/components/common/StatBox";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -44,6 +50,12 @@ import {
 } from "@/lib/sessionRules";
 import { invoicesApi } from "@/api/endpoints/invoices";
 import { downloadInvoicePdf } from "@/lib/invoices/pdf";
+import {
+  CLINIC_PROFILE_WORKFLOWS,
+  clinicProfileSupportsWorkflow,
+  getClinicProfileLabel,
+  getClinicProfileProviderLabel,
+} from "@/lib/clinicProfiles";
 
 export default function SessionDetailsPage() {
   const { id } = useParams();
@@ -146,6 +158,21 @@ export default function SessionDetailsPage() {
     };
   }, [session?.patient]);
   const doctor = session?.doctor || {};
+  const sessionProfile = session?.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
+  const providerLabel = getClinicProfileProviderLabel(sessionProfile, t);
+  const profileLabel = getClinicProfileLabel(sessionProfile, t);
+  const supportsAssessmentTracking = clinicProfileSupportsWorkflow(
+    sessionProfile,
+    CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+  );
+  const supportsTreatmentPrograms = clinicProfileSupportsWorkflow(
+    sessionProfile,
+    CLINIC_PROFILE_WORKFLOWS.AUTO_FOLLOW_UP_VISITS,
+  );
+  const supportsVisitCategories = clinicProfileSupportsWorkflow(
+    sessionProfile,
+    CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+  );
   const isCrossBranchSession =
     session?.branchId != null &&
     patient?.primaryBranchId != null &&
@@ -308,7 +335,10 @@ export default function SessionDetailsPage() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>
           {t("sessions.sessionInfo")}
-          {session.isReassessment ? (
+          <Badge variant="outline" className="mx-3 align-middle">
+            {profileLabel}
+          </Badge>
+          {supportsAssessmentTracking && session.isReassessment ? (
             <span
               className="inline-flex items-center justify-center rounded-full mx-4 border border-teal-300 bg-teal-100 p-1 text-teal-800 shadow-sm dark:border-teal-700 dark:bg-teal-900/70 dark:text-teal-50"
               title={t("sessions.isReassessment", {
@@ -317,7 +347,7 @@ export default function SessionDetailsPage() {
             >
               <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
             </span>
-          ) : session.isAssessment ? (
+          ) : supportsAssessmentTracking && session.isAssessment ? (
             <span
               className="inline-flex items-center justify-center rounded-full mx-4 border border-purple-300 bg-purple-100 p-1 text-purple-800 shadow-sm dark:border-purple-700 dark:bg-purple-900/70 dark:text-purple-50"
               title={t("sessions.isAssessment", { defaultValue: "Assessment" })}
@@ -352,7 +382,7 @@ export default function SessionDetailsPage() {
             {!isDoctorOnly && (
               <>
                 <StatBox
-                  label={t("sessions.doctor")}
+                  label={providerLabel}
                   value={doctor.fullName || "--"}
                 />
                 <StatBox
@@ -401,23 +431,27 @@ export default function SessionDetailsPage() {
                   label={t("sessions.cost")}
                   value={session.cost != null ? session.cost : "--"}
                 />
-                <StatBox
-                  label={t("sessions.category", { defaultValue: "Category" })}
-                  value={session.category?.name || "--"}
-                >
-                  {session.category?.name ? (
-                    <div className="flex flex-col">
-                      <span>{session.category.name}</span>
-                      {session.categoryNotes && (
-                        <span className="text-xs text-muted-foreground">
-                          {session.categoryNotes}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span>--</span>
-                  )}
-                </StatBox>
+                {supportsVisitCategories && (
+                  <StatBox
+                    label={t("sessions.category", {
+                      defaultValue: "Category",
+                    })}
+                    value={session.category?.name || "--"}
+                  >
+                    {session.category?.name ? (
+                      <div className="flex flex-col">
+                        <span>{session.category.name}</span>
+                        {session.categoryNotes && (
+                          <span className="text-xs text-muted-foreground">
+                            {session.categoryNotes}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span>--</span>
+                    )}
+                  </StatBox>
+                )}
               </>
             )}
 
@@ -434,21 +468,27 @@ export default function SessionDetailsPage() {
   const renderProgramNotesCard = () => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>{t("sessions.programAndNotes")}</CardTitle>
+        <CardTitle>
+          {supportsTreatmentPrograms
+            ? t("sessions.programAndNotes")
+            : t("sessions.notes")}
+        </CardTitle>
         {canEditProgramsAndNotes && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                isEditingPrograms
-                  ? setIsEditingPrograms(false)
-                  : handleStartEditPrograms()
-              }
-            >
-              {isEditingPrograms ? t("common.close") : t("common.edit")}{" "}
-              {t("sessions.program")}
-            </Button>
+            {supportsTreatmentPrograms && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  isEditingPrograms
+                    ? setIsEditingPrograms(false)
+                    : handleStartEditPrograms()
+                }
+              >
+                {isEditingPrograms ? t("common.close") : t("common.edit")}{" "}
+                {t("sessions.program")}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -465,121 +505,123 @@ export default function SessionDetailsPage() {
         )}
       </CardHeader>
       <CardContent className="space-y-6 text-sm">
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">
-            {t("sessions.program")}
-          </h2>
-          {isEditingPrograms && canEditProgramsAndNotes ? (
-            <div className="space-y-4">
-              {programItems.map((item, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>
-                      {t("sessions.program")} #{index + 1}
-                    </span>
-                    {programItems.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveProgramItem(index)}
-                        disabled={updatePrograms.isPending}
-                      >
-                        {t("common.delete")}
-                      </Button>
-                    )}
+        {supportsTreatmentPrograms && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {t("sessions.program")}
+            </h2>
+            {isEditingPrograms && canEditProgramsAndNotes ? (
+              <div className="space-y-4">
+                {programItems.map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {t("sessions.program")} #{index + 1}
+                      </span>
+                      {programItems.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveProgramItem(index)}
+                          disabled={updatePrograms.isPending}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      rows={3}
+                      value={item}
+                      onChange={(e) =>
+                        handleChangeProgramItem(index, e.target.value)
+                      }
+                      disabled={updatePrograms.isPending}
+                    />
                   </div>
-                  <Textarea
-                    rows={3}
-                    value={item}
-                    onChange={(e) =>
-                      handleChangeProgramItem(index, e.target.value)
-                    }
-                    disabled={updatePrograms.isPending}
-                  />
-                </div>
-              ))}
+                ))}
 
-              <div className="flex justify-between items-center pt-2 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddProgramItem}
-                  disabled={updatePrograms.isPending}
-                >
-                  + {t("common.create")}
-                </Button>
-                <div className="flex gap-2">
+                <div className="flex justify-between items-center pt-2 border-t">
                   <Button
                     type="button"
-                    variant="ghost"
-                    onClick={() => setIsEditingPrograms(false)}
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddProgramItem}
                     disabled={updatePrograms.isPending}
                   >
-                    {t("common.cancel")}
+                    + {t("common.create")}
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSavePrograms}
-                    disabled={updatePrograms.isPending}
-                  >
-                    {updatePrograms.isPending
-                      ? t("common.loading")
-                      : t("common.save")}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setIsEditingPrograms(false)}
+                      disabled={updatePrograms.isPending}
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleSavePrograms}
+                      disabled={updatePrograms.isPending}
+                    >
+                      {updatePrograms.isPending
+                        ? t("common.loading")
+                        : t("common.save")}
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : currentPrograms.length ? (
-            <ul className="space-y-2 text-sm list-disc pl-5">
-              <div className="flex items-start gap-2">
-                <ul
-                  className="flex-1 list-disc pl-5"
-                  style={{ fontSize: `${programFontSize}px` }}
-                >
-                  {currentPrograms.map((item, index) => (
-                    <li key={index} className="whitespace-pre-line">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      incProgram();
-                    }}
-                    className="h-7 w-7"
+            ) : currentPrograms.length ? (
+              <ul className="space-y-2 text-sm list-disc pl-5">
+                <div className="flex items-start gap-2">
+                  <ul
+                    className="flex-1 list-disc pl-5"
+                    style={{ fontSize: `${programFontSize}px` }}
                   >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      decProgram();
-                    }}
-                    className="h-7 w-7"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
+                    {currentPrograms.map((item, index) => (
+                      <li key={index} className="whitespace-pre-line">
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        incProgram();
+                      }}
+                      className="h-7 w-7"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        decProgram();
+                      }}
+                      className="h-7 w-7"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("messages.noDataFound")}
-            </p>
-          )}
-        </div>
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t("messages.noDataFound")}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <h2 className="text-sm font-medium text-muted-foreground">
@@ -820,8 +862,10 @@ export default function SessionDetailsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t("sessions.sessionDetails")}
-        description={`${t("sessions.date")}: ${session.sessionDate || "--"}`}
+        title={t("visitDetails.title", { defaultValue: "Visit details" })}
+        description={`${profileLabel} · ${t("sessions.date")}: ${
+          session.sessionDate || "--"
+        }`}
         onBack={() => navigate(-1)}
         actions={
           <>
@@ -907,7 +951,7 @@ export default function SessionDetailsPage() {
         <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
           {t("sessions.crossBranchContext", {
             defaultValue:
-              "This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",
+              "This visit was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",
             serviceBranch: session.branch?.name || "--",
             primaryBranch: patient.primaryBranch?.name || "--",
           })}

@@ -34,6 +34,8 @@ import {
   CLINIC_PROFILE_WORKFLOWS,
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
+  getClinicProfileProviderLabel,
+  getClinicProfileVisitLabel,
 } from "@/lib/clinicProfiles";
 import {
   useDoctorLookupOptions,
@@ -193,6 +195,8 @@ export function SessionForm({
     () => getProfileDetailFields(activeProfile),
     [activeProfile],
   );
+  const activeVisitLabel = getClinicProfileVisitLabel(activeProfile, t);
+  const activeProviderLabel = getClinicProfileProviderLabel(activeProfile, t);
 
   useEffect(() => {
     const fallbackProfile = enabledProfiles[0] || CLINIC_PROFILES.PHYSIOTHERAPY;
@@ -322,7 +326,7 @@ export function SessionForm({
       return {
         isInvalid: true,
         message: t("sessions.packageRequiresPatient", {
-          defaultValue: "Select a patient before creating a package session.",
+          defaultValue: "Select a patient before creating a package visit.",
         }),
       };
     }
@@ -332,7 +336,7 @@ export function SessionForm({
       return {
         isInvalid: true,
         message: t("sessions.packageCostPositive", {
-          defaultValue: "Package sessions require a positive cost.",
+          defaultValue: "Package visits require a positive cost.",
         }),
       };
     }
@@ -355,7 +359,7 @@ export function SessionForm({
         isInvalid: true,
         message: t("sessions.packageInsufficientBalance", {
           defaultValue:
-            "Insufficient patient balance for package session. Balance: {{balance}}, required: {{cost}}.",
+            "Insufficient patient balance for package visit. Balance: {{balance}}, required: {{cost}}.",
           balance: patientBalance,
           cost: numericCost,
         }),
@@ -590,16 +594,18 @@ export function SessionForm({
     <Card>
       <CardHeader>
         <CardTitle>
-          {isEditing ? t("sessions.editSession") : t("sessions.createSession")}
+          {isEditing
+            ? `${t("common.edit")} ${activeVisitLabel}`
+            : `${t("common.create")} ${activeVisitLabel}`}
         </CardTitle>
       </CardHeader>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="doctorId">{t("sessions.doctor")}</Label>
+            <Label htmlFor="doctorId">{activeProviderLabel}</Label>
             {lockDoctor ? (
               <div className="rounded-md border bg-muted px-3 py-2 text-sm">
-                {lockedDoctorLabel || t("sessions.doctor")}
+                {lockedDoctorLabel || activeProviderLabel}
               </div>
             ) : (
               <Controller
@@ -610,7 +616,7 @@ export function SessionForm({
                     options={doctorOptions}
                     value={field.value ? String(field.value) : ""}
                     onChange={(val) => field.onChange(Number(val))}
-                    placeholder={t("sessions.doctor")}
+                    placeholder={activeProviderLabel}
                     disabled={isSubmitting}
                     searchPlaceholder={t("sessions.filters.searchPlaceholder")}
                     onSearchChange={doctorLookup.setSearch}
@@ -639,7 +645,7 @@ export function SessionForm({
               <p className="text-xs text-muted-foreground">
                 {t("sessions.assessmentDoctorRestriction", {
                   defaultValue:
-                    "Assessment and reassessment sessions have doctor assignment restrictions.",
+                    "Assessment and reassessment visits have provider assignment restrictions.",
                 })}
               </p>
             )}
@@ -750,7 +756,11 @@ export function SessionForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sessionTime">{t("sessions.startedAt")}</Label>
+            <Label htmlFor="sessionTime">
+              {`${activeVisitLabel} - ${t("sessions.scheduledTime", {
+                defaultValue: "Scheduled time",
+              })}`}
+            </Label>
             <Controller
               name="sessionTime"
               control={control}
@@ -760,7 +770,9 @@ export function SessionForm({
                   value={field.value || ""}
                   onChange={field.onChange}
                   disabled={isSubmitting}
-                  placeholder={t("sessions.startedAt")}
+                  placeholder={t("sessions.scheduledTime", {
+                    defaultValue: "Scheduled time",
+                  })}
                   stepMinutes={60}
                   startHour={10}
                   endHour={24}

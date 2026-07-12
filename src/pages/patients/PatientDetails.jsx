@@ -27,7 +27,7 @@ import {
   useDeactivatePatientBranchRelationship,
 } from "@/hooks/usePatients";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PERMISSIONS, USER_ROLES } from "@/lib/constants";
+import { CLINIC_PROFILES, PERMISSIONS, USER_ROLES } from "@/lib/constants";
 import { useUIStore } from "@/store/uiStore";
 import { resolveEffectiveBranchId } from "@/lib/branchScope";
 import { useActiveBranchProfiles } from "@/hooks/useActiveBranchProfiles";
@@ -658,6 +658,18 @@ export default function PatientDetailsPage() {
     if (!sessionsData?.pages) return [];
     return sessionsData.pages.flatMap((page) => page.data || []);
   }, [sessionsData]);
+  const sessionHistoryShowsCategories = useMemo(
+    () =>
+      sessions.some((session) =>
+        clinicProfileSupportsWorkflow(
+          session?.profile ||
+            activeClinicalProfile ||
+            CLINIC_PROFILES.PHYSIOTHERAPY,
+          CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+        ),
+      ),
+    [activeClinicalProfile, sessions],
+  );
 
   const loadMoreRef = useRef(null);
   const sectionParam = searchParams.get("section");
@@ -768,7 +780,7 @@ export default function PatientDetailsPage() {
 
     if (log.type === "session_payment") {
       return t("patients.logActionSessionUsedBalance", {
-        defaultValue: "Session used balance",
+        defaultValue: "Visit used balance",
       });
     }
 
@@ -2012,7 +2024,10 @@ export default function PatientDetailsPage() {
                     <th className="px-4 py-3 font-medium">
                       {t("sessions.endTime", { defaultValue: "End time" })}
                     </th>
-                    {supportsVisitCategories && (
+                    <th className="px-4 py-3 font-medium">
+                      {t("sessions.profile", { defaultValue: "Clinic profile" })}
+                    </th>
+                    {sessionHistoryShowsCategories && (
                       <th className="px-4 py-3 font-medium">
                         {t("sessions.category", { defaultValue: "Category" })}
                       </th>
@@ -2024,107 +2039,133 @@ export default function PatientDetailsPage() {
                       {t("sessions.status")}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      {t("sessions.doctor")}
+                      {t("clinicProfiles.providerGeneric", {
+                        defaultValue: "Provider",
+                      })}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session) => (
-                    <tr
-                      key={session.id}
-                      className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/sessions/${session.id}`)}
-                    >
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-2">
-                          {session.sessionDate
-                            ? formatDate(session.sessionDate, "PP")
-                            : "--"}
-                          {supportsAssessmentTracking &&
-                          session.isReassessment ? (
-                            <Badge className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-teal-200 bg-teal-100 p-0 text-teal-800 dark:border-teal-800 dark:bg-teal-900/40 dark:text-teal-100">
-                              <ClipboardCheck
-                                className="h-5 w-5 text-teal-600"
-                                aria-hidden="true"
-                              />
-                            </Badge>
-                          ) : supportsAssessmentTracking &&
-                            session.isAssessment ? (
-                            <Badge className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-purple-200 bg-purple-100 p-0 text-purple-800 dark:border-purple-800 dark:bg-purple-900/40 dark:text-purple-100">
-                              <Stethoscope
-                                className="h-5 w-5 text-primary"
-                                aria-hidden="true"
-                              />
-                            </Badge>
-                          ) : null}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {session.sessionTime ? (
-                          <span dir="ltr" className="inline-block font-mono">
-                            {formatDateTime(
-                              `${session.sessionDate}T${session.sessionTime}`,
-                              "p",
-                            )}
-                          </span>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {session.arrivalTime ? (
-                          <span dir="ltr" className="inline-block font-mono">
-                            {formatDateTime(
-                              `${session.sessionDate}T${session.arrivalTime}`,
-                              "p",
-                            )}
-                          </span>
-                        ) : (
-                          "--"
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span dir="ltr" className="inline-block font-mono">
-                          {formatTimeWithDate(
-                            session.startTime,
-                            session.sessionDate,
-                          ) || "--"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span dir="ltr" className="inline-block font-mono">
-                          {formatTimeWithDate(
-                            session.endTime,
-                            session.sessionDate,
-                          ) || "--"}
-                        </span>
-                      </td>
-                      {supportsVisitCategories && (
+                  {sessions.map((session) => {
+                    const sessionProfile =
+                      session.profile ||
+                      activeClinicalProfile ||
+                      CLINIC_PROFILES.PHYSIOTHERAPY;
+                    const rowSupportsAssessmentTracking =
+                      clinicProfileSupportsWorkflow(
+                        sessionProfile,
+                        CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+                      );
+                    const rowSupportsVisitCategories =
+                      clinicProfileSupportsWorkflow(
+                        sessionProfile,
+                        CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+                      );
+
+                    return (
+                      <tr
+                        key={session.id}
+                        className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => navigate(`/sessions/${session.id}`)}
+                      >
                         <td className="px-4 py-3">
-                          {session.category?.name || "--"}
-                        </td>
-                      )}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span>{session.branch?.name || "--"}</span>
-                          {patient.primaryBranchId != null &&
-                            session.branchId != null &&
-                            Number(patient.primaryBranchId) !==
-                              Number(session.branchId) && (
-                              <Badge variant="outline">
-                                {t("patients.crossBranchService", {
-                                  defaultValue: "Cross-branch",
-                                })}
+                          <span className="flex items-center gap-2">
+                            {session.sessionDate
+                              ? formatDate(session.sessionDate, "PP")
+                              : "--"}
+                            {rowSupportsAssessmentTracking &&
+                            session.isReassessment ? (
+                              <Badge className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-teal-200 bg-teal-100 p-0 text-teal-800 dark:border-teal-800 dark:bg-teal-900/40 dark:text-teal-100">
+                                <ClipboardCheck
+                                  className="h-5 w-5 text-teal-600"
+                                  aria-hidden="true"
+                                />
                               </Badge>
-                            )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{session.status || "--"}</td>
-                      <td className="px-4 py-3">
-                        {session.doctor?.fullName || "--"}
-                      </td>
-                    </tr>
-                  ))}
+                            ) : rowSupportsAssessmentTracking &&
+                              session.isAssessment ? (
+                              <Badge className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-purple-200 bg-purple-100 p-0 text-purple-800 dark:border-purple-800 dark:bg-purple-900/40 dark:text-purple-100">
+                                <Stethoscope
+                                  className="h-5 w-5 text-primary"
+                                  aria-hidden="true"
+                                />
+                              </Badge>
+                            ) : null}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {session.sessionTime ? (
+                            <span dir="ltr" className="inline-block font-mono">
+                              {formatDateTime(
+                                `${session.sessionDate}T${session.sessionTime}`,
+                                "p",
+                              )}
+                            </span>
+                          ) : (
+                            "--"
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {session.arrivalTime ? (
+                            <span dir="ltr" className="inline-block font-mono">
+                              {formatDateTime(
+                                `${session.sessionDate}T${session.arrivalTime}`,
+                                "p",
+                              )}
+                            </span>
+                          ) : (
+                            "--"
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span dir="ltr" className="inline-block font-mono">
+                            {formatTimeWithDate(
+                              session.startTime,
+                              session.sessionDate,
+                            ) || "--"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span dir="ltr" className="inline-block font-mono">
+                            {formatTimeWithDate(
+                              session.endTime,
+                              session.sessionDate,
+                            ) || "--"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge variant="secondary">
+                            {getClinicProfileLabel(sessionProfile, t)}
+                          </Badge>
+                        </td>
+                        {sessionHistoryShowsCategories && (
+                          <td className="px-4 py-3">
+                            {rowSupportsVisitCategories
+                              ? session.category?.name || "--"
+                              : "--"}
+                          </td>
+                        )}
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span>{session.branch?.name || "--"}</span>
+                            {patient.primaryBranchId != null &&
+                              session.branchId != null &&
+                              Number(patient.primaryBranchId) !==
+                                Number(session.branchId) && (
+                                <Badge variant="outline">
+                                  {t("patients.crossBranchService", {
+                                    defaultValue: "Cross-branch",
+                                  })}
+                                </Badge>
+                              )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">{session.status || "--"}</td>
+                        <td className="px-4 py-3">
+                          {session.doctor?.fullName || "--"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               {hasNextPage && (

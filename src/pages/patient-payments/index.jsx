@@ -10,7 +10,7 @@ import { AsyncSearchableSelect } from '@/components/common/AsyncSearchableSelect
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DataTable } from '@/components/common/DataTable';
 import { reportsApi } from '@/api/endpoints/reports';
-import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
+import { formatDate, formatCurrency } from '@/lib/utils';
 import { usePatientLookupOptions } from '@/hooks/useLookupOptions';
 
 export default function PatientPaymentsReportPage() {
@@ -134,13 +134,13 @@ export default function PatientPaymentsReportPage() {
       },
       {
         key: 'sessionCost',
-        header: t('sessions.cost'),
+        header: t('payments.sessionCost', { defaultValue: 'Visit cost' }),
         cell: (row) =>
           row.sessionCost != null ? formatCurrency(row.sessionCost) : '--',
       },
       {
         key: 'sessionPaidInFull',
-        header: t('payments.sessionPaidInFull', { defaultValue: 'Session fully paid' }),
+        header: t('payments.sessionPaidInFull', { defaultValue: 'Visit fully paid' }),
         cell: (row) =>
           row.sessionPaidInFull != null
             ? row.sessionPaidInFull
@@ -150,7 +150,7 @@ export default function PatientPaymentsReportPage() {
       },
       {
         key: 'sessionRemaining',
-        header: t('payments.sessionRemaining', { defaultValue: 'Session remaining' }),
+        header: t('payments.sessionRemaining', { defaultValue: 'Visit remaining' }),
         cell: (row) =>
           row.sessionRemaining != null
             ? formatCurrency(row.sessionRemaining)
@@ -186,7 +186,7 @@ export default function PatientPaymentsReportPage() {
                 <label className="text-xs font-medium text-muted-foreground">
                   {t('payments.patientLabel', { defaultValue: 'Patient' })}
                 </label>
-                <SearchableSelect
+                <AsyncSearchableSelect
                   options={patientOptions}
                   value={selectedPatientId}
                   onChange={(val) => {
@@ -198,7 +198,22 @@ export default function PatientPaymentsReportPage() {
                   placeholder={t('payments.patientPlaceholder', {
                     defaultValue: 'Select a patient',
                   })}
-                  disabled={patientsQuery.isLoading}
+                  searchPlaceholder={t('patients.searchPlaceholder', {
+                    defaultValue: 'Search by name',
+                  })}
+                  onSearchChange={patientLookup.setSearch}
+                  hasMore={patientLookup.hasNextPage}
+                  onLoadMore={patientLookup.fetchNextPage}
+                  isLoading={patientLookup.isLoading}
+                  isLoadingMore={patientLookup.isFetchingNextPage}
+                  isError={patientLookup.isError}
+                  selectedOption={selectedPatientOption}
+                  emptyText={t('common.noData', { defaultValue: 'No data' })}
+                  loadingText={t('common.loading')}
+                  loadMoreText={t('common.loadMore', {
+                    defaultValue: 'Load more',
+                  })}
+                  errorText={t('messages.errorOccurred')}
                 />
               </div>
 

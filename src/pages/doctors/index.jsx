@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/common/DataTable';
 import { LocalizedDatePicker } from '@/components/common/LocalizedDatePicker';
 import { AsyncSearchableSelect } from '@/components/common/AsyncSearchableSelect';
@@ -194,15 +195,15 @@ export default function DoctorsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('doctors.title', { defaultValue: 'Doctors' })} />
+      <PageHeader title={t('doctors.title', { defaultValue: 'Providers' })} />
 
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="grid gap-3 md:flex md:items-end">
               <div className="w-full md:w-64 space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">
-                  {t('doctors.doctorLabel', { defaultValue: 'Doctor' })}
+                  {t('doctors.doctorLabel', { defaultValue: 'Provider' })}
                 </label>
                 <AsyncSearchableSelect
                   options={doctorOptions}
@@ -214,7 +215,7 @@ export default function DoctorsPage() {
                     updateFiltersInUrl(nextDoctorId, fromDate, toDate, status, 1);
                   }}
                   placeholder={t('doctors.doctorPlaceholder', {
-                    defaultValue: 'Select a doctor',
+                    defaultValue: 'Select a provider',
                   })}
                   searchPlaceholder={t('sessions.filters.searchPlaceholder')}
                   onSearchChange={doctorLookup.setSearch}
@@ -250,7 +251,7 @@ export default function DoctorsPage() {
                 />
               </div>
 
-              <div className="flex gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
                     {t('reports.from')}
@@ -317,7 +318,7 @@ export default function DoctorsPage() {
           ) : !selectedDoctorId ? (
             <div className="py-6 text-center text-muted-foreground text-sm">
               {t('doctors.selectDoctorHint', {
-                defaultValue: 'Select a doctor to view sessions.',
+                defaultValue: 'Select a provider to view visits.',
               })}
             </div>
           ) : sessions.length === 0 ? (
@@ -332,6 +333,68 @@ export default function DoctorsPage() {
                 getRowId={(row) => row.id}
                 onRowClick={(row) => navigate(`/sessions/${row.id}`)}
                 direction={isRtl ? 'rtl' : 'ltr'}
+                mobileCard={(row) => {
+                  const date = row.sessionDate || row.date;
+
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">
+                            {row.patient?.fullName || '--'}
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            {row.patient?.patientCode
+                              ? `#${row.patient.patientCode}`
+                              : t('patients.patientId')}
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="shrink-0">
+                          {row.status ? t(`status.${row.status}`) : '--'}
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('sessions.date')}
+                          </div>
+                          <div className="mt-1 font-medium" dir="ltr">
+                            {date ? formatDate(date, 'PP') : '--'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('sessions.scheduledTime', {
+                              defaultValue: 'Scheduled time',
+                            })}
+                          </div>
+                          <div className="mt-1 font-mono font-medium" dir="ltr">
+                            {formatTimeTo12Hour(row.sessionTime)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('sessions.arrivalTime')}
+                          </div>
+                          <div className="mt-1 font-mono font-medium" dir="ltr">
+                            {formatTimeTo12Hour(row.arrivalTime)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">
+                            {t('payments.sessionCost', {
+                              defaultValue: 'Visit cost',
+                            })}
+                          </div>
+                          <div className="mt-1 font-medium">
+                            {row.cost != null ? row.cost : '--'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }}
               />
 
               <div className="mt-4 flex flex-col gap-3 border-t bg-muted/30 px-4 py-3 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
@@ -342,7 +405,7 @@ export default function DoctorsPage() {
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-lg bg-emerald-100 px-4 py-3 text-xs text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100">
                       <div className="text-lg uppercase tracking-wide opacity-80">
-                        {t('doctors.totalSessions', { defaultValue: 'Total sessions' })}
+                        {t('doctors.totalSessions', { defaultValue: 'Total visits' })}
                       </div>
                       <div className="mt-1 text-base font-bold text-foreground">
                         {summary.totalSessions ?? totalSessions}
@@ -351,7 +414,7 @@ export default function DoctorsPage() {
                     <div className="rounded-lg bg-sky-100 px-4 py-3 text-xs text-sky-900 dark:bg-sky-900/40 dark:text-sky-100">
                       <div className="text-lg uppercase tracking-wide opacity-80">
                         {t('doctors.completedSessions', {
-                          defaultValue: 'Completed sessions',
+                          defaultValue: 'Completed visits',
                         })}
                       </div>
                       <div className="mt-1 text-base font-bold text-foreground">
@@ -361,7 +424,7 @@ export default function DoctorsPage() {
                     <div className="rounded-lg bg-amber-100 px-4 py-3 text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-100">
                       <div className="text-lg uppercase tracking-wide opacity-80">
                         {t('doctors.cancelledSessions', {
-                          defaultValue: 'Cancelled sessions',
+                          defaultValue: 'Cancelled visits',
                         })}
                       </div>
                       <div className="mt-1 text-base font-bold text-foreground">

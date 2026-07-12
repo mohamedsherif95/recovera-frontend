@@ -9,6 +9,12 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDashboard, usePatientsReport } from '@/hooks/useDashboard';
 import { useAuthStore } from '@/store/authStore';
+import { CLINIC_PROFILES } from '@/lib/constants';
+import {
+  CLINIC_PROFILE_WORKFLOWS,
+  clinicProfileSupportsWorkflow,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
 import {
   Users,
   Calendar,
@@ -19,7 +25,6 @@ import {
   Activity,
   BellRing,
   ListChecks,
-  TrendingUp,
   Stethoscope,
 } from 'lucide-react';
 
@@ -143,7 +148,9 @@ export default function Dashboard() {
                     <th className="px-3 py-2 font-medium">{t('sessions.startTime', { defaultValue: 'Start time' })}</th>
                     <th className="px-3 py-2 font-medium">{t('sessions.endTime', { defaultValue: 'End time' })}</th>
                     <th className="px-3 py-2 font-medium">{t('sessions.patient')}</th>
-                    <th className="px-3 py-2 font-medium">{t('sessions.doctor')}</th>
+                    <th className="px-3 py-2 font-medium">
+                      {t('clinicProfiles.providerGeneric', { defaultValue: 'Provider' })}
+                    </th>
                     <th className="px-3 py-2 font-medium">{t('sessions.status')}</th>
                   </tr>
                 </thead>
@@ -178,37 +185,46 @@ export default function Dashboard() {
                         <div className="flex flex-col">
                           <span className="font-medium flex items-center gap-1">
                             {session.patientName}
-                            {session.sessionsUntilReassessment === 0 &&
+                            {clinicProfileSupportsWorkflow(
+                              session.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
+                              CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+                            ) &&
+                              session.sessionsUntilReassessment === 0 &&
                               !session.isAssessment &&
                               !session.isReassessment && (
-                              <span
-            className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50"
-                              >
-                                <BellRing
-              className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
-                                  aria-hidden="true"
-                                  title={t('patients.reassessmentDue', { defaultValue: 'Reassessment due' })}
-                                />
-                              </span>
-                            )}
+                                <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+                                  <BellRing
+                                    className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
+                                    aria-hidden="true"
+                                    title={t('patients.reassessmentDue', { defaultValue: 'Reassessment due' })}
+                                  />
+                                </span>
+                              )}
                           </span>
                           {session.patientCode && (
                             <span className="text-xs text-muted-foreground">#{session.patientCode}</span>
                           )}
+                          <span className="text-xs text-muted-foreground">
+                            {getClinicProfileLabel(session.profile || CLINIC_PROFILES.PHYSIOTHERAPY, t)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-3 py-2">{session.doctorName}</td>
                       <td className="px-3 py-2 text-xs uppercase text-muted-foreground">
                         <div className="flex items-center gap-2">
                           <span>{session.status || '--'}</span>
-                          {session.isAssessment && (
-                            <span
-                              className="inline-flex items-center justify-center rounded-full border border-purple-300 bg-purple-100 p-1 text-purple-800 shadow-sm dark:border-purple-700 dark:bg-purple-900/70 dark:text-purple-50"
-                              title={t('sessions.isAssessment', { defaultValue: 'Assessment' })}
-                            >
-                              <Stethoscope className="h-4 w-4" aria-hidden="true" />
-                            </span>
-                          )}
+                          {clinicProfileSupportsWorkflow(
+                            session.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
+                            CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+                          ) &&
+                            session.isAssessment && (
+                              <span
+                                className="inline-flex items-center justify-center rounded-full border border-purple-300 bg-purple-100 p-1 text-purple-800 shadow-sm dark:border-purple-700 dark:bg-purple-900/70 dark:text-purple-50"
+                                title={t('sessions.isAssessment', { defaultValue: 'Assessment' })}
+                              >
+                                <Stethoscope className="h-4 w-4" aria-hidden="true" />
+                              </span>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -218,7 +234,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">
-              {t('dashboard.noSessionsToday', { defaultValue: 'No sessions scheduled for today.' })}
+              {t('dashboard.noSessionsToday', { defaultValue: 'No visits scheduled for today.' })}
             </p>
           )}
         </CardContent>
@@ -340,25 +356,32 @@ export default function Dashboard() {
             {upcomingSessions.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('dashboard.noUpcoming')}</p>
             ) : (
-              upcomingSessions.map((session) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                >
-                  <div>
-                    <p className="font-medium">{session.patientName}</p>
-                    <p className="text-xs text-muted-foreground">{session.doctorName}</p>
+              upcomingSessions.map((session) => {
+                const sessionProfile = session.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
+
+                return (
+                  <div
+                    key={session.id}
+                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                  >
+                    <div>
+                      <p className="font-medium">{session.patientName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {getClinicProfileLabel(sessionProfile, t)}
+                        {session.doctorName ? ` - ${session.doctorName}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold" dir="ltr">
+                        {formatDate(session.sessionDate, 'MMM d')}
+                      </p>
+                      <p className="text-xs text-muted-foreground" dir="ltr">
+                        {formatTimeTo12Hour(session.sessionTime)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold" dir="ltr">
-                      {formatDate(session.sessionDate, 'MMM d')}
-                    </p>
-                    <p className="text-xs text-muted-foreground" dir="ltr">
-                      {formatTimeTo12Hour(session.sessionTime)}
-                    </p>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
             <Button variant="outline" size="sm" className="w-full" onClick={() => navigate('/sessions')}>
               {t('dashboard.viewAllSessions')}

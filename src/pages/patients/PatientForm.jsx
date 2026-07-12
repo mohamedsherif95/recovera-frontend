@@ -167,7 +167,7 @@ export function PatientForm({
                 {showDefaultSessionCost && (
                   <div className="space-y-2">
                     <Label htmlFor="defaultSessionCost">
-                      {t('patients.defaultSessionCost', { defaultValue: 'Default session cost' })}
+                      {t('patients.defaultSessionCost', { defaultValue: 'Default visit cost' })}
                     </Label>
                     <Input
                       id="defaultSessionCost"

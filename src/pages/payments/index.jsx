@@ -10,6 +10,8 @@ import { LocalizedDatePicker } from '@/components/common/LocalizedDatePicker';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { useSessions, useSession } from '@/hooks/useSessions';
 import { useCreatePayment } from '@/hooks/usePayments';
+import { CLINIC_PROFILES } from '@/lib/constants';
+import { getClinicProfileLabel } from '@/lib/clinicProfiles';
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
@@ -64,7 +66,7 @@ export default function PaymentsPage() {
         value: String(s.id),
         label: `${s.patient?.fullName || 'Unknown patient'} - ${
           s.sessionDate || t('sessions.date')
-        }`,
+        } - ${getClinicProfileLabel(s.profile || CLINIC_PROFILES.PHYSIOTHERAPY, t)}`,
       })),
     [sessions, t]
   );
@@ -121,7 +123,7 @@ export default function PaymentsPage() {
                   <div className="flex flex-wrap gap-4">
                     <div>
                       <span className="font-medium">
-                        {t('payments.sessionCost', { defaultValue: 'Session cost' })}:
+                        {t('payments.sessionCost', { defaultValue: 'Visit cost' })}:
                       </span>{' '}
                       {sessionSummary.cost}
                     </div>

@@ -365,6 +365,26 @@ export function getClinicProfileLabel(profile, t) {
     : config.labelDefault;
 }
 
+export function getClinicProfileVisitLabel(profile, t) {
+  const config = getClinicProfileConfig(profile);
+  if (!config) return "Visit";
+
+  return typeof t === "function"
+    ? t(config.visitLabelKey, { defaultValue: config.visitLabelDefault })
+    : config.visitLabelDefault;
+}
+
+export function getClinicProfileProviderLabel(profile, t) {
+  const config = getClinicProfileConfig(profile);
+  if (!config) return "Provider";
+
+  return typeof t === "function"
+    ? t(config.providerLabelKey, {
+        defaultValue: config.providerLabelDefault,
+      })
+    : config.providerLabelDefault;
+}
+
 export function getClinicProfileDetailFields(profile) {
   return getClinicProfileConfig(profile)?.detailFields || [];
 }

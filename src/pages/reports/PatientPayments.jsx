@@ -20,7 +20,12 @@ import { DataTable } from '@/components/common/DataTable';
 import DateRangePicker from '@/components/common/DateRangePicker';
 import { reportsApi } from '@/api/endpoints/reports';
 import { useAuthStore } from '@/store/authStore';
-import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
+import { CLINIC_PROFILES, PERMISSIONS, USER_ROLES } from '@/lib/constants';
+import {
+  CLINIC_PROFILE_WORKFLOWS,
+  clinicProfileSupportsWorkflow,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
 import { formatDate, formatCurrency } from '@/lib/utils';
 import { DollarSign, CreditCard, Banknote, Wallet, AlertCircle } from 'lucide-react';
 import { usePatientLookupOptions } from '@/hooks/useLookupOptions';
@@ -238,7 +243,20 @@ export default function IncomeReportPage() {
     return [];
   }, [detailsData]);
 
-  const unpaidSessions = detailsData?.unpaidSessions ?? [];
+  const unpaidSessions = useMemo(
+    () => detailsData?.unpaidSessions ?? [],
+    [detailsData?.unpaidSessions],
+  );
+  const showUnpaidSessionCategories = useMemo(
+    () =>
+      unpaidSessions.some((session) =>
+        clinicProfileSupportsWorkflow(
+          session.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
+          CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+        ),
+      ),
+    [unpaidSessions],
+  );
   const summary = summaryData?.summary || null;
   const totalPaymentsCount = detailsData?.total ?? 0;
   const totalPages = totalPaymentsCount ? Math.ceil(totalPaymentsCount / pageSize) : 1;
@@ -262,7 +280,7 @@ export default function IncomeReportPage() {
     return totals;
   }, [summary]);
 
-  const getMethodIcon = (method) => {
+  const getMethodIcon = useCallback((method) => {
     switch (method) {
       case 'cash':
         return <Banknote className="h-4 w-4" />;
@@ -273,9 +291,9 @@ export default function IncomeReportPage() {
       default:
         return <DollarSign className="h-4 w-4" />;
     }
-  };
+  }, []);
 
-  const getMethodLabel = (method) => {
+  const getMethodLabel = useCallback((method) => {
     switch (method) {
       case 'cash':
         return t('payments.methods.cash', { defaultValue: 'Cash' });
@@ -286,7 +304,7 @@ export default function IncomeReportPage() {
       default:
         return method || t('common.unknown', { defaultValue: 'Unknown' });
     }
-  };
+  }, [t]);
 
   const handleDownloadPaymentInvoice = useCallback(async (paymentId) => {
     if (!paymentId) return;
@@ -374,7 +392,7 @@ export default function IncomeReportPage() {
         },
         {
           key: 'sessionCost',
-          header: t('sessions.cost'),
+          header: t('payments.sessionCost', { defaultValue: 'Visit cost' }),
           cell: (row) =>
             row.sessionCost != null ? formatCurrency(row.sessionCost) : '--',
         },
@@ -736,7 +754,7 @@ export default function IncomeReportPage() {
                 {formatCurrency(summary.totalRemaining ?? 0)}
               </div>
               <p className="text-xs text-red-600/70 dark:text-red-400/70">
-                {t('reports.unpaidBalance', { defaultValue: 'Unpaid balance from sessions' })}
+                {t('reports.unpaidBalance', { defaultValue: 'Unpaid balance from visits' })}
               </p>
             </CardContent>
           </Card>
@@ -748,7 +766,7 @@ export default function IncomeReportPage() {
         <Card className="border-red-200 dark:border-red-800">
           <CardHeader>
             <CardTitle className="text-red-700 dark:text-red-400">
-              {t('reports.unpaidSessions', { defaultValue: 'Sessions with Outstanding Balance' })}
+              {t('reports.unpaidSessions', { defaultValue: 'Visits with outstanding balance' })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -759,32 +777,54 @@ export default function IncomeReportPage() {
                   <tr className="border-b bg-muted/50 text-xs uppercase text-muted-foreground">
                     <th className="px-4 py-3 font-medium text-start">{t('patients.patient')}</th>
                     <th className="px-4 py-3 font-medium text-start">{t('sessions.date')}</th>
+                    <th className="px-4 py-3 font-medium text-start">
+                      {t('sessions.profile', { defaultValue: 'Clinic profile' })}
+                    </th>
                     <th className="px-4 py-3 font-medium text-start">{t('sessions.cost')}</th>
                     <th className="px-4 py-3 font-medium text-start">{t('payments.paid')}</th>
                     <th className="px-4 py-3 font-medium text-start">{t('payments.remaining')}</th>
-                    <th className="px-4 py-3 font-medium text-start">{t('sessions.category')}</th>
+                    {showUnpaidSessionCategories && (
+                      <th className="px-4 py-3 font-medium text-start">{t('sessions.category')}</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {unpaidSessions.map((session) => (
-                    <tr
-                      key={session.sessionId}
-                      className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => navigate(`/sessions/${session.sessionId}`)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{session.patientName}</div>
-                        <div className="text-xs text-muted-foreground">{session.patientCode}</div>
-                      </td>
-                      <td className="px-4 py-3">{formatDate(session.sessionDate, 'PP')}</td>
-                      <td className="px-4 py-3">{formatCurrency(session.cost)}</td>
-                      <td className="px-4 py-3">{formatCurrency(session.totalPaid)}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-red-600 font-medium">{formatCurrency(session.remaining)}</span>
-                      </td>
-                      <td className="px-4 py-3">{session.category}</td>
-                    </tr>
-                  ))}
+                  {unpaidSessions.map((session) => {
+                    const sessionProfile = session.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
+                    const rowSupportsVisitCategories = clinicProfileSupportsWorkflow(
+                      sessionProfile,
+                      CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+                    );
+
+                    return (
+                      <tr
+                        key={session.sessionId}
+                        className="border-b last:border-b-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => navigate(`/sessions/${session.sessionId}`)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{session.patientName}</div>
+                          <div className="text-xs text-muted-foreground">{session.patientCode}</div>
+                        </td>
+                        <td className="px-4 py-3">{formatDate(session.sessionDate, 'PP')}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="secondary">
+                            {getClinicProfileLabel(sessionProfile, t)}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3">{formatCurrency(session.cost)}</td>
+                        <td className="px-4 py-3">{formatCurrency(session.totalPaid)}</td>
+                        <td className="px-4 py-3">
+                          <span className="text-red-600 font-medium">{formatCurrency(session.remaining)}</span>
+                        </td>
+                        {showUnpaidSessionCategories && (
+                          <td className="px-4 py-3">
+                            {rowSupportsVisitCategories ? session.category || '--' : '--'}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               </div>

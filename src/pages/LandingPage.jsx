@@ -62,6 +62,12 @@ export default function LandingPage() {
     t('marketing.experience.steps', { returnObjects: true }),
   );
   const pricingModels = asArray(t('marketing.pricing.models', { returnObjects: true }));
+  const customSystemPoints = asArray(
+    t('marketing.customSystem.points', { returnObjects: true }),
+  );
+  const customSystemVisualItems = asArray(
+    t('marketing.customSystem.visual.items', { returnObjects: true }),
+  );
   const [activeProfileId, setActiveProfileId] = useState('physiotherapy');
   const [activePricingId, setActivePricingId] = useState('allowance');
 
@@ -446,6 +452,106 @@ export default function LandingPage() {
                   <PricingVisual model={activePricing} />
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="custom-system"
+          className="scroll-mt-24 border-b border-border bg-[#eef8f4] text-slate-950 dark:bg-[#102421] dark:text-white"
+        >
+          <div className="mx-auto grid max-w-7xl gap-9 px-4 py-12 sm:px-6 sm:py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:px-8 lg:py-20">
+            <div data-landing-reveal>
+              <div className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-white/80 px-3 py-2 text-sm font-bold text-emerald-800 shadow-sm dark:border-emerald-900 dark:bg-slate-950/35 dark:text-emerald-200">
+                <Layers3 className="h-4 w-4" />
+                {t('marketing.customSystem.eyebrow')}
+              </div>
+              <h2 className="mt-5 max-w-3xl text-3xl font-black leading-tight sm:text-4xl">
+                {t('marketing.customSystem.title')}
+              </h2>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-700 dark:text-slate-300">
+                {t('marketing.customSystem.description')}
+              </p>
+
+              <ul className="mt-7 grid gap-3">
+                {customSystemPoints.map((point) => (
+                  <li key={point} className="flex items-start gap-3 text-sm leading-6 text-slate-800 dark:text-slate-200">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <Button asChild size="lg" className="h-12 px-6 text-base font-semibold">
+                  <a href="#pricing">
+                    {t('marketing.customSystem.primaryCta')}
+                    <ArrowRight className={cn('h-4 w-4', isRtl && 'rotate-180')} />
+                  </a>
+                </Button>
+                <p className="max-w-md text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {t('marketing.customSystem.hint')}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="landing-custom-system-preview overflow-hidden rounded-lg border border-emerald-200 bg-white shadow-xl shadow-emerald-950/10 dark:border-emerald-900/80 dark:bg-slate-950/70 dark:shadow-black/20"
+              data-landing-reveal
+              style={{ '--reveal-delay': '120ms' }}
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+                <p className="text-sm font-black text-slate-950 dark:text-white">
+                  {t('marketing.customSystem.visual.label')}
+                </p>
+                <span className="rounded-md bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+                  {t('marketing.customSystem.visual.mode')}
+                </span>
+              </div>
+
+              <div className="p-5 sm:p-7">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-5 dark:border-slate-800">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-normal text-emerald-700 dark:text-emerald-300">
+                      {t('marketing.customSystem.visual.badge')}
+                    </p>
+                    <h3 className="mt-2 max-w-lg text-2xl font-black leading-tight text-slate-950 dark:text-white">
+                      {t('marketing.customSystem.visual.title')}
+                    </h3>
+                  </div>
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+                    <Layers3 className="h-6 w-6" />
+                  </span>
+                </div>
+
+                <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                  {t('marketing.customSystem.visual.description')}
+                </p>
+
+                <div className="mt-6 grid gap-3">
+                  {customSystemVisualItems.map((item, index) => (
+                    <div
+                      key={item.label}
+                      className="grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-4 sm:grid-cols-[auto_1fr_auto] sm:items-center dark:border-slate-800 dark:bg-slate-900/70"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-white text-sm font-black text-emerald-700 shadow-sm dark:bg-slate-950 dark:text-emerald-300">
+                        0{index + 1}
+                      </span>
+                      <span>
+                        <span className="block text-sm font-black text-slate-950 dark:text-white">
+                          {item.label}
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          {item.description}
+                        </span>
+                      </span>
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        {item.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>

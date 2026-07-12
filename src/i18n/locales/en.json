@@ -1625,6 +1625,42 @@
         }
       ]
     },
+    "customSystem": {
+      "eyebrow": "Need more than Recovera?",
+      "title": "A dedicated clinic system for special requirements and larger scale.",
+      "description": "Recovera is the subscription platform for clinics that want a ready operating system. If your organization needs unusual workflows, private architecture, deep integrations, or a system you fully own outside Recovera, that becomes a separate custom software build.",
+      "points": [
+        "A discovery phase to map the workflows, roles, integrations, data, and reporting you actually need",
+        "Custom modules and patient journeys built around your operating model instead of Recovera's product limits",
+        "Separate architecture, delivery scope, and ownership model for organizations that need their own system"
+      ],
+      "primaryCta": "Compare Recovera first",
+      "hint": "If the standard branch plans do not fit, the next conversation is a custom system scope, not a Recovera subscription.",
+      "visual": {
+        "label": "Custom software route",
+        "mode": "Outside Recovera",
+        "badge": "Dedicated clinic system",
+        "title": "Built from your requirements, not from a preset plan",
+        "description": "A custom engagement starts by defining the operating model, then turns that into a separate system with its own scope, infrastructure, and delivery plan.",
+        "items": [
+          {
+            "value": "Discovery",
+            "label": "Understand",
+            "description": "Map complex workflows, teams, branches, and data needs"
+          },
+          {
+            "value": "Design",
+            "label": "Architect",
+            "description": "Define custom modules, integrations, permissions, and reports"
+          },
+          {
+            "value": "Build",
+            "label": "Deliver",
+            "description": "Create a dedicated system with its own rollout and support model"
+          }
+        ]
+      }
+    },
     "final": {
       "eyebrow": "A better rhythm for every clinic day",
       "title": "One system that feels familiar to your team and clear to clinic owners.",

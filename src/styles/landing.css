@@ -69,6 +69,12 @@
   animation: landing-panel-enter 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.landing-custom-system-preview {
+  transition:
+    transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .landing-profile-tone-sky {
   color: #082f49;
   background: #eaf7fc;
@@ -157,6 +163,12 @@
   }
 }
 
+@media (hover: hover) {
+  .landing-custom-system-preview:hover {
+    transform: translateY(-4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-landing-reveal] {
     opacity: 1;
@@ -167,8 +179,10 @@
 
   .landing-scene-shell,
   .landing-switch-panel,
+  .landing-custom-system-preview,
   .landing-live-dot {
     animation: none;
+    transition: none;
   }
 
   .landing-page * {

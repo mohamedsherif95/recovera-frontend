@@ -42,31 +42,12 @@ import {
   QUERY_KEYS,
   USER_ROLES,
 } from '@/lib/constants';
+import {
+  CLINIC_PROFILE_OPTIONS,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
-
-const PROFILE_OPTIONS = [
-  {
-    value: CLINIC_PROFILES.PHYSIOTHERAPY,
-    labelKey: 'branchSubscriptions.profiles.physiotherapy',
-    labelDefault: 'Physiotherapy',
-  },
-  {
-    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
-    labelKey: 'branchSubscriptions.profiles.medicalDoctor',
-    labelDefault: 'Medical doctor clinic',
-  },
-  {
-    value: CLINIC_PROFILES.DENTIST,
-    labelKey: 'branchSubscriptions.profiles.dentist',
-    labelDefault: 'Dentist',
-  },
-  {
-    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
-    labelKey: 'branchSubscriptions.profiles.laserDermatology',
-    labelDefault: 'Laser and dermatology',
-  },
-];
 
 const PRICING_MODEL_OPTIONS = [
   {
@@ -145,10 +126,7 @@ const getOptionLabel = (option, t) =>
   option ? t(option.labelKey, { defaultValue: option.labelDefault }) : null;
 
 const getProfileLabel = (profile, t) =>
-  getOptionLabel(
-    PROFILE_OPTIONS.find((option) => option.value === profile),
-    t,
-  ) || profile;
+  getClinicProfileLabel(profile, t) || profile;
 
 const getPricingModelLabel = (model, t) =>
   getOptionLabel(
@@ -728,7 +706,7 @@ export default function PlatformOnboardingPage() {
                   })}
                 </Label>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {PROFILE_OPTIONS.map((profile) => {
+                  {CLINIC_PROFILE_OPTIONS.map((profile) => {
                     const checked = form.enabledProfiles.includes(profile.value);
                     return (
                       <label

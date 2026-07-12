@@ -47,33 +47,13 @@ import { useUIStore } from '@/store/uiStore';
 import {
   BRANCH_SUBSCRIPTION_ACCESS_STATUS,
   BRANCH_PRICING_MODELS,
-  CLINIC_PROFILES,
   PERMISSIONS,
 } from '@/lib/constants';
+import {
+  CLINIC_PROFILE_OPTIONS,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
 import { cn } from '@/lib/utils';
-
-const PROFILE_OPTIONS = [
-  {
-    value: CLINIC_PROFILES.PHYSIOTHERAPY,
-    labelKey: 'branchSubscriptions.profiles.physiotherapy',
-    labelDefault: 'Physiotherapy',
-  },
-  {
-    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
-    labelKey: 'branchSubscriptions.profiles.medicalDoctor',
-    labelDefault: 'Medical doctor clinic',
-  },
-  {
-    value: CLINIC_PROFILES.DENTIST,
-    labelKey: 'branchSubscriptions.profiles.dentist',
-    labelDefault: 'Dentist',
-  },
-  {
-    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
-    labelKey: 'branchSubscriptions.profiles.laserDermatology',
-    labelDefault: 'Laser and dermatology',
-  },
-];
 
 const STATUS_OPTIONS = [
   {
@@ -127,10 +107,7 @@ const getPricingModelLabel = (model, t) =>
   ) || model;
 
 const getProfileLabel = (profile, t) =>
-  getOptionLabel(
-    PROFILE_OPTIONS.find((option) => option.value === profile),
-    t,
-  ) || profile;
+  getClinicProfileLabel(profile, t) || profile;
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
@@ -1667,7 +1644,7 @@ export default function BranchSubscriptionsPage() {
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleProfilesSubmit}>
                     <div className="rounded-md border">
-                      {PROFILE_OPTIONS.map((profile) => {
+                      {CLINIC_PROFILE_OPTIONS.map((profile) => {
                         const enabled = form.enabledProfiles.includes(profile.value);
                         return (
                           <div

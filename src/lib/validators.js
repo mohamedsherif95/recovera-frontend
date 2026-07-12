@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CLINIC_PROFILE_CODES } from '@/lib/clinicProfiles';
 
 const optionalNumberField = (schema) =>
   z.preprocess(
@@ -101,14 +102,7 @@ export const sessionSchema = z.object({
   cost: optionalNumberField(z.number().min(0, 'validation.sessions.costPositive')),
   categoryId: z.number().optional().nullable(),
   categoryNotes: z.string().optional().nullable(),
-  profile: z
-    .enum([
-      'physiotherapy',
-      'medical_doctor',
-      'dentist',
-      'laser_dermatology',
-    ])
-    .optional(),
+  profile: z.enum(CLINIC_PROFILE_CODES).optional(),
   visitType: z.string().optional().nullable(),
   isAssessment: z.boolean().optional(),
   isNewAssessment: z.boolean().optional(),

@@ -46,9 +46,9 @@ import {
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   BRANCH_SUBSCRIPTION_ACCESS_STATUS,
-  CLINIC_PROFILES,
   PERMISSIONS,
 } from '@/lib/constants';
+import { getClinicProfileLabel } from '@/lib/clinicProfiles';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
@@ -59,29 +59,6 @@ const emptyBranchForm = {
   isActive: 'true',
   changeReason: '',
 };
-
-const PROFILE_OPTIONS = [
-  {
-    value: CLINIC_PROFILES.PHYSIOTHERAPY,
-    labelKey: 'branchSubscriptions.profiles.physiotherapy',
-    labelDefault: 'Physiotherapy',
-  },
-  {
-    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
-    labelKey: 'branchSubscriptions.profiles.medicalDoctor',
-    labelDefault: 'Medical doctor clinic',
-  },
-  {
-    value: CLINIC_PROFILES.DENTIST,
-    labelKey: 'branchSubscriptions.profiles.dentist',
-    labelDefault: 'Dentist',
-  },
-  {
-    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
-    labelKey: 'branchSubscriptions.profiles.laserDermatology',
-    labelDefault: 'Laser and dermatology',
-  },
-];
 
 export default function BranchesPage() {
   const { t, i18n } = useTranslation();
@@ -1132,9 +1109,5 @@ function getEnabledProfiles(branch) {
 }
 
 function getProfileLabel(profile, t) {
-  const option = PROFILE_OPTIONS.find((item) => item.value === profile);
-
-  return option
-    ? t(option.labelKey, { defaultValue: option.labelDefault })
-    : String(profile);
+  return getClinicProfileLabel(profile, t) || String(profile);
 }

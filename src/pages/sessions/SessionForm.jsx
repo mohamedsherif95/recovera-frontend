@@ -24,6 +24,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { CLINIC_PROFILES, USER_ROLES } from '@/lib/constants';
 import {
+  CLINIC_PROFILE_OPTIONS,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
+import {
   canOverrideBranchScope,
   resolveEffectiveBranchId,
   resolveEffectiveClinicId,
@@ -51,25 +55,6 @@ const DEFAULT_SESSION_VALUES = {
   isAssessment: false,
   isNewAssessment: false,
 };
-
-const PROFILE_OPTIONS = [
-  {
-    value: CLINIC_PROFILES.PHYSIOTHERAPY,
-    label: 'Physiotherapy',
-  },
-  {
-    value: CLINIC_PROFILES.MEDICAL_DOCTOR,
-    label: 'Medical doctor clinic',
-  },
-  {
-    value: CLINIC_PROFILES.DENTIST,
-    label: 'Dentist',
-  },
-  {
-    value: CLINIC_PROFILES.LASER_DERMATOLOGY,
-    label: 'Laser and dermatology',
-  },
-];
 
 const normalizeBranchProfiles = (branch) => {
   const profiles = branch?.subscription?.profiles;
@@ -615,11 +600,11 @@ export function SessionForm({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {PROFILE_OPTIONS.filter((profile) =>
+                      {CLINIC_PROFILE_OPTIONS.filter((profile) =>
                         enabledProfiles.includes(profile.value),
                       ).map((profile) => (
                         <SelectItem key={profile.value} value={profile.value}>
-                          {profile.label}
+                          {getClinicProfileLabel(profile.value, t)}
                         </SelectItem>
                       ))}
                     </SelectContent>

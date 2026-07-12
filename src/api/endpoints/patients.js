@@ -1,11 +1,11 @@
-import apiClient from '../client';
+import apiClient from "../client";
 
 export const patientsApi = {
   /**
    * List patients with optional query params
    */
   getAll: async (params = {}) => {
-    const response = await apiClient.get('/patients', { params });
+    const response = await apiClient.get("/patients", { params });
     return response.data;
   },
 
@@ -13,7 +13,9 @@ export const patientsApi = {
    * Search company-level patients that can be attached to the active branch.
    */
   searchCompany: async (params = {}) => {
-    const response = await apiClient.get('/patients/company-search', { params });
+    const response = await apiClient.get("/patients/company-search", {
+      params,
+    });
     return response.data;
   },
 
@@ -29,7 +31,7 @@ export const patientsApi = {
    * Create patient
    */
   create: async (payload) => {
-    const response = await apiClient.post('/patients', payload);
+    const response = await apiClient.post("/patients", payload);
     return response.data;
   },
 
@@ -73,7 +75,9 @@ export const patientsApi = {
    * Get patient's sessions history
    */
   getSessions: async (patientId, params = {}) => {
-    const response = await apiClient.get(`/patients/${patientId}/sessions`, { params });
+    const response = await apiClient.get(`/patients/${patientId}/sessions`, {
+      params,
+    });
     return response.data;
   },
 
@@ -81,7 +85,10 @@ export const patientsApi = {
    * Update patient's medical history
    */
   updateHistory: async (patientId, payload) => {
-    const response = await apiClient.put(`/patients/${patientId}/history`, payload);
+    const response = await apiClient.put(
+      `/patients/${patientId}/history`,
+      payload,
+    );
     return response.data;
   },
 
@@ -97,14 +104,31 @@ export const patientsApi = {
    * Update patient's programs
    */
   updatePrograms: async (patientId, payload) => {
-    const response = await apiClient.put(`/patients/${patientId}/programs`, payload);
+    const response = await apiClient.put(
+      `/patients/${patientId}/programs`,
+      payload,
+    );
+    return response.data;
+  },
+
+  /**
+   * Update branch/profile-specific patient record details.
+   */
+  updateProfileRecord: async (patientId, profile, payload) => {
+    const response = await apiClient.put(
+      `/patients/${patientId}/profile-records/${profile}`,
+      payload,
+    );
     return response.data;
   },
   /**
    * Add balance log entry for patient
    */
   addBalance: async (patientId, payload) => {
-    const response = await apiClient.post(`/patients/${patientId}/balance`, payload);
+    const response = await apiClient.post(
+      `/patients/${patientId}/balance`,
+      payload,
+    );
     return response.data;
   },
 
@@ -112,9 +136,12 @@ export const patientsApi = {
    * List patient balance logs/notes
    */
   getBalanceLogs: async (patientId, params = {}) => {
-    const response = await apiClient.get(`/patients/${patientId}/balance-logs`, {
-      params,
-    });
+    const response = await apiClient.get(
+      `/patients/${patientId}/balance-logs`,
+      {
+        params,
+      },
+    );
     return response.data;
   },
 

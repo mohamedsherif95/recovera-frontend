@@ -11,6 +11,8 @@ import { usePatients, useCreatePatient, useDeletePatient } from '@/hooks/usePati
 import { useDebounce } from '@/hooks/useDebounce';
 import { usePermissions } from '@/hooks/usePermissions';
 import { PERMISSIONS } from '@/lib/constants';
+import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
+import { CLINIC_PROFILE_WORKFLOWS } from '@/lib/clinicProfiles';
 import { PatientForm } from './PatientForm';
 import { ExistingPatientIntake } from './ExistingPatientIntake';
 import { Loader2, Plus, RefreshCcw, Trash2, BellRing, CircleOff, UserPlus } from 'lucide-react';
@@ -19,6 +21,7 @@ export default function PatientsPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { hasPermission, canAny } = usePermissions();
+  const { supportsWorkflow } = useActiveBranchProfiles();
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [intakeMode, setIntakeMode] = useState('new');
@@ -42,15 +45,25 @@ export default function PatientsPage() {
   const [patientToDelete, setPatientToDelete] = useState(null);
 
   const canDelete = hasPermission(PERMISSIONS['patients:delete']);
+  const supportsVisitCategories = supportsWorkflow(
+    CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
+  );
+  const supportsAssessmentTracking = supportsWorkflow(
+    CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+  );
+  const supportsTreatmentPackages = supportsWorkflow(
+    CLINIC_PROFILE_WORKFLOWS.TREATMENT_PACKAGES,
+  );
+  const showPhysiotherapyPatientSettings = Boolean(
+    supportsVisitCategories ||
+      supportsAssessmentTracking ||
+      supportsTreatmentPackages,
+  );
 
   const canView = canAny([
     PERMISSIONS['patients:viewAll'],
     PERMISSIONS['patients:viewAssigned'],
   ]);
-
-  if (!canView) {
-    return <Navigate to="/unauthorized" replace />;
-  }
 
   const columns = useMemo(
     () => [
@@ -67,7 +80,7 @@ export default function PatientsPage() {
         cell: (row) => (
           <span className="flex items-center gap-1">
             {row.fullName}
-            {row.sessionsUntilReassessment === 0 && (
+            {supportsAssessmentTracking && row.sessionsUntilReassessment === 0 && (
               <span
             className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50"
               >
@@ -78,7 +91,7 @@ export default function PatientsPage() {
                 />
               </span>
             )}
-            {row.isBalanceExhaustedAfterUse && (
+            {supportsTreatmentPackages && row.isBalanceExhaustedAfterUse && (
               <span
                 className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50"
               >
@@ -99,11 +112,15 @@ export default function PatientsPage() {
         header: t('patients.phone'),
         cell: (row) => row.phone || '--',
       },
-      {
-        key: 'category',
-        header: t('patients.category', { defaultValue: 'Category' }),
-        cell: (row) => row.category?.name || '--',
-      },
+      ...(supportsVisitCategories
+        ? [
+            {
+              key: 'category',
+              header: t('patients.category', { defaultValue: 'Category' }),
+              cell: (row) => row.category?.name || '--',
+            },
+          ]
+        : []),
       {
         key: 'primaryBranch',
         header: t('patients.primaryBranch', { defaultValue: 'Primary branch' }),
@@ -143,7 +160,7 @@ export default function PatientsPage() {
           ]
         : []),
     ],
-    [t, canDelete]
+    [t, canDelete, supportsAssessmentTracking, supportsTreatmentPackages, supportsVisitCategories]
   );
 
   const patients = useMemo(() => {
@@ -184,6 +201,10 @@ export default function PatientsPage() {
       },
     });
   };
+
+  if (!canView) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   return (
     <div className="space-y-6">
@@ -237,6 +258,7 @@ export default function PatientsPage() {
               onSubmit={handleCreate}
               onCancel={() => setShowForm(false)}
               isSubmitting={createPatient.isPending}
+              showPhysiotherapySettings={showPhysiotherapyPatientSettings}
             />
           ) : (
             <ExistingPatientIntake

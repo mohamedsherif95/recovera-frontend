@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useSessionProfileDetails,
   useUpdateSessionProfileDetails,
-} from '@/hooks/useSessions';
-import { getProfileDetailFields } from '@/lib/sessionProfileDetails';
+} from "@/hooks/useSessions";
+import { getProfileDetailFields } from "@/lib/sessionProfileDetails";
 
 function unwrapResponse(response) {
   return response?.data ?? response ?? null;
@@ -18,7 +18,7 @@ function unwrapResponse(response) {
 function buildInitialDetails(fields, details) {
   return fields.reduce((acc, field) => {
     const value = details?.[field.key];
-    acc[field.key] = value == null ? '' : String(value);
+    acc[field.key] = value == null ? "" : String(value);
     return acc;
   }, {});
 }
@@ -26,11 +26,11 @@ function buildInitialDetails(fields, details) {
 function cleanDetails(fields, values) {
   return fields.reduce((acc, field) => {
     const rawValue = values[field.key];
-    if (rawValue == null || rawValue === '') {
+    if (rawValue == null || rawValue === "") {
       return acc;
     }
 
-    if (field.type === 'number') {
+    if (field.type === "number") {
       const numericValue = Number(rawValue);
       if (Number.isFinite(numericValue)) {
         acc[field.key] = numericValue;
@@ -59,8 +59,13 @@ export function ProfileDetailsPanel({ session, canEdit }) {
   });
   const updateDetails = useUpdateSessionProfileDetails();
   const profileDetails = unwrapResponse(detailsQuery.data);
-  const details = profileDetails?.details || {};
-  const hasDetails = fields.some((field) => details[field.key] != null && details[field.key] !== '');
+  const details = useMemo(
+    () => profileDetails?.details || {},
+    [profileDetails?.details],
+  );
+  const hasDetails = fields.some(
+    (field) => details[field.key] != null && details[field.key] !== "",
+  );
 
   useEffect(() => {
     if (!isEditing) {
@@ -101,8 +106,8 @@ export function ProfileDetailsPanel({ session, canEdit }) {
     );
   };
 
-  const title = t('profileDetails.title', {
-    defaultValue: 'Clinical details',
+  const title = t("visitDetails.title", {
+    defaultValue: "Visit details",
   });
 
   return (
@@ -113,42 +118,54 @@ export function ProfileDetailsPanel({ session, canEdit }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => (isEditing ? setIsEditing(false) : handleStartEdit())}
+            onClick={() =>
+              isEditing ? setIsEditing(false) : handleStartEdit()
+            }
             disabled={updateDetails.isPending}
           >
-            {isEditing ? t('common.close') : t('common.edit')}
+            {isEditing ? t("common.close") : t("common.edit")}
           </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
         {detailsQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">{t('messages.loadingData')}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("messages.loadingData")}
+          </p>
         ) : isEditing ? (
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((field) => (
                 <div
                   key={field.key}
-                  className={field.type === 'textarea' ? 'space-y-2 md:col-span-2' : 'space-y-2'}
+                  className={
+                    field.type === "textarea"
+                      ? "space-y-2 md:col-span-2"
+                      : "space-y-2"
+                  }
                 >
                   <Label htmlFor={`profile-detail-${field.key}`}>
                     {t(field.labelKey, { defaultValue: field.defaultLabel })}
                   </Label>
-                  {field.type === 'textarea' ? (
+                  {field.type === "textarea" ? (
                     <Textarea
                       id={`profile-detail-${field.key}`}
                       rows={4}
-                      value={formValues[field.key] || ''}
-                      onChange={(event) => handleChange(field.key, event.target.value)}
+                      value={formValues[field.key] || ""}
+                      onChange={(event) =>
+                        handleChange(field.key, event.target.value)
+                      }
                       disabled={updateDetails.isPending}
                     />
                   ) : (
                     <Input
                       id={`profile-detail-${field.key}`}
-                      type={field.type === 'number' ? 'number' : 'text'}
-                      min={field.type === 'number' ? 1 : undefined}
-                      value={formValues[field.key] || ''}
-                      onChange={(event) => handleChange(field.key, event.target.value)}
+                      type={field.type === "number" ? "number" : "text"}
+                      min={field.type === "number" ? 1 : undefined}
+                      value={formValues[field.key] || ""}
+                      onChange={(event) =>
+                        handleChange(field.key, event.target.value)
+                      }
                       disabled={updateDetails.isPending}
                     />
                   )}
@@ -162,25 +179,34 @@ export function ProfileDetailsPanel({ session, canEdit }) {
                 onClick={() => setIsEditing(false)}
                 disabled={updateDetails.isPending}
               >
-                {t('common.cancel')}
+                {t("common.cancel")}
               </Button>
               <Button
                 type="button"
                 onClick={handleSave}
                 disabled={updateDetails.isPending}
               >
-                {updateDetails.isPending ? t('common.loading') : t('common.save')}
+                {updateDetails.isPending
+                  ? t("common.loading")
+                  : t("common.save")}
               </Button>
             </div>
           </div>
         ) : hasDetails ? (
           <div className="grid gap-4 md:grid-cols-2">
             {fields
-              .filter((field) => details[field.key] != null && details[field.key] !== '')
+              .filter(
+                (field) =>
+                  details[field.key] != null && details[field.key] !== "",
+              )
               .map((field) => (
                 <div
                   key={field.key}
-                  className={field.type === 'textarea' ? 'space-y-1 md:col-span-2' : 'space-y-1'}
+                  className={
+                    field.type === "textarea"
+                      ? "space-y-1 md:col-span-2"
+                      : "space-y-1"
+                  }
                 >
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     {t(field.labelKey, { defaultValue: field.defaultLabel })}
@@ -193,8 +219,8 @@ export function ProfileDetailsPanel({ session, canEdit }) {
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            {t('profileDetails.empty', {
-              defaultValue: 'No clinical details recorded for this profile.',
+            {t("visitDetails.empty", {
+              defaultValue: "No visit details recorded for this profile.",
             })}
           </p>
         )}

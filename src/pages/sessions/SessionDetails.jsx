@@ -1,34 +1,49 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams, Navigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { EmptyState } from '@/components/common/EmptyState';
-import { useSession, useUpdateSession, useUpdateSessionPrograms, useUpdateSessionNotes, useUpdateSessionStatus, useDeleteSession } from '@/hooks/useSessions';
-import { useSessionPayments, useDeletePayment } from '@/hooks/usePayments';
-import { usePermissions } from '@/hooks/usePermissions';
-import { PERMISSIONS, SESSION_STATUS, USER_ROLES } from '@/lib/constants';
-import { StatBox } from '@/components/common/StatBox';
-import { formatDate, formatDateTime } from '@/lib/utils';
-import { useAuthStore } from '@/store/authStore';
-import { SessionForm } from './SessionForm';
-import { ProfileDetailsPanel } from './ProfileDetailsPanel';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { PageHeader } from '@/components/common/PageHeader';
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { EmptyState } from "@/components/common/EmptyState";
+import {
+  useSession,
+  useUpdateSession,
+  useUpdateSessionPrograms,
+  useUpdateSessionNotes,
+  useUpdateSessionStatus,
+  useDeleteSession,
+} from "@/hooks/useSessions";
+import { useSessionPayments, useDeletePayment } from "@/hooks/usePayments";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PERMISSIONS, SESSION_STATUS, USER_ROLES } from "@/lib/constants";
+import { StatBox } from "@/components/common/StatBox";
+import { formatDate, formatDateTime } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
+import { SessionForm } from "./SessionForm";
+import { ProfileDetailsPanel } from "./ProfileDetailsPanel";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { PageHeader } from "@/components/common/PageHeader";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
-import { ChevronDown, Stethoscope, ClipboardCheck, Plus, Minus } from 'lucide-react';
-import { getAllowedStatusTransitions, buildStatusUpdatePayload } from '@/lib/sessionRules';
-import { invoicesApi } from '@/api/endpoints/invoices';
-import { downloadInvoicePdf } from '@/lib/invoices/pdf';
+} from "@/components/ui/dropdown-menu";
+import {
+  ChevronDown,
+  Stethoscope,
+  ClipboardCheck,
+  Plus,
+  Minus,
+} from "lucide-react";
+import {
+  getAllowedStatusTransitions,
+  buildStatusUpdatePayload,
+} from "@/lib/sessionRules";
+import { invoicesApi } from "@/api/endpoints/invoices";
+import { downloadInvoicePdf } from "@/lib/invoices/pdf";
 
 export default function SessionDetailsPage() {
   const { id } = useParams();
@@ -48,17 +63,18 @@ export default function SessionDetailsPage() {
   });
 
   const canView = canAny([
-    PERMISSIONS['sessions:viewAll'],
-    PERMISSIONS['sessions:viewOwn'],
+    PERMISSIONS["sessions:viewAll"],
+    PERMISSIONS["sessions:viewOwn"],
   ]);
 
-  const canEditSessionCore = can(PERMISSIONS['sessions:update']);
+  const canEditSessionCore = can(PERMISSIONS["sessions:update"]);
 
   const canEditProgramsAndNotes =
-    can(PERMISSIONS['sessions:updateProgram']) && (isOwnSession(session) || isAdmin);
+    can(PERMISSIONS["sessions:updateProgram"]) &&
+    (isOwnSession(session) || isAdmin);
 
-  const canUpdateAnyStatus = can(PERMISSIONS['sessions:updateStatus']);
-  const canUpdateOwnStatus = can(PERMISSIONS['sessions:updateStatusOwn']);
+  const canUpdateAnyStatus = can(PERMISSIONS["sessions:updateStatus"]);
+  const canUpdateOwnStatus = can(PERMISSIONS["sessions:updateStatusOwn"]);
 
   const canUpdateStatusFor = (sess) => {
     if (canUpdateAnyStatus) return true;
@@ -69,15 +85,15 @@ export default function SessionDetailsPage() {
   const canUpdateStatus = canUpdateStatusFor(session);
 
   const canViewPaymentsSection = canAny([
-    PERMISSIONS['payments:viewAll'],
-    PERMISSIONS['payments:viewReports'],
+    PERMISSIONS["payments:viewAll"],
+    PERMISSIONS["payments:viewReports"],
   ]);
 
   const canViewCostCard = hasAnyRole([
     USER_ROLES.MANAGER,
     USER_ROLES.SECRETARY,
   ]);
-  
+
   const isDoctorOnly = useMemo(() => {
     const roles = user?.roles?.map((r) => r.name?.toLowerCase()) || [];
     return roles.length > 0 && roles.every((r) => r === USER_ROLES.DOCTOR);
@@ -111,13 +127,17 @@ export default function SessionDetailsPage() {
 
   const patient = useMemo(() => {
     const rawPatient = session?.patient || {};
-    if (rawPatient.primaryBranchId || !Array.isArray(rawPatient.branchRelationships)) {
+    if (
+      rawPatient.primaryBranchId ||
+      !Array.isArray(rawPatient.branchRelationships)
+    ) {
       return rawPatient;
     }
 
     const primaryRelationship =
-      rawPatient.branchRelationships.find((relationship) => relationship.isPrimary) ||
-      rawPatient.branchRelationships[0];
+      rawPatient.branchRelationships.find(
+        (relationship) => relationship.isPrimary,
+      ) || rawPatient.branchRelationships[0];
 
     return {
       ...rawPatient,
@@ -132,15 +152,15 @@ export default function SessionDetailsPage() {
     Number(session.branchId) !== Number(patient.primaryBranchId);
 
   const formatTimeForDisplay = (time) => {
-    if (!time || !session?.sessionDate) return time || '--';
-    return formatDateTime(`${session.sessionDate}T${time}`, 'p');
+    if (!time || !session?.sessionDate) return time || "--";
+    return formatDateTime(`${session.sessionDate}T${time}`, "p");
   };
 
   const currentPrograms = useMemo(() => {
     if (!session || session.programs == null) return [];
     if (Array.isArray(session.programs)) {
       return session.programs
-        .map((item) => (item == null ? '' : String(item)))
+        .map((item) => (item == null ? "" : String(item)))
         .filter((item) => item.trim().length > 0);
     }
     const single = String(session.programs);
@@ -151,7 +171,7 @@ export default function SessionDetailsPage() {
     if (!session || session.notes == null) return [];
     if (Array.isArray(session.notes)) {
       return session.notes
-        .map((item) => (item == null ? '' : String(item)))
+        .map((item) => (item == null ? "" : String(item)))
         .filter((item) => item.trim().length > 0);
     }
     const single = String(session.notes);
@@ -159,13 +179,13 @@ export default function SessionDetailsPage() {
   })();
 
   const normalizeIsoDate = (value) => {
-    if (!value) return '';
+    if (!value) return "";
     const asString = String(value);
-    return asString.includes('T') ? asString.split('T')[0] : asString;
+    return asString.includes("T") ? asString.split("T")[0] : asString;
   };
 
   const normalizeTimeHHmm = (value) => {
-    if (!value) return '';
+    if (!value) return "";
     const asString = String(value);
     // API can return HH:mm:ss but the TimePicker expects HH:mm
     return asString.length >= 5 ? asString.slice(0, 5) : asString;
@@ -177,15 +197,21 @@ export default function SessionDetailsPage() {
       patientId: session?.patientId ?? patient?.id ?? undefined,
       sessionDate: normalizeIsoDate(session?.sessionDate),
       sessionTime: normalizeTimeHHmm(session?.sessionTime),
-      cost: typeof session?.cost === 'string' ? Number(session.cost) : (session?.cost ?? undefined),
+      cost:
+        typeof session?.cost === "string"
+          ? Number(session.cost)
+          : (session?.cost ?? undefined),
       categoryId: session?.categoryId ?? session?.category?.id ?? undefined,
-      categoryNotes: session?.categoryNotes ?? '',
+      categoryNotes: session?.categoryNotes ?? "",
       profile: session?.profile ?? undefined,
-      visitType: session?.visitType ?? '',
+      visitType: session?.visitType ?? "",
+      profileDetails: session?.profileDetail?.details ?? {},
       isAssessment: session?.isAssessment ?? false,
-      isNewAssessment: session?.isAssessment ? session?.isReassessment !== true : false,
+      isNewAssessment: session?.isAssessment
+        ? session?.isReassessment !== true
+        : false,
     }),
-    [session, patient?.id]
+    [session, patient?.id],
   );
 
   const renderPatientCard = () => (
@@ -194,30 +220,45 @@ export default function SessionDetailsPage() {
       onClick={() => patient.id && navigate(`/patients/${patient.id}`)}
     >
       <CardHeader>
-        <CardTitle>{t('patients.patientDetails')}</CardTitle>
+        <CardTitle>{t("patients.patientDetails")}</CardTitle>
       </CardHeader>
-        <CardContent className="space-y-3">
+      <CardContent className="space-y-3">
         <div className="grid gap-3">
-          <StatBox label={t('patients.fullName')} value={patient.fullName || '--'} />
-          <StatBox label={t('patients.patientId')} value={patient.patientCode || '--'} />
           <StatBox
-            label={t('patients.primaryBranch', { defaultValue: 'Primary branch' })}
-            value={patient.primaryBranch?.name || '--'}
+            label={t("patients.fullName")}
+            value={patient.fullName || "--"}
+          />
+          <StatBox
+            label={t("patients.patientId")}
+            value={patient.patientCode || "--"}
+          />
+          <StatBox
+            label={t("patients.primaryBranch", {
+              defaultValue: "Primary branch",
+            })}
+            value={patient.primaryBranch?.name || "--"}
           />
           {patient.medicalHistory && patient.medicalHistory.length > 0 && (
             <StatBox
               blackAndWhiteText={true}
-              label={t('patients.medicalHistory', { defaultValue: 'Patient Diagnosis' })}
+              label={t("patients.medicalHistory", {
+                defaultValue: "Patient Diagnosis",
+              })}
               value={
                 <div className="flex items-start gap-2">
-                  <div className="flex-1" style={{ fontSize: `${diagnosisFontSize}px` }}>
+                  <div
+                    className="flex-1"
+                    style={{ fontSize: `${diagnosisFontSize}px` }}
+                  >
                     {Array.isArray(patient.medicalHistory) ? (
                       <ul className="list-disc list-inside space-y-1">
                         {patient.medicalHistory.map((item, idx) => (
                           <li key={idx}>
-                            {typeof item === 'string'
+                            {typeof item === "string"
                               ? item
-                              : item.condition || item.diagnosis || JSON.stringify(item)}
+                              : item.condition ||
+                                item.diagnosis ||
+                                JSON.stringify(item)}
                           </li>
                         ))}
                       </ul>
@@ -266,26 +307,32 @@ export default function SessionDetailsPage() {
     <Card className="lg:col-span-2">
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>
-          {t('sessions.sessionInfo')}
+          {t("sessions.sessionInfo")}
           {session.isReassessment ? (
             <span
               className="inline-flex items-center justify-center rounded-full mx-4 border border-teal-300 bg-teal-100 p-1 text-teal-800 shadow-sm dark:border-teal-700 dark:bg-teal-900/70 dark:text-teal-50"
-              title={t('sessions.isReassessment', { defaultValue: 'Reassessment' })}
+              title={t("sessions.isReassessment", {
+                defaultValue: "Reassessment",
+              })}
             >
               <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
             </span>
           ) : session.isAssessment ? (
             <span
               className="inline-flex items-center justify-center rounded-full mx-4 border border-purple-300 bg-purple-100 p-1 text-purple-800 shadow-sm dark:border-purple-700 dark:bg-purple-900/70 dark:text-purple-50"
-              title={t('sessions.isAssessment', { defaultValue: 'Assessment' })}
+              title={t("sessions.isAssessment", { defaultValue: "Assessment" })}
             >
               <Stethoscope className="h-5 w-5" aria-hidden="true" />
             </span>
           ) : null}
         </CardTitle>
         {canEditSessionCore && (
-          <Button variant="outline" size="sm" onClick={() => setIsEditingSession((prev) => !prev)}>
-            {isEditingSession ? t('common.close') : t('common.edit')}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditingSession((prev) => !prev)}
+          >
+            {isEditingSession ? t("common.close") : t("common.edit")}
           </Button>
         )}
       </CardHeader>
@@ -304,48 +351,67 @@ export default function SessionDetailsPage() {
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {!isDoctorOnly && (
               <>
-                <StatBox label={t('sessions.doctor')} value={doctor.fullName || '--'} />
-                <StatBox label={t('sessions.date')} value={session.sessionDate || '--'} />
-                <StatBox label={t('sessions.scheduledTime', { defaultValue: 'Scheduled time' })}>
+                <StatBox
+                  label={t("sessions.doctor")}
+                  value={doctor.fullName || "--"}
+                />
+                <StatBox
+                  label={t("sessions.date")}
+                  value={session.sessionDate || "--"}
+                />
+                <StatBox
+                  label={t("sessions.scheduledTime", {
+                    defaultValue: "Scheduled time",
+                  })}
+                >
                   <span dir="ltr" className="inline-block font-mono">
-                    {formatTimeForDisplay(session.sessionTime) || '--'}
+                    {formatTimeForDisplay(session.sessionTime) || "--"}
                   </span>
                 </StatBox>
                 <StatBox
-                  label={t('users.branch', { defaultValue: 'Service branch' })}
-                  value={session.branch?.name || '--'}
+                  label={t("users.branch", { defaultValue: "Service branch" })}
+                  value={session.branch?.name || "--"}
                 />
               </>
             )}
 
-            <StatBox label={t('sessions.arrivalTime')}>
+            <StatBox label={t("sessions.arrivalTime")}>
               <span dir="ltr" className="inline-block font-mono">
-                {formatTimeForDisplay(session.arrivalTime) || '--'}
+                {formatTimeForDisplay(session.arrivalTime) || "--"}
               </span>
             </StatBox>
-            <StatBox label={t('sessions.startTime', { defaultValue: 'Start time' })}>
+            <StatBox
+              label={t("sessions.startTime", { defaultValue: "Start time" })}
+            >
               <span dir="ltr" className="inline-block font-mono">
-                {formatTimeForDisplay(session.startTime) || '--'}
+                {formatTimeForDisplay(session.startTime) || "--"}
               </span>
             </StatBox>
-            <StatBox label={t('sessions.endTime', { defaultValue: 'End time' })}>
+            <StatBox
+              label={t("sessions.endTime", { defaultValue: "End time" })}
+            >
               <span dir="ltr" className="inline-block font-mono">
-                {formatTimeForDisplay(session.endTime) || '--'}
+                {formatTimeForDisplay(session.endTime) || "--"}
               </span>
             </StatBox>
 
             {!isDoctorOnly && canViewCostCard && (
               <>
-                <StatBox label={t('sessions.cost')} value={session.cost != null ? session.cost : '--'} />
                 <StatBox
-                  label={t('sessions.category', { defaultValue: 'Category' })}
-                  value={session.category?.name || '--'}
+                  label={t("sessions.cost")}
+                  value={session.cost != null ? session.cost : "--"}
+                />
+                <StatBox
+                  label={t("sessions.category", { defaultValue: "Category" })}
+                  value={session.category?.name || "--"}
                 >
                   {session.category?.name ? (
                     <div className="flex flex-col">
                       <span>{session.category.name}</span>
                       {session.categoryNotes && (
-                        <span className="text-xs text-muted-foreground">{session.categoryNotes}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {session.categoryNotes}
+                        </span>
                       )}
                     </div>
                   ) : (
@@ -356,8 +422,8 @@ export default function SessionDetailsPage() {
             )}
 
             <StatBox
-              label={t('sessions.status')}
-              value={session.status ? t(`status.${session.status}`) : '--'}
+              label={t("sessions.status")}
+              value={session.status ? t(`status.${session.status}`) : "--"}
             />
           </div>
         )}
@@ -368,36 +434,48 @@ export default function SessionDetailsPage() {
   const renderProgramNotesCard = () => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>{t('sessions.programAndNotes')}</CardTitle>
+        <CardTitle>{t("sessions.programAndNotes")}</CardTitle>
         {canEditProgramsAndNotes && (
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => (isEditingPrograms ? setIsEditingPrograms(false) : handleStartEditPrograms())}
+              onClick={() =>
+                isEditingPrograms
+                  ? setIsEditingPrograms(false)
+                  : handleStartEditPrograms()
+              }
             >
-              {isEditingPrograms ? t('common.close') : t('common.edit')} {t('sessions.program')}
+              {isEditingPrograms ? t("common.close") : t("common.edit")}{" "}
+              {t("sessions.program")}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => (isEditingNotes ? setIsEditingNotes(false) : handleStartEditNotes())}
+              onClick={() =>
+                isEditingNotes
+                  ? setIsEditingNotes(false)
+                  : handleStartEditNotes()
+              }
             >
-              {isEditingNotes ? t('common.close') : t('common.edit')} {t('sessions.notes')}
+              {isEditingNotes ? t("common.close") : t("common.edit")}{" "}
+              {t("sessions.notes")}
             </Button>
           </div>
         )}
       </CardHeader>
       <CardContent className="space-y-6 text-sm">
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">{t('sessions.program')}</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {t("sessions.program")}
+          </h2>
           {isEditingPrograms && canEditProgramsAndNotes ? (
             <div className="space-y-4">
               {programItems.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
-                      {t('sessions.program')} #{index + 1}
+                      {t("sessions.program")} #{index + 1}
                     </span>
                     {programItems.length > 1 && (
                       <Button
@@ -407,14 +485,16 @@ export default function SessionDetailsPage() {
                         onClick={() => handleRemoveProgramItem(index)}
                         disabled={updatePrograms.isPending}
                       >
-                        {t('common.delete')}
+                        {t("common.delete")}
                       </Button>
                     )}
                   </div>
                   <Textarea
                     rows={3}
                     value={item}
-                    onChange={(e) => handleChangeProgramItem(index, e.target.value)}
+                    onChange={(e) =>
+                      handleChangeProgramItem(index, e.target.value)
+                    }
                     disabled={updatePrograms.isPending}
                   />
                 </div>
@@ -428,7 +508,7 @@ export default function SessionDetailsPage() {
                   onClick={handleAddProgramItem}
                   disabled={updatePrograms.isPending}
                 >
-                  + {t('common.create')}
+                  + {t("common.create")}
                 </Button>
                 <div className="flex gap-2">
                   <Button
@@ -437,14 +517,16 @@ export default function SessionDetailsPage() {
                     onClick={() => setIsEditingPrograms(false)}
                     disabled={updatePrograms.isPending}
                   >
-                    {t('common.cancel')}
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleSavePrograms}
                     disabled={updatePrograms.isPending}
                   >
-                    {updatePrograms.isPending ? t('common.loading') : t('common.save')}
+                    {updatePrograms.isPending
+                      ? t("common.loading")
+                      : t("common.save")}
                   </Button>
                 </div>
               </div>
@@ -452,7 +534,10 @@ export default function SessionDetailsPage() {
           ) : currentPrograms.length ? (
             <ul className="space-y-2 text-sm list-disc pl-5">
               <div className="flex items-start gap-2">
-                <ul className="flex-1 list-disc pl-5" style={{ fontSize: `${programFontSize}px` }}>
+                <ul
+                  className="flex-1 list-disc pl-5"
+                  style={{ fontSize: `${programFontSize}px` }}
+                >
                   {currentPrograms.map((item, index) => (
                     <li key={index} className="whitespace-pre-line">
                       {item}
@@ -490,19 +575,23 @@ export default function SessionDetailsPage() {
               </div>
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">{t('messages.noDataFound')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("messages.noDataFound")}
+            </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">{t('sessions.notes')}</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {t("sessions.notes")}
+          </h2>
           {isEditingNotes && canEditProgramsAndNotes ? (
             <div className="space-y-4">
               {notesItems.map((item, index) => (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
-                      {t('sessions.notes')} #{index + 1}
+                      {t("sessions.notes")} #{index + 1}
                     </span>
                     {notesItems.length > 1 && (
                       <Button
@@ -512,14 +601,16 @@ export default function SessionDetailsPage() {
                         onClick={() => handleRemoveNoteItem(index)}
                         disabled={updateNotes.isPending}
                       >
-                        {t('common.delete')}
+                        {t("common.delete")}
                       </Button>
                     )}
                   </div>
                   <Textarea
                     rows={3}
                     value={item}
-                    onChange={(e) => handleChangeNoteItem(index, e.target.value)}
+                    onChange={(e) =>
+                      handleChangeNoteItem(index, e.target.value)
+                    }
                     disabled={updateNotes.isPending}
                   />
                 </div>
@@ -533,7 +624,7 @@ export default function SessionDetailsPage() {
                   onClick={handleAddNoteItem}
                   disabled={updateNotes.isPending}
                 >
-                  + {t('common.create')}
+                  + {t("common.create")}
                 </Button>
                 <div className="flex gap-2">
                   <Button
@@ -542,10 +633,16 @@ export default function SessionDetailsPage() {
                     onClick={() => setIsEditingNotes(false)}
                     disabled={updateNotes.isPending}
                   >
-                    {t('common.cancel')}
+                    {t("common.cancel")}
                   </Button>
-                  <Button type="button" onClick={handleSaveNotes} disabled={updateNotes.isPending}>
-                    {updateNotes.isPending ? t('common.loading') : t('common.save')}
+                  <Button
+                    type="button"
+                    onClick={handleSaveNotes}
+                    disabled={updateNotes.isPending}
+                  >
+                    {updateNotes.isPending
+                      ? t("common.loading")
+                      : t("common.save")}
                   </Button>
                 </div>
               </div>
@@ -553,7 +650,10 @@ export default function SessionDetailsPage() {
           ) : currentNotes.length ? (
             <ul className="space-y-2 text-sm list-disc pl-5">
               <div className="flex items-start gap-2">
-                <ul className="flex-1 list-disc pl-5" style={{ fontSize: `${notesFontSize}px` }}>
+                <ul
+                  className="flex-1 list-disc pl-5"
+                  style={{ fontSize: `${notesFontSize}px` }}
+                >
                   {currentNotes.map((item, index) => (
                     <li key={index} className="whitespace-pre-line">
                       {item}
@@ -591,7 +691,9 @@ export default function SessionDetailsPage() {
               </div>
             </ul>
           ) : (
-            <p className="text-sm text-muted-foreground">{t('messages.noDataFound')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("messages.noDataFound")}
+            </p>
           )}
         </div>
       </CardContent>
@@ -599,7 +701,8 @@ export default function SessionDetailsPage() {
   );
 
   const handleUpdateSession = (values) => {
-    const { patientId, ...payload } = values || {};
+    const payload = { ...(values || {}) };
+    delete payload.patientId;
     updateSession.mutate(
       {
         sessionId: id,
@@ -609,13 +712,12 @@ export default function SessionDetailsPage() {
         onSuccess: () => {
           setIsEditingSession(false);
         },
-      }
+      },
     );
   };
 
-
   const handleStartEditPrograms = () => {
-    setProgramItems(currentPrograms.length ? currentPrograms : ['']);
+    setProgramItems(currentPrograms.length ? currentPrograms : [""]);
     setIsEditingPrograms(true);
   };
 
@@ -628,7 +730,7 @@ export default function SessionDetailsPage() {
   };
 
   const handleAddProgramItem = () => {
-    setProgramItems((prev) => [...prev, '']);
+    setProgramItems((prev) => [...prev, ""]);
   };
 
   const handleRemoveProgramItem = (index) => {
@@ -637,7 +739,7 @@ export default function SessionDetailsPage() {
 
   const handleSavePrograms = () => {
     const cleaned = programItems
-      .map((item) => (item == null ? '' : item.trim()))
+      .map((item) => (item == null ? "" : item.trim()))
       .filter((item) => item.length > 0);
 
     updatePrograms.mutate(
@@ -649,12 +751,12 @@ export default function SessionDetailsPage() {
         onSuccess: () => {
           setIsEditingPrograms(false);
         },
-      }
+      },
     );
   };
 
   const handleStartEditNotes = () => {
-    setNotesItems(currentNotes.length ? currentNotes : ['']);
+    setNotesItems(currentNotes.length ? currentNotes : [""]);
     setIsEditingNotes(true);
   };
 
@@ -667,7 +769,7 @@ export default function SessionDetailsPage() {
   };
 
   const handleAddNoteItem = () => {
-    setNotesItems((prev) => [...prev, '']);
+    setNotesItems((prev) => [...prev, ""]);
   };
 
   const handleRemoveNoteItem = (index) => {
@@ -676,7 +778,7 @@ export default function SessionDetailsPage() {
 
   const handleSaveNotes = () => {
     const cleaned = notesItems
-      .map((item) => (item == null ? '' : item.trim()))
+      .map((item) => (item == null ? "" : item.trim()))
       .filter((item) => item.length > 0);
 
     updateNotes.mutate(
@@ -688,7 +790,7 @@ export default function SessionDetailsPage() {
         onSuccess: () => {
           setIsEditingNotes(false);
         },
-      }
+      },
     );
   };
 
@@ -707,10 +809,10 @@ export default function SessionDetailsPage() {
   if (isError || !session) {
     return (
       <EmptyState
-        title={t('messages.errorOccurred')}
-        description={t('common.error')}
+        title={t("messages.errorOccurred")}
+        description={t("common.error")}
         action={() => navigate(-1)}
-        actionLabel={t('common.back')}
+        actionLabel={t("common.back")}
       />
     );
   }
@@ -718,8 +820,8 @@ export default function SessionDetailsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('sessions.sessionDetails')}
-        description={`${t('sessions.date')}: ${session.sessionDate || '--'}`}
+        title={t("sessions.sessionDetails")}
+        description={`${t("sessions.date")}: ${session.sessionDate || "--"}`}
         onBack={() => navigate(-1)}
         actions={
           <>
@@ -730,7 +832,7 @@ export default function SessionDetailsPage() {
                 onClick={() => setDeleteConfirmOpen(true)}
                 disabled={deleteSession.isPending}
               >
-                {t('common.delete')}
+                {t("common.delete")}
               </Button>
             )}
             {canUpdateStatus &&
@@ -739,8 +841,14 @@ export default function SessionDetailsPage() {
               }).length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="default" size="sm" disabled={updateStatus.isPending}>
-                      {t('sessions.changeStatus', { defaultValue: 'Change status' })}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={updateStatus.isPending}
+                    >
+                      {t("sessions.changeStatus", {
+                        defaultValue: "Change status",
+                      })}
                       <ChevronDown className="ms-1 h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -755,26 +863,36 @@ export default function SessionDetailsPage() {
                             setPendingStatus(statusKey);
                             setCancelConfirmOpen(true);
                           } else {
-                            const payload = buildStatusUpdatePayload(session, statusKey);
+                            const payload = buildStatusUpdatePayload(
+                              session,
+                              statusKey,
+                            );
                             updateStatus.mutate(
                               { sessionId: session.id, data: payload },
                               {
                                 onSuccess: (updatedSession) => {
                                   if (statusKey === SESSION_STATUS.COMPLETED) {
                                     if (!updatedSession.paidInFull) {
-                                      const totalPaid = updatedSession.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-                                      const remaining = updatedSession.cost - totalPaid;
-                                      navigate(`/payments?sessionId=${session.id}&amount=${remaining}`);
+                                      const totalPaid =
+                                        updatedSession.payments?.reduce(
+                                          (sum, p) => sum + Number(p.amount),
+                                          0,
+                                        ) || 0;
+                                      const remaining =
+                                        updatedSession.cost - totalPaid;
+                                      navigate(
+                                        `/payments?sessionId=${session.id}&amount=${remaining}`,
+                                      );
                                     }
                                   }
                                 },
-                              }
+                              },
                             );
                           }
                         }}
                       >
                         {statusKey === SESSION_STATUS.IN_PROGRESS
-                          ? t('status.start')
+                          ? t("status.start")
                           : t(`status.${statusKey}`)}
                       </DropdownMenuItem>
                     ))}
@@ -787,11 +905,11 @@ export default function SessionDetailsPage() {
 
       {isCrossBranchSession && (
         <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
-          {t('sessions.crossBranchContext', {
+          {t("sessions.crossBranchContext", {
             defaultValue:
-              'This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.',
-            serviceBranch: session.branch?.name || '--',
-            primaryBranch: patient.primaryBranch?.name || '--',
+              "This session was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",
+            serviceBranch: session.branch?.name || "--",
+            primaryBranch: patient.primaryBranch?.name || "--",
           })}
         </div>
       )}
@@ -800,7 +918,10 @@ export default function SessionDetailsPage() {
         <>
           {renderPatientCard()}
           {renderProgramNotesCard()}
-          <ProfileDetailsPanel session={session} canEdit={canEditProgramsAndNotes} />
+          <ProfileDetailsPanel
+            session={session}
+            canEdit={canEditProgramsAndNotes}
+          />
           {renderSessionInfoCard()}
         </>
       ) : (
@@ -809,7 +930,10 @@ export default function SessionDetailsPage() {
             {renderPatientCard()}
             {renderSessionInfoCard()}
           </div>
-          <ProfileDetailsPanel session={session} canEdit={canEditProgramsAndNotes} />
+          <ProfileDetailsPanel
+            session={session}
+            canEdit={canEditProgramsAndNotes}
+          />
           {renderProgramNotesCard()}
         </>
       )}
@@ -825,12 +949,12 @@ export default function SessionDetailsPage() {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title={t('common.confirmDelete')}
-        description={t('sessions.deleteDescription')}
+        title={t("common.confirmDelete")}
+        description={t("sessions.deleteDescription")}
         onConfirm={() => {
           setIsDeletingSession(true);
           deleteSession.mutate(id, {
-            onSuccess: () => navigate('/sessions'),
+            onSuccess: () => navigate("/sessions"),
             onError: () => setIsDeletingSession(false),
           });
         }}
@@ -839,8 +963,8 @@ export default function SessionDetailsPage() {
       <ConfirmDialog
         open={cancelConfirmOpen}
         onOpenChange={setCancelConfirmOpen}
-        title={t('common.confirmCancel')}
-        description={t('sessions.cancelDescription')}
+        title={t("common.confirmCancel")}
+        description={t("sessions.cancelDescription")}
         onConfirm={() => {
           const payload = buildStatusUpdatePayload(session, pendingStatus);
           updateStatus.mutate({ sessionId: id, data: payload });
@@ -857,13 +981,11 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
   const navigate = useNavigate();
   const { can } = usePermissions();
 
-  const {
-    data: paymentSummary,
-    isLoading: isPaymentsLoading,
-  } = useSessionPayments(sessionId);
+  const { data: paymentSummary, isLoading: isPaymentsLoading } =
+    useSessionPayments(sessionId);
 
-  const canCreatePayment = can(PERMISSIONS['payments:create']);
-  const canViewInvoices = can(PERMISSIONS['invoices:view']);
+  const canCreatePayment = can(PERMISSIONS["payments:create"]);
+  const canViewInvoices = can(PERMISSIONS["invoices:view"]);
   const canUseInvoiceActions = canViewInvoices && !isDoctorOnly;
   const deletePayment = useDeletePayment();
   const [paymentPendingDelete, setPaymentPendingDelete] = useState(null);
@@ -878,15 +1000,15 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
     } catch (error) {
       if (error?.response?.status === 404) {
         toast.error(
-          t('reports.invoiceNotFound', {
-            defaultValue: 'No invoice found for this payment.',
+          t("reports.invoiceNotFound", {
+            defaultValue: "No invoice found for this payment.",
           }),
         );
       } else {
         toast.error(
           error?.response?.data?.message ||
-            t('reports.failedInvoiceDownload', {
-              defaultValue: 'Failed to load invoice.',
+            t("reports.failedInvoiceDownload", {
+              defaultValue: "Failed to load invoice.",
             }),
         );
       }
@@ -895,73 +1017,91 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
     }
   };
 
-  const isRtl = i18n.language === 'ar';
+  const isRtl = i18n.language === "ar";
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <CardTitle>{t('payments.paymentDetails')}</CardTitle>
+        <CardTitle>{t("payments.paymentDetails")}</CardTitle>
         {canCreatePayment && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate(`/payments?sessionId=${sessionId}`)}
           >
-            {t('payments.createPayment')}
+            {t("payments.createPayment")}
           </Button>
         )}
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         {isPaymentsLoading && (
-          <p className="text-muted-foreground">{t('messages.loadingData')}</p>
+          <p className="text-muted-foreground">{t("messages.loadingData")}</p>
         )}
 
         {paymentSummary && (
           <div className="grid gap-3 md:grid-cols-4">
             <StatBox
-              label={t('sessions.cost')}
+              label={t("sessions.cost")}
               value={
                 paymentSummary.sessionCost != null
                   ? paymentSummary.sessionCost
-                  : '--'
+                  : "--"
               }
             />
             <StatBox
-              label={t('payments.totalPaid')}
+              label={t("payments.totalPaid")}
               value={
-                paymentSummary.totalPaid != null ? paymentSummary.totalPaid : '--'
+                paymentSummary.totalPaid != null
+                  ? paymentSummary.totalPaid
+                  : "--"
               }
             />
             <StatBox
-              label={t('payments.remaining')}
+              label={t("payments.remaining")}
               value={
-                paymentSummary.remaining != null ? paymentSummary.remaining : '--'
+                paymentSummary.remaining != null
+                  ? paymentSummary.remaining
+                  : "--"
               }
             />
             <StatBox
-              label={t('payments.paidInFull')}
-              value={paymentSummary.paidInFull ? t('common.yes') : t('common.no')}
+              label={t("payments.paidInFull")}
+              value={
+                paymentSummary.paidInFull ? t("common.yes") : t("common.no")
+              }
             />
           </div>
         )}
 
-        {paymentSummary && Array.isArray(paymentSummary.payments) && (
-          paymentSummary.payments.length ? (
+        {paymentSummary &&
+          Array.isArray(paymentSummary.payments) &&
+          (paymentSummary.payments.length ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs md:text-sm" dir={isRtl ? 'rtl' : 'ltr'}>
+              <table
+                className="w-full text-xs md:text-sm"
+                dir={isRtl ? "rtl" : "ltr"}
+              >
                 <thead>
                   <tr
                     className={`border-b bg-muted/50 text-xs uppercase text-muted-foreground ${
-                      isRtl ? 'text-right' : 'text-left'
+                      isRtl ? "text-right" : "text-left"
                     }`}
                   >
-                    <th className="px-3 py-2 font-medium">{t('payments.amount')}</th>
-                    <th className="px-3 py-2 font-medium">{t('payments.method')}</th>
-                    <th className="px-3 py-2 font-medium">{t('payments.paymentDate')}</th>
-                    <th className="px-3 py-2 font-medium">{t('sessions.notes')}</th>
+                    <th className="px-3 py-2 font-medium">
+                      {t("payments.amount")}
+                    </th>
+                    <th className="px-3 py-2 font-medium">
+                      {t("payments.method")}
+                    </th>
+                    <th className="px-3 py-2 font-medium">
+                      {t("payments.paymentDate")}
+                    </th>
+                    <th className="px-3 py-2 font-medium">
+                      {t("sessions.notes")}
+                    </th>
                     {(isAdmin || canUseInvoiceActions) && (
                       <th className="px-3 py-2 font-medium text-right">
-                        {t('common.actions')}
+                        {t("common.actions")}
                       </th>
                     )}
                   </tr>
@@ -975,9 +1115,9 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
                       <td className="px-3 py-2">{p.amount}</td>
                       <td className="px-3 py-2">{p.paymentMethod}</td>
                       <td className="px-3 py-2">
-                        {p.paymentDate ? formatDate(p.paymentDate, 'PP') : '--'}
+                        {p.paymentDate ? formatDate(p.paymentDate, "PP") : "--"}
                       </td>
-                      <td className="px-3 py-2">{p.notes || '--'}</td>
+                      <td className="px-3 py-2">{p.notes || "--"}</td>
                       {(isAdmin || canUseInvoiceActions) && (
                         <td className="px-3 py-2 text-right">
                           <div className="flex justify-end gap-2">
@@ -989,8 +1129,10 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
                                 disabled={invoiceLoadingPaymentId === p.id}
                               >
                                 {invoiceLoadingPaymentId === p.id
-                                  ? t('common.loading')
-                                  : t('nav.invoices', { defaultValue: 'Invoice' })}
+                                  ? t("common.loading")
+                                  : t("nav.invoices", {
+                                      defaultValue: "Invoice",
+                                    })}
                               </Button>
                             )}
                             {isAdmin && (
@@ -1000,7 +1142,7 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
                                 onClick={() => setPaymentPendingDelete(p)}
                                 disabled={deletePayment.isPending}
                               >
-                                {t('common.delete')}
+                                {t("common.delete")}
                               </Button>
                             )}
                           </div>
@@ -1012,17 +1154,17 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
               </table>
             </div>
           ) : (
-            <p className="text-muted-foreground">{t('payments.noPayments')}</p>
-          )
-        )}
+            <p className="text-muted-foreground">{t("payments.noPayments")}</p>
+          ))}
       </CardContent>
       <ConfirmDialog
-        title={t('payments.deleteTitle', { defaultValue: 'Delete payment' })}
-        description={t('payments.deleteDescription', {
-          defaultValue: 'Are you sure you want to delete this payment? This action cannot be undone.',
+        title={t("payments.deleteTitle", { defaultValue: "Delete payment" })}
+        description={t("payments.deleteDescription", {
+          defaultValue:
+            "Are you sure you want to delete this payment? This action cannot be undone.",
         })}
-        confirmText={t('common.delete')}
-        cancelText={t('common.cancel')}
+        confirmText={t("common.delete")}
+        cancelText={t("common.cancel")}
         open={!!paymentPendingDelete}
         onOpenChange={(open) => {
           if (!open) setPaymentPendingDelete(null);
@@ -1037,7 +1179,10 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
             },
           );
         }}
-        confirmProps={{ variant: 'destructive', disabled: deletePayment.isPending }}
+        confirmProps={{
+          variant: "destructive",
+          disabled: deletePayment.isPending,
+        }}
       />
     </Card>
   );

@@ -28,10 +28,13 @@ export function PatientForm({
   onCancel,
   isSubmitting,
   isEditing,
+  showPhysiotherapySettings = true,
   showDefaultSessionCost = true,
 }) {
   const { t } = useTranslation();
-  const categoriesQuery = useSessionCategories();
+  const categoriesQuery = useSessionCategories({
+    enabled: showPhysiotherapySettings,
+  });
   const {
     register,
     handleSubmit,
@@ -65,6 +68,20 @@ export function PatientForm({
     reset({ ...defaultValues, ...initialValues });
   }, [initialValues, reset]);
 
+  const handleFormSubmit = (values) => {
+    const payload = { ...values };
+
+    if (!showPhysiotherapySettings) {
+      delete payload.categoryId;
+      delete payload.defaultSessionCost;
+      delete payload.reassessmentCycleLength;
+    } else if (!showDefaultSessionCost) {
+      delete payload.defaultSessionCost;
+    }
+
+    onSubmit(payload);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -72,7 +89,7 @@ export function PatientForm({
           {isEditing ? t('patients.editPatient') : t('patients.createPatient')}
         </CardTitle>
       </CardHeader>
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(handleFormSubmit)}>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="fullName">{t('patients.fullName')}</Label>
@@ -117,65 +134,76 @@ export function PatientForm({
             {errors.referral && <p className="text-sm text-destructive">{errors.referral.message}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">{t('patients.category', { defaultValue: 'Category' })}</Label>
-            <Controller
-              name="categoryId"
-              control={control}
-              render={({ field }) => (
-                <SearchableSelect
-                  options={categoryOptions}
-                  value={field.value ? String(field.value) : ''}
-                  onChange={(val) => field.onChange(val ? Number(val) : undefined)}
-                  placeholder={t('patients.categoryPlaceholder', {
-                    defaultValue: 'Select category',
-                  })}
-                  disabled={isSubmitting || categoriesQuery.isLoading}
-                />
-              )}
-            />
-            {errors.categoryId && (
-              <p className="text-sm text-destructive">{errors.categoryId.message}</p>
-            )}
-          </div>
+          {showPhysiotherapySettings && (
+            <div className="space-y-4 border-t pt-4 md:col-span-2">
+              <h3 className="text-sm font-semibold">
+                {t('patients.physiotherapyClinicalSettings', {
+                  defaultValue: 'Physiotherapy clinical settings',
+                })}
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryId">{t('patients.category', { defaultValue: 'Category' })}</Label>
+                  <Controller
+                    name="categoryId"
+                    control={control}
+                    render={({ field }) => (
+                      <SearchableSelect
+                        options={categoryOptions}
+                        value={field.value ? String(field.value) : ''}
+                        onChange={(val) => field.onChange(val ? Number(val) : undefined)}
+                        placeholder={t('patients.categoryPlaceholder', {
+                          defaultValue: 'Select category',
+                        })}
+                        disabled={isSubmitting || categoriesQuery.isLoading}
+                      />
+                    )}
+                  />
+                  {errors.categoryId && (
+                    <p className="text-sm text-destructive">{errors.categoryId.message}</p>
+                  )}
+                </div>
 
-          {showDefaultSessionCost && (
-            <div className="space-y-2">
-              <Label htmlFor="defaultSessionCost">
-                {t('patients.defaultSessionCost', { defaultValue: 'Default session cost' })}
-              </Label>
-              <Input
-                id="defaultSessionCost"
-                type="number"
-                step="1"
-                min="0"
-                {...register('defaultSessionCost', { valueAsNumber: true })}
-                disabled={isSubmitting}
-              />
-              {errors.defaultSessionCost && (
-                <p className="text-sm text-destructive">{errors.defaultSessionCost.message}</p>
-              )}
+                {showDefaultSessionCost && (
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultSessionCost">
+                      {t('patients.defaultSessionCost', { defaultValue: 'Default session cost' })}
+                    </Label>
+                    <Input
+                      id="defaultSessionCost"
+                      type="number"
+                      step="1"
+                      min="0"
+                      {...register('defaultSessionCost', { valueAsNumber: true })}
+                      disabled={isSubmitting}
+                    />
+                    {errors.defaultSessionCost && (
+                      <p className="text-sm text-destructive">{errors.defaultSessionCost.message}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="reassessmentCycleLength">
+                    {t('patients.reassessmentCycleLength', {
+                      defaultValue: 'Reassessment cycle length',
+                    })}
+                  </Label>
+                  <Input
+                    id="reassessmentCycleLength"
+                    type="number"
+                    step="1"
+                    min="0"
+                    {...register('reassessmentCycleLength', { valueAsNumber: true })}
+                    disabled={isSubmitting}
+                  />
+                  {errors.reassessmentCycleLength && (
+                    <p className="text-sm text-destructive">{errors.reassessmentCycleLength.message}</p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label htmlFor="reassessmentCycleLength">
-              {t('patients.reassessmentCycleLength', {
-                defaultValue: 'Reassessment cycle length',
-              })}
-            </Label>
-            <Input
-              id="reassessmentCycleLength"
-              type="number"
-              step="1"
-              min="0"
-              {...register('reassessmentCycleLength', { valueAsNumber: true })}
-              disabled={isSubmitting}
-            />
-            {errors.reassessmentCycleLength && (
-              <p className="text-sm text-destructive">{errors.reassessmentCycleLength.message}</p>
-            )}
-          </div>
         </CardContent>
         <CardFooter className="flex justify-end gap-2">
           {isEditing && (

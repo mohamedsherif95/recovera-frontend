@@ -192,6 +192,13 @@
     "createPatient": "إضافة مريض",
     "editPatient": "تعديل المريض",
     "patientDetails": "تفاصيل المريض",
+    "companyPatientRecord": "ملف المريض داخل الشركة",
+    "branchClinicalRecords": "الملفات الطبية في هذا الفرع",
+    "profileRecord": "ملف التخصص",
+    "profileSummary": "ملخص التخصص",
+    "profileRecordEmpty": "لا يوجد ملخص طبي مسجل لهذا التخصص حتى الآن.",
+    "clinicalHistory": "التاريخ الطبي",
+    "noEnabledClinicalProfiles": "لا توجد تخصصات مفعلة لهذا الفرع.",
     "patientHistory": "تشخيص المريض",
     "fullName": "الاسم الكامل",
     "age": "العمر",
@@ -238,6 +245,7 @@
     "logNoAmountChange": "لا يوجد تغيير في المبلغ",
     "logRemainingChange": "تغيير المبلغ المتبقي",
     "medicalHistory": "التاريخ المرضي",
+    "physiotherapyClinicalSettings": "إعدادات العلاج الطبيعي الطبية",
     "moveAmount": "نقل مبلغ",
     "moveFromDueToBalance": "نقل من المتبقي إلى الرصيد",
     "moveFromDueToBalanceHint": "استخدمها عند تحويل جزء من المبلغ المتبقي إلى الرصيد.",
@@ -643,12 +651,7 @@
             "تابع حركة فرع واحد أو مجموعة فروع بسهولة"
           ],
           "flowLabel": "خطوات العمل في العلاج الطبيعي",
-          "flow": [
-            "استقبال",
-            "تقييم",
-            "جلسة",
-            "متابعة"
-          ]
+          "flow": ["استقبال", "تقييم", "جلسة", "متابعة"]
         },
         {
           "id": "medical",
@@ -663,12 +666,7 @@
             "اعرف حركة كل فرع بصورة أوضح"
           ],
           "flowLabel": "خطوات العمل في عيادات الأطباء",
-          "flow": [
-            "حجز",
-            "كشف",
-            "خطة علاج",
-            "متابعة"
-          ]
+          "flow": ["حجز", "كشف", "خطة علاج", "متابعة"]
         },
         {
           "id": "dental",
@@ -683,12 +681,7 @@
             "تابع الفروع مع الحفاظ على طبيعة يوم كل فرع"
           ],
           "flowLabel": "خطوات العمل في عيادات الأسنان",
-          "flow": [
-            "حجز",
-            "فحص",
-            "إجراء",
-            "رجوع"
-          ]
+          "flow": ["حجز", "فحص", "إجراء", "رجوع"]
         },
         {
           "id": "dermatology",
@@ -703,12 +696,7 @@
             "حافظ على تنسيق الفروع من غير ما تلغي اختلاف طريقة شغلها"
           ],
           "flowLabel": "خطوات العمل في مراكز الليزر والجلدية",
-          "flow": [
-            "استشارة",
-            "تجهيز",
-            "جلسة",
-            "عناية لاحقة"
-          ]
+          "flow": ["استشارة", "تجهيز", "جلسة", "عناية لاحقة"]
         }
       ]
     },
@@ -1687,6 +1675,54 @@
   },
   "profileDetails": {
     "title": "تفاصيل الملف",
-    "empty": "اختر ملف عيادة لعرض تفاصيله."
+    "empty": "اختر ملف عيادة لعرض تفاصيله.",
+    "diagnosisSummary": "ملخص التشخيص",
+    "treatmentFocus": "محور العلاج",
+    "homeInstructions": "تعليمات منزلية",
+    "chiefComplaint": "الشكوى الرئيسية",
+    "historyOfPresentIllness": "تاريخ الشكوى الحالية",
+    "examination": "الفحص",
+    "diagnosis": "التشخيص",
+    "prescription": "الروشتة",
+    "followUpPlan": "خطة المتابعة",
+    "procedure": "الإجراء",
+    "toothOrArea": "السن أو المنطقة",
+    "treatmentPlan": "خطة العلاج",
+    "materialsUsed": "المواد المستخدمة",
+    "nextVisitPlan": "خطة الزيارة التالية",
+    "treatmentArea": "منطقة العلاج",
+    "skinType": "نوع البشرة",
+    "device": "الجهاز",
+    "settings": "الإعدادات",
+    "sessionNumber": "رقم الجلسة",
+    "clinicalNotes": "ملاحظات طبية",
+    "aftercareInstructions": "تعليمات ما بعد الإجراء"
+  },
+  "visitDetails": {
+    "title": "تفاصيل الزيارة",
+    "empty": "لا توجد تفاصيل مسجلة لهذه الزيارة.",
+    "sessionFocus": "هدف الجلسة",
+    "interventionsPerformed": "الإجراءات التي تم تنفيذها",
+    "patientResponse": "استجابة المريض",
+    "painLevel": "مستوى الألم",
+    "homeInstructions": "تعليمات منزلية",
+    "chiefComplaint": "الشكوى الرئيسية",
+    "examinationFindings": "نتائج الكشف",
+    "diagnosis": "التشخيص",
+    "prescription": "الوصفة العلاجية",
+    "followUpPlan": "خطة المتابعة",
+    "procedure": "الإجراء",
+    "toothOrArea": "السن أو المنطقة",
+    "anesthesia": "التخدير",
+    "materialsUsed": "المواد المستخدمة",
+    "postOpInstructions": "تعليمات ما بعد الإجراء",
+    "nextVisitPlan": "خطة الزيارة القادمة",
+    "treatmentArea": "منطقة العلاج",
+    "skinType": "نوع البشرة",
+    "device": "الجهاز",
+    "energySettings": "إعدادات الطاقة",
+    "sessionNumber": "رقم الجلسة",
+    "skinReaction": "استجابة الجلد",
+    "aftercareInstructions": "تعليمات ما بعد الجلسة"
   }
 }

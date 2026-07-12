@@ -965,6 +965,13 @@
     "createPatient": "Create Patient",
     "editPatient": "Edit Patient",
     "patientDetails": "Patient Details",
+    "companyPatientRecord": "Company patient record",
+    "branchClinicalRecords": "Branch clinical records",
+    "profileRecord": "Profile record",
+    "profileSummary": "Profile summary",
+    "profileRecordEmpty": "No patient-level summary is recorded for this profile yet.",
+    "clinicalHistory": "Clinical history",
+    "noEnabledClinicalProfiles": "No clinic profiles are enabled for this branch.",
     "patientHistory": "Patient Diagnosis",
     "fullName": "Full Name",
     "age": "Age",
@@ -1022,6 +1029,7 @@
     "transferFromRemainingNote": "Moved from due amount to balance",
     "unknownPatient": "Unknown patient",
     "medicalHistory": "Medical History",
+    "physiotherapyClinicalSettings": "Physiotherapy clinical settings",
     "defaultSessionCost": "Default session cost",
     "reassessmentCycleLength": "Reassessment cycle length",
     "newPatient": "New patient",
@@ -1460,12 +1468,7 @@
             "Follow activity across one branch or a growing clinic group"
           ],
           "flowLabel": "Physiotherapy workflow",
-          "flow": [
-            "Welcome",
-            "Assess",
-            "Treat",
-            "Follow up"
-          ]
+          "flow": ["Welcome", "Assess", "Treat", "Follow up"]
         },
         {
           "id": "medical",
@@ -1480,12 +1483,7 @@
             "Give owners a clearer picture of branch activity"
           ],
           "flowLabel": "Medical clinic workflow",
-          "flow": [
-            "Book",
-            "Consult",
-            "Plan",
-            "Follow up"
-          ]
+          "flow": ["Book", "Consult", "Plan", "Follow up"]
         },
         {
           "id": "dental",
@@ -1500,12 +1498,7 @@
             "Track activity while each branch keeps its own daily rhythm"
           ],
           "flowLabel": "Dental clinic workflow",
-          "flow": [
-            "Book",
-            "Examine",
-            "Treat",
-            "Return"
-          ]
+          "flow": ["Book", "Examine", "Treat", "Return"]
         },
         {
           "id": "dermatology",
@@ -1520,12 +1513,7 @@
             "Keep every branch aligned without flattening how it works"
           ],
           "flowLabel": "Laser and dermatology workflow",
-          "flow": [
-            "Consult",
-            "Prepare",
-            "Treat",
-            "Aftercare"
-          ]
+          "flow": ["Consult", "Prepare", "Treat", "Aftercare"]
         }
       ]
     },
@@ -1687,6 +1675,54 @@
   },
   "profileDetails": {
     "title": "Profile details",
-    "empty": "Select a clinic profile to review its details."
+    "empty": "Select a clinic profile to review its details.",
+    "diagnosisSummary": "Diagnosis summary",
+    "treatmentFocus": "Treatment focus",
+    "homeInstructions": "Home instructions",
+    "chiefComplaint": "Chief complaint",
+    "historyOfPresentIllness": "History of present illness",
+    "examination": "Examination",
+    "diagnosis": "Diagnosis",
+    "prescription": "Prescription",
+    "followUpPlan": "Follow-up plan",
+    "procedure": "Procedure",
+    "toothOrArea": "Tooth or area",
+    "treatmentPlan": "Treatment plan",
+    "materialsUsed": "Materials used",
+    "nextVisitPlan": "Next visit plan",
+    "treatmentArea": "Treatment area",
+    "skinType": "Skin type",
+    "device": "Device",
+    "settings": "Settings",
+    "sessionNumber": "Session number",
+    "clinicalNotes": "Clinical notes",
+    "aftercareInstructions": "Aftercare instructions"
+  },
+  "visitDetails": {
+    "title": "Visit details",
+    "empty": "No visit details recorded for this profile.",
+    "sessionFocus": "Session focus",
+    "interventionsPerformed": "Interventions performed",
+    "patientResponse": "Patient response",
+    "painLevel": "Pain level",
+    "homeInstructions": "Home instructions",
+    "chiefComplaint": "Chief complaint",
+    "examinationFindings": "Examination findings",
+    "diagnosis": "Diagnosis",
+    "prescription": "Prescription",
+    "followUpPlan": "Follow-up plan",
+    "procedure": "Procedure",
+    "toothOrArea": "Tooth or area",
+    "anesthesia": "Anesthesia",
+    "materialsUsed": "Materials used",
+    "postOpInstructions": "Post-op instructions",
+    "nextVisitPlan": "Next visit plan",
+    "treatmentArea": "Treatment area",
+    "skinType": "Skin type",
+    "device": "Device",
+    "energySettings": "Energy settings",
+    "sessionNumber": "Session number",
+    "skinReaction": "Skin reaction",
+    "aftercareInstructions": "Aftercare instructions"
   }
 }

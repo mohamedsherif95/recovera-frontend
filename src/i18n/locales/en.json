@@ -1183,7 +1183,7 @@
     "correctBalanceHint": "Use this only to correct the current displayed balance.",
     "moveAmount": "Move amount",
     "moveFromDueToBalance": "Move from due amount to balance",
-    "moveFromDueToBalanceHint": "Use this when part of the due amount should become usable balance.",
+    "moveFromDueToBalanceHint": "Use when part of the dues should become usable balance.",
     "newBalanceValue": "New balance value",
     "noRemainingToMove": "No due amount available to move.",
     "noBalanceChange": "No balance change",

@@ -48,6 +48,7 @@ import {
 } from '@/lib/clinicProfiles';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
+import { getClinicNextMonthInput } from '@/lib/time';
 
 const PRICING_MODEL_OPTIONS = [
   {
@@ -117,10 +118,7 @@ const toInteger = (value) => {
 const formatMoney = (value) =>
   Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
 
-const formatNextMonth = () =>
-  new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
-    .toISOString()
-    .slice(0, 7);
+const formatNextMonth = () => getClinicNextMonthInput();
 
 const getOptionLabel = (option, t) =>
   option ? t(option.labelKey, { defaultValue: option.labelDefault }) : null;

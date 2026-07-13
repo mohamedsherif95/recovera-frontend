@@ -34,6 +34,13 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { invoicesApi } from '@/api/endpoints/invoices';
 import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import { useCreateStatementInvoice } from '@/hooks/useInvoices';
+import {
+  addDaysToDateOnly,
+  dateOnlyToDate,
+  getClinicMonthEndDateOnly,
+  getClinicMonthStartDateOnly,
+  getClinicTodayDateOnly,
+} from '@/lib/time';
 
 const toDateOnlyString = (value) => {
   if (!value) return '';
@@ -48,8 +55,7 @@ const parseDateOnlyString = (value) => {
   if (!value) return null;
   const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
-    const [, year, month, day] = match;
-    return new Date(Number(year), Number(month) - 1, Number(day));
+    return dateOnlyToDate(value);
   }
 
   const parsed = new Date(value);
@@ -57,14 +63,9 @@ const parseDateOnlyString = (value) => {
 };
 
 const getRecentIncomeDayValues = (todayValue) => {
-  const baseDate = parseDateOnlyString(todayValue);
-  if (!baseDate) return [];
-
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(baseDate);
-    date.setDate(baseDate.getDate() - index);
-    return toDateOnlyString(date);
-  });
+  return Array.from({ length: 7 }, (_, index) =>
+    addDaysToDateOnly(todayValue, -index),
+  );
 };
 
 export default function IncomeReportPage() {
@@ -79,15 +80,15 @@ export default function IncomeReportPage() {
   const canCreateInvoices = can(PERMISSIONS['invoices:create']);
   const usesSecretaryIncomeScope = isSecretary && !isAdmin;
   const canUseFullRangeFilters = isAdmin || hasAnyRole([USER_ROLES.SECRETARY]);
-  const todayDateOnly = useMemo(() => toDateOnlyString(new Date()), []);
+  const todayDateOnly = useMemo(() => getClinicTodayDateOnly(), []);
   const todayDate = useMemo(() => parseDateOnlyString(todayDateOnly), [todayDateOnly]);
   const currentMonthStartDate = useMemo(
-    () => new Date(todayDate.getFullYear(), todayDate.getMonth(), 1),
-    [todayDate],
+    () => dateOnlyToDate(getClinicMonthStartDateOnly()),
+    [],
   );
   const currentMonthEndDate = useMemo(
-    () => new Date(todayDate.getFullYear(), todayDate.getMonth() + 1, 0),
-    [todayDate],
+    () => dateOnlyToDate(getClinicMonthEndDateOnly()),
+    [],
   );
 
   const [selectedPatientId, setSelectedPatientIdState] = useState(() => {

@@ -42,6 +42,7 @@ import {
   formatTimeTo12Hour,
   formatTimeWithDate,
 } from "@/lib/utils";
+import { getClinicTodayDateOnly } from "@/lib/time";
 import {
   Loader2,
   CalendarClock,
@@ -108,7 +109,7 @@ export default function SessionsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
-  const todayIso = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayIso = useMemo(() => getClinicTodayDateOnly(), []);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
   const [statusFilter, setStatusFilter] = useState(

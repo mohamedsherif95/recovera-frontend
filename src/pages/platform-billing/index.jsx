@@ -61,6 +61,11 @@ import {
 import { usePermissions } from '@/hooks/usePermissions';
 import { useUIStore } from '@/store/uiStore';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
+import {
+  clinicDateTimeLocalNow,
+  clinicDateTimeLocalToIso,
+  getClinicCurrentMonthInput,
+} from '@/lib/time';
 import { PERMISSIONS } from '@/lib/constants';
 
 const activeStatuses = new Set(['issued', 'partially_paid', 'paid']);
@@ -104,8 +109,7 @@ const lifecycleBadgeVariant = {
 };
 
 const currentMonthInput = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return getClinicCurrentMonthInput();
 };
 
 const toBillingMonth = (value) => (value ? `${value}-01` : '');
@@ -594,7 +598,7 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
   const { t } = useTranslation();
   const [amount, setAmount] = useState('');
   const [collectedAt, setCollectedAt] = useState(() =>
-    new Date().toISOString().slice(0, 16),
+    clinicDateTimeLocalNow(),
   );
   const [method, setMethod] = useState('cash');
   const [reference, setReference] = useState('');
@@ -603,7 +607,7 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
   useEffect(() => {
     if (!open) {
       setAmount('');
-      setCollectedAt(new Date().toISOString().slice(0, 16));
+      setCollectedAt(clinicDateTimeLocalNow());
       setMethod('cash');
       setReference('');
       setNotes('');
@@ -617,6 +621,7 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
     Number(maxAmount) > 0 &&
     numericAmount > Number(maxAmount);
   const invalidAmount = !Number.isFinite(numericAmount) || numericAmount <= 0;
+  const collectedAtIso = clinicDateTimeLocalToIso(collectedAt);
   const remainingBalance = Number(maxAmount || 0);
   const projectedBalance =
     Number.isFinite(numericAmount) && Number.isFinite(remainingBalance)
@@ -773,13 +778,19 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
             onClick={() =>
               onSubmit({
                 amount: Number(amount),
-                collectedAt: new Date(collectedAt).toISOString(),
+                collectedAt: collectedAtIso,
                 method,
                 reference,
                 notes,
               })
             }
-            disabled={isLoading || invalidAmount || exceedsBalance || !method.trim()}
+            disabled={
+              isLoading ||
+              invalidAmount ||
+              exceedsBalance ||
+              !method.trim() ||
+              !collectedAtIso
+            }
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t('platformBilling.collectionDialog.submit', {

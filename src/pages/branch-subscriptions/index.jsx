@@ -59,6 +59,10 @@ import {
   getClinicProfileLabel,
 } from '@/lib/clinicProfiles';
 import { cn } from '@/lib/utils';
+import {
+  getClinicCurrentMonthInput,
+  getClinicNextMonthInput,
+} from '@/lib/time';
 
 const STATUS_OPTIONS = [
   {
@@ -127,22 +131,31 @@ const toMoneyInteger = (value) => {
   return Math.max(0, Math.round(parsed));
 };
 
-const getCalendarMonthKey = (date = new Date()) =>
-  date.getFullYear() * 100 + date.getMonth() + 1;
+const getMonthInputKey = (value) => {
+  const [year, month] = String(value || '').split('-').map(Number);
+  return Number.isFinite(year) && Number.isFinite(month)
+    ? year * 100 + month
+    : null;
+};
 
-const getNextCalendarMonthKey = (date = new Date()) => {
+const getCalendarMonthKey = (date) => {
+  if (!date) return getMonthInputKey(getClinicCurrentMonthInput());
+  return date.getFullYear() * 100 + date.getMonth() + 1;
+};
+
+const getNextCalendarMonthKey = (date) => {
+  if (!date) return getMonthInputKey(getClinicNextMonthInput());
   const nextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   return getCalendarMonthKey(nextMonth);
 };
 
-const formatNextCalendarMonth = () =>
-  new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString(
-    undefined,
-    {
-      month: 'short',
-      year: 'numeric',
-    },
-  );
+const formatNextCalendarMonth = () => {
+  const [year, month] = getClinicNextMonthInput().split('-').map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
 const getTermMonthKey = (term) => {
   const value =

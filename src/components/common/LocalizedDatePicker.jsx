@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   format,
-  parseISO,
   startOfMonth,
   endOfMonth,
   startOfWeek,
@@ -15,6 +14,7 @@ import {
 import { arSA, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { dateOnlyToDate, getClinicTodayDateOnly } from '@/lib/time';
 
 // Reusable, localized date picker that works with ISO date strings (YYYY-MM-DD)
 // value: string | '' | null
@@ -38,16 +38,14 @@ export function LocalizedDatePicker({
 
   const selectedDate = useMemo(() => {
     if (!value) return null;
-    try {
-      return parseISO(value);
-    } catch {
-      return null;
-    }
+    return dateOnlyToDate(value);
   }, [value]);
 
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-  const [currentMonth, setCurrentMonth] = useState(() => selectedDate || new Date());
+  const [currentMonth, setCurrentMonth] = useState(
+    () => selectedDate || dateOnlyToDate(getClinicTodayDateOnly()),
+  );
 
   useEffect(() => {
     if (selectedDate) {
@@ -93,7 +91,7 @@ export function LocalizedDatePicker({
   }
 
   const weekDayLabels = useMemo(() => {
-    const start = startOfWeek(new Date(), { locale });
+    const start = startOfWeek(dateOnlyToDate(getClinicTodayDateOnly()), { locale });
     return Array.from({ length: 7 }).map((_, idx) => {
       const d = addDays(start, idx);
       return format(d, 'EE', { locale });
@@ -190,7 +188,10 @@ export function LocalizedDatePicker({
           {days.map((dateObj) => {
             const inMonth = isSameMonth(dateObj, monthStart);
             const isSelected = selectedDate && isSameDay(dateObj, selectedDate);
-            const isToday = isSameDay(dateObj, new Date());
+            const isToday = isSameDay(
+              dateObj,
+              dateOnlyToDate(getClinicTodayDateOnly()),
+            );
 
             return (
               <button

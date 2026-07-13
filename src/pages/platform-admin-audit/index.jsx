@@ -36,7 +36,8 @@ import {
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { usePlatformAdminAuditEvents } from '@/hooks/usePlatformAdmin';
 import { useUIStore } from '@/store/uiStore';
-import { cn } from '@/lib/utils';
+import { cn, formatDateTime as formatBusinessDateTime } from '@/lib/utils';
+import { dateOnlyToUtcEndIso, dateOnlyToUtcStartIso } from '@/lib/time';
 
 const areaIcons = {
   billing: Receipt,
@@ -74,8 +75,8 @@ export default function PlatformAdminAuditPage() {
       status,
       search: search.trim() || undefined,
       branchId: branchId ?? undefined,
-      fromDate: fromDate ? `${fromDate}T00:00:00.000Z` : undefined,
-      toDate: toDate ? `${toDate}T23:59:59.999Z` : undefined,
+      fromDate: fromDate ? dateOnlyToUtcStartIso(fromDate) : undefined,
+      toDate: toDate ? dateOnlyToUtcEndIso(toDate) : undefined,
     }),
     [area, branchId, fromDate, limit, page, search, status, toDate],
   );
@@ -845,11 +846,5 @@ function formatTarget(event) {
 function formatDateTime(value) {
   if (!value) return '--';
 
-  return new Date(value).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatBusinessDateTime(value, 'MMM d, yyyy, p') || '--';
 }

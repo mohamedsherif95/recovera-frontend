@@ -27,7 +27,11 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { usePlatformAdminOverview } from '@/hooks/usePlatformAdmin';
 import { useUIStore } from '@/store/uiStore';
 import { PERMISSIONS } from '@/lib/constants';
-import { cn } from '@/lib/utils';
+import {
+  cn,
+  formatDate as formatBusinessDate,
+  formatDateTime as formatBusinessDateTime,
+} from '@/lib/utils';
 
 const modules = [
   {
@@ -797,10 +801,7 @@ function formatMoney(value) {
 
 function formatMonth(value) {
   if (!value) return '--';
-  return new Date(value).toLocaleDateString(undefined, {
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatBusinessDate(value, 'MMM yyyy') || '--';
 }
 
 function toMonthInputValue(value) {
@@ -810,18 +811,10 @@ function toMonthInputValue(value) {
 
 function formatDate(value) {
   if (!value) return '--';
-  return new Date(value).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatBusinessDate(value, 'MMM d') || '--';
 }
 
 function formatDateTime(value) {
   if (!value) return '--';
-  return new Date(value).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatBusinessDateTime(value, 'MMM d, p') || '--';
 }

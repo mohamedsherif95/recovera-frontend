@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { formatDate, formatTimeTo12Hour } from '@/lib/utils';
+import { getClinicDateDaysAgo, getClinicTodayDateOnly } from '@/lib/time';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,12 +68,8 @@ export default function Dashboard() {
   const alerts = stats.alerts || {};
   const followUps = alerts.followUpPatients || [];
   const isRtl = i18n.language === 'ar';
-  const todayIso = new Date().toISOString().split('T')[0];
-  const sevenDaysAgo = (() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 6);
-    return date.toISOString().split('T')[0];
-  })();
+  const todayIso = getClinicTodayDateOnly();
+  const sevenDaysAgo = getClinicDateDaysAgo(6);
 
   const totalPatients = overview.totalPatients ?? patientsReport?.totalPatients ?? 0;
   const sessionsToday = today.totalSessionsToday ?? stats.sessionsToday ?? 0;

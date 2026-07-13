@@ -6,6 +6,7 @@ import { enUS, ar } from 'date-fns/locale';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { cn } from '@/lib/utils';
+import { dateOnlyToDate, getClinicTodayDateOnly } from '@/lib/time';
 
 const parseDateValue = (value) => {
   if (!value) return null;
@@ -30,9 +31,7 @@ const parseDateValue = (value) => {
 };
 
 const getStartOfToday = () => {
-  const next = new Date();
-  next.setHours(0, 0, 0, 0);
-  return next;
+  return dateOnlyToDate(getClinicTodayDateOnly());
 };
 
 function DateRangePicker({ 

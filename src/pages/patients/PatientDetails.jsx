@@ -66,7 +66,7 @@ const normalizeTextItems = (value) => {
   if (!value) return [];
   if (Array.isArray(value)) {
     return value
-      .map((item) => (item == null ? "" : String(item)))
+      .map((item) => (item == null ? "" : String(item.note || item).trim()))
       .filter((item) => item.trim().length > 0);
   }
 
@@ -1817,13 +1817,6 @@ export default function PatientDetailsPage() {
                           defaultValue: "Move amount",
                         })}
                   </Button>
-                  {currentRemainingAmount <= 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      {t("patients.noRemainingToMove", {
-                        defaultValue: "No due amount to move right now.",
-                      })}
-                    </p>
-                  )}
                 </div>
               </div>
             )}

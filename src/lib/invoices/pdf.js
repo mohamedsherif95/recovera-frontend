@@ -1,16 +1,9 @@
 import { jsPDF } from 'jspdf';
+import { formatDateTime as formatBusinessDateTime } from '@/lib/utils';
 
 const formatDateTime = (value) => {
   if (!value) return '--';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '--';
-  return parsed.toLocaleString('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatBusinessDateTime(value, 'dd MMM yyyy, HH:mm') || '--';
 };
 
 const formatAmount = (value, currency = 'EGP') => {

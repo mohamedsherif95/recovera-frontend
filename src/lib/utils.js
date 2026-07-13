@@ -2,6 +2,10 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
+import {
+  getClinicCurrentTimeString,
+  toDateFnsCompatibleDate,
+} from '@/lib/time';
 
 /**
  * Merge Tailwind classes with clsx
@@ -27,7 +31,9 @@ export function formatCurrency(amount) {
  */
 export function formatDate(date, formatStr = 'PP') {
   if (!date) return '';
-  return format(new Date(date), formatStr);
+  const parsed = date instanceof Date ? date : toDateFnsCompatibleDate(date);
+  if (!parsed) return '';
+  return format(parsed, formatStr);
 }
 
 /**
@@ -35,8 +41,8 @@ export function formatDate(date, formatStr = 'PP') {
  */
 export function formatDateTime(date, formatStr = 'PPp') {
   if (!date) return '';
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) {
+  const parsed = toDateFnsCompatibleDate(date);
+  if (!parsed) {
     return '';
   }
   return format(parsed, formatStr, { locale: enUS });
@@ -50,7 +56,7 @@ export const formatTimeWithDate = (time) => {
   return formatTimeTo12Hour(time);
 };
 
-export const getCurrentLocalTime = () => new Date().toTimeString().split(' ')[0];
+export const getCurrentLocalTime = () => getClinicCurrentTimeString();
 
 /**
  * Convert 24-hour time string to 12-hour format with AM/PM

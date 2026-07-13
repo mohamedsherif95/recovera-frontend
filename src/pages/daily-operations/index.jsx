@@ -55,6 +55,7 @@ import {
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
+import { dateOnlyToDate, getClinicTodayDateOnly } from "@/lib/time";
 
 // Static time slots; API returns a flat sessions array with `slot` matching these labels (24h).
 // Rows are fixed from 10:00 to 24:00.
@@ -149,8 +150,7 @@ export default function DailyOperationsPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
     const fromUrl = searchParams.get("date");
     if (fromUrl) return fromUrl;
-    const today = new Date();
-    return today.toISOString().slice(0, 10);
+    return getClinicTodayDateOnly();
   });
 
   const [shiftFilter, setShiftFilterState] = useState(() => {
@@ -194,11 +194,7 @@ export default function DailyOperationsPage() {
   }, [i18n.language]);
 
   const selectedDateObj = useMemo(() => {
-    try {
-      return new Date(selectedDate);
-    } catch {
-      return new Date();
-    }
+    return dateOnlyToDate(selectedDate) || dateOnlyToDate(getClinicTodayDateOnly());
   }, [selectedDate]);
 
   const isRtl = i18n.language === "ar";

@@ -37,6 +37,11 @@ import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
 import { usePermissions } from '@/hooks/usePermissions';
+import {
+  dateOnlyToDate,
+  getClinicMonthEndDateOnly,
+  getClinicMonthStartDateOnly,
+} from '@/lib/time';
 
 const PAGE_SIZE = 10;
 
@@ -53,8 +58,7 @@ const parseDateOnlyString = (value) => {
   if (!value) return null;
   const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (match) {
-    const [, year, month, day] = match;
-    return new Date(Number(year), Number(month) - 1, Number(day));
+    return dateOnlyToDate(value);
   }
 
   const parsed = new Date(value);
@@ -93,14 +97,13 @@ export default function InvoicesPage() {
     return roles.length > 0 && roles.every((role) => role === USER_ROLES.DOCTOR);
   }, [currentUser]);
 
-  const today = useMemo(() => new Date(), []);
   const currentMonthStart = useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), 1),
-    [today],
+    () => dateOnlyToDate(getClinicMonthStartDateOnly()),
+    [],
   );
   const currentMonthEnd = useMemo(
-    () => new Date(today.getFullYear(), today.getMonth() + 1, 0),
-    [today],
+    () => dateOnlyToDate(getClinicMonthEndDateOnly()),
+    [],
   );
 
   const [selectedPatientId, setSelectedPatientId] = useState(

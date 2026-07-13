@@ -30,6 +30,7 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { SessionForm } from "./SessionForm";
 import { ProfileDetailsPanel } from "./ProfileDetailsPanel";
+import { VisitImageCard } from "@/components/visit-images/VisitImageCard";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { PageHeader } from "@/components/common/PageHeader";
 import {
@@ -1108,6 +1109,8 @@ export default function SessionDetailsPage() {
           {renderProgramNotesCard()}
         </>
       )}
+
+      <VisitImageCard session={session} />
 
       {canViewPaymentsSection && (
         <SessionPaymentsSection

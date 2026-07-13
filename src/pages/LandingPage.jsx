@@ -13,6 +13,7 @@ import {
   Clock3,
   HeartPulse,
   Layers3,
+  MessageCircle,
   ReceiptText,
   Smile,
   Sparkles,
@@ -47,10 +48,32 @@ const experienceIcons = {
   insight: BarChart3,
 };
 
+const aboutIcons = {
+  operatingSystem: Building2,
+  specialtyAware: HeartPulse,
+  ownerClarity: BadgeCheck,
+};
+
+const workIcons = {
+  recovera: ClipboardCheck,
+  custom: Layers3,
+  operations: BarChart3,
+};
+
 const pricingIcons = {
   allowance: ClipboardCheck,
   packages: Layers3,
 };
+
+const partnerIcons = {
+  owners: Building2,
+  doctors: Stethoscope,
+  frontDesk: CalendarCheck,
+  groups: Users,
+};
+
+const WHATSAPP_HREF =
+  'https://wa.me/201508976776?text=Hello%20Recovera%2C%20I%20would%20like%20to%20know%20more%20about%20the%20clinic%20management%20system.';
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
@@ -61,12 +84,19 @@ export default function LandingPage() {
   const experienceSteps = asArray(
     t('marketing.experience.steps', { returnObjects: true }),
   );
+  const aboutPrinciples = asArray(
+    t('marketing.about.principles', { returnObjects: true }),
+  );
+  const workItems = asArray(t('marketing.works.items', { returnObjects: true }));
   const pricingModels = asArray(t('marketing.pricing.models', { returnObjects: true }));
   const customSystemPoints = asArray(
     t('marketing.customSystem.points', { returnObjects: true }),
   );
   const customSystemVisualItems = asArray(
     t('marketing.customSystem.visual.items', { returnObjects: true }),
+  );
+  const partnerItems = asArray(
+    t('marketing.partners.items', { returnObjects: true }),
   );
   const [activeProfileId, setActiveProfileId] = useState('physiotherapy');
   const [activePricingId, setActivePricingId] = useState('allowance');
@@ -157,6 +187,43 @@ export default function LandingPage() {
                   ),
                 )}
               </ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="about" className="scroll-mt-24 border-b border-border bg-background">
+          <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 sm:py-20 lg:grid-cols-[0.88fr_1.12fr] lg:items-start lg:px-8 lg:py-24">
+            <div data-landing-reveal>
+              <SectionIntro
+                eyebrow={t('marketing.about.eyebrow')}
+                title={t('marketing.about.title')}
+                description={t('marketing.about.description')}
+              />
+              <div className="mt-8 rounded-lg border border-sky-200 bg-sky-50 p-5 text-sm leading-7 text-sky-950 dark:border-sky-900 dark:bg-sky-950/35 dark:text-sky-100">
+                <strong className="block text-base">{t('marketing.about.promiseTitle')}</strong>
+                <span>{t('marketing.about.promise')}</span>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1" data-landing-reveal style={{ '--reveal-delay': '120ms' }}>
+              {aboutPrinciples.map((item) => {
+                const Icon = aboutIcons[item.id] || BadgeCheck;
+
+                return (
+                  <article
+                    key={item.id}
+                    className="group rounded-lg border border-border bg-card p-5 shadow-sm transition-transform duration-300 hover:-translate-y-1"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-950 text-white dark:bg-sky-950/70">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-5 text-lg font-black leading-tight">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                      {item.description}
+                    </p>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -350,6 +417,52 @@ export default function LandingPage() {
               <p className="max-w-xl text-sm leading-7 text-slate-300">
                 {t('marketing.experience.spotlight.description')}
               </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="works" className="scroll-mt-24 border-b border-border bg-background">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+            <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+              <SectionIntro
+                eyebrow={t('marketing.works.eyebrow')}
+                title={t('marketing.works.title')}
+                description={t('marketing.works.description')}
+              />
+              <p className="max-w-xl border-s-4 border-emerald-500 ps-5 text-sm leading-7 text-muted-foreground" data-landing-reveal>
+                {t('marketing.works.note')}
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
+              {workItems.map((item, index) => {
+                const Icon = workIcons[item.id] || ClipboardCheck;
+
+                return (
+                  <article
+                    key={item.id}
+                    className="relative overflow-hidden rounded-lg border border-border bg-card p-6 shadow-sm"
+                    data-landing-reveal
+                    style={{ '--reveal-delay': `${index * 110}ms` }}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <span className="rounded-md bg-slate-100 px-3 py-1 text-xs font-black text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                        {item.kicker}
+                      </span>
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-sky-700 dark:text-sky-300">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-black leading-tight">{item.title}</h3>
+                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                      {item.description}
+                    </p>
+                    <div className="mt-7 border-t border-border pt-5 text-sm font-bold text-foreground">
+                      {item.result}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -556,6 +669,35 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <section id="partners" className="scroll-mt-24 border-b border-border bg-[#f7fbff] dark:bg-[#101b24]">
+          <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+            <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+              <SectionIntro
+                eyebrow={t('marketing.partners.eyebrow')}
+                title={t('marketing.partners.title')}
+                description={t('marketing.partners.description')}
+              />
+              <div className="grid gap-3 sm:grid-cols-2" data-landing-reveal style={{ '--reveal-delay': '120ms' }}>
+                {partnerItems.map((item) => {
+                  const Icon = partnerIcons[item.id] || Users;
+
+                  return (
+                    <article key={item.id} className="rounded-lg border border-border bg-card p-5 shadow-sm">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="mt-5 text-lg font-black">{item.title}</h3>
+                      <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                        {item.description}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="bg-slate-950 text-white">
           <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
             <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center" data-landing-reveal>
@@ -595,6 +737,8 @@ export default function LandingPage() {
           <p>{t('marketing.footer.tagline')}</p>
         </div>
       </footer>
+
+      <WhatsAppFloatingCta t={t} />
     </div>
   );
 }
@@ -756,6 +900,41 @@ function PricingVisual({ model }) {
         </div>
       )}
     </div>
+  );
+}
+
+function WhatsAppFloatingCta({ t }) {
+  return (
+    <a
+      href={WHATSAPP_HREF}
+      target="_blank"
+      rel="noreferrer"
+      className="landing-whatsapp-float"
+      aria-label={t('marketing.whatsapp.aria')}
+    >
+      <span className="landing-whatsapp-icon" aria-hidden="true">
+        <WhatsAppGlyph />
+      </span>
+      <span className="hidden text-sm font-black sm:inline">
+        {t('marketing.whatsapp.label')}
+      </span>
+      <MessageCircle className="h-4 w-4 sm:hidden" aria-hidden="true" />
+    </a>
+  );
+}
+
+function WhatsAppGlyph() {
+  return (
+    <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M16 4.5A11.3 11.3 0 0 0 6.2 21.45L5 27l5.7-1.28A11.3 11.3 0 1 0 16 4.5Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12.35 10.25c-.25-.6-.52-.62-.77-.63h-.65c-.23 0-.6.08-.92.43-.32.35-1.2 1.17-1.2 2.85s1.23 3.3 1.4 3.53c.17.23 2.37 3.8 5.88 5.17 2.92 1.15 3.52.92 4.16.86.64-.06 2.07-.84 2.36-1.66.29-.82.29-1.52.2-1.67-.08-.15-.31-.23-.66-.4-.35-.17-2.07-1.02-2.39-1.14-.32-.12-.55-.17-.78.17-.23.35-.9 1.14-1.1 1.37-.2.23-.4.26-.75.09-.35-.18-1.47-.54-2.8-1.72-1.04-.92-1.73-2.06-1.93-2.41-.2-.35-.02-.54.15-.71.15-.15.35-.4.52-.6.17-.2.23-.35.35-.58.12-.23.06-.43-.03-.6-.09-.17-.77-1.86-1.06-2.54Z"
+        fill="white"
+      />
+    </svg>
   );
 }
 

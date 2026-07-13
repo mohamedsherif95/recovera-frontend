@@ -48,6 +48,7 @@ import {
 } from "@/lib/utils";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
+import { VisitImageGallery } from "@/components/visit-images/VisitImageGallery";
 import {
   Activity,
   BellRing,
@@ -2027,6 +2028,8 @@ export default function PatientDetailsPage() {
         </Card>
       )}
 
+      <VisitImageGallery patientId={id} />
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle className="flex items-center gap-2">
@@ -2103,7 +2106,7 @@ export default function PatientDetailsPage() {
                     </th>
                     <th className="px-4 py-3 font-medium">
                       {t("clinicProfiles.providerGeneric", {
-                        defaultValue: "Provider",
+                        defaultValue: "Doctor",
                       })}
                     </th>
                   </tr>

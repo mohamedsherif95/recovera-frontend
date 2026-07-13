@@ -746,7 +746,7 @@ export function SessionForm({
               <p className="text-xs text-muted-foreground">
                 {t("sessions.assessmentDoctorRestriction", {
                   defaultValue:
-                    "Assessment and reassessment visits have provider assignment restrictions.",
+                    "Assessment and reassessment visits have doctor assignment restrictions.",
                 })}
               </p>
             )}
@@ -1063,7 +1063,7 @@ export function SessionForm({
                   <p className="text-xs text-muted-foreground">
                     {t("sessions.assessmentLockedDoctorHint", {
                       defaultValue:
-                        "This provider cannot be assigned assessment or reassessment sessions.",
+                        "This doctor cannot be assigned assessment or reassessment sessions.",
                     })}
                   </p>
                 )}
@@ -1130,7 +1130,7 @@ export function SessionForm({
                           <p className="text-xs text-muted-foreground">
                             {t("sessions.assessmentLockedDoctorHint", {
                               defaultValue:
-                                "This provider cannot be assigned assessment or reassessment sessions.",
+                                "This doctor cannot be assigned assessment or reassessment sessions.",
                             })}
                           </p>
                         )}

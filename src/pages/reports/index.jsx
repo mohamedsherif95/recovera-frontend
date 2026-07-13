@@ -65,11 +65,11 @@ export default function ReportsPage() {
             key: 'providers',
             icon: Stethoscope,
             title: t('reports.providerVisitsTitle', {
-              defaultValue: 'Provider visits',
+              defaultValue: 'Doctor visits',
             }),
             description: t('reports.providerVisitsDescription', {
               defaultValue:
-                'Inspect provider schedules, visit status, timing, and revenue context.',
+                'Inspect doctor schedules, visit status, timing, and revenue context.',
             }),
             to: '/doctors',
           },
@@ -128,7 +128,7 @@ export default function ReportsPage() {
         })}
         description={t('reports.commandCenterSummary', {
           defaultValue:
-            'Start with the report that matches the operational question: money, patient balances, provider work, audit trail, or branch reconciliation.',
+            'Start with the report that matches the operational question: money, patient balances, doctor work, audit trail, or branch reconciliation.',
         })}
       >
         <div className="grid gap-2 sm:grid-cols-3">

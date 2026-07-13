@@ -1598,7 +1598,7 @@ export default function UsersPage() {
               {isPlatformAdminRoute
                 ? t('platformAdmin.userAccess.provisionDescription', {
                     defaultValue:
-                      'Create a manager, branch manager, provider, or secretary for this clinic group. Temporary passwords must be changed on first login.',
+                      'Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.',
                   })
                 : t('platformAdmin.userAccess.temporaryPasswordDescription', {
                     defaultValue:

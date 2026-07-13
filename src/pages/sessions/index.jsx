@@ -281,7 +281,7 @@ export default function SessionsPage() {
       {
         key: "doctor",
         header: t("clinicProfiles.providerGeneric", {
-          defaultValue: "Provider",
+          defaultValue: "Doctor",
         }),
         cell: (row) => row.doctor?.fullName || "--",
       },
@@ -655,7 +655,7 @@ export default function SessionsPage() {
                         <div>
                           <div className="text-muted-foreground">
                             {t("clinicProfiles.providerGeneric", {
-                              defaultValue: "Provider",
+                              defaultValue: "Doctor",
                             })}
                           </div>
                           <div className="mt-1 font-medium">

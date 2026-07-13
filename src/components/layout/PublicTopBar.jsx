@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, ArrowRight, LogIn, ReceiptText, Users } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  Briefcase,
+  Handshake,
+  Info,
+  LogIn,
+  ReceiptText,
+  Users,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { ThemeSwitcher } from '@/components/common/ThemeSwitcher';
@@ -8,9 +17,12 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navItems = [
+  { href: '#about', key: 'about', icon: Info },
   { href: '#profiles', key: 'profiles', icon: Activity },
   { href: '#experience', key: 'experience', icon: Users },
+  { href: '#works', key: 'works', icon: Briefcase },
   { href: '#pricing', key: 'pricing', icon: ReceiptText },
+  { href: '#partners', key: 'partners', icon: Handshake },
 ];
 
 export function PublicTopBar({ mode = 'landing' }) {
@@ -66,7 +78,7 @@ export function PublicTopBar({ mode = 'landing' }) {
           </Link>
 
           {isLanding && (
-            <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground lg:flex">
+            <nav className="hidden items-center gap-1 text-sm font-medium text-muted-foreground xl:flex">
               {navItems.map((item) => (
                 <a
                   key={item.key}
@@ -114,7 +126,7 @@ export function PublicTopBar({ mode = 'landing' }) {
       {isLanding && (
         <nav
           aria-label={t('marketing.nav.mobileLabel')}
-          className="landing-mobile-dock fixed inset-x-0 bottom-0 z-[60] grid grid-cols-4 border-t border-border bg-background/95 px-2 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur lg:hidden"
+          className="landing-mobile-dock fixed inset-x-0 bottom-0 z-[60] flex gap-1 overflow-x-auto border-t border-border bg-background/95 px-2 pt-1 shadow-[0_-8px_24px_rgba(15,23,42,0.10)] backdrop-blur lg:hidden"
         >
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -126,7 +138,7 @@ export function PublicTopBar({ mode = 'landing' }) {
                 href={item.href}
                 aria-current={isActive ? 'location' : undefined}
                 className={cn(
-                  'flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center text-[11px] font-semibold leading-4 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'flex min-h-14 min-w-[4.9rem] flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center text-[11px] font-semibold leading-4 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isActive && 'bg-sky-50 text-sky-800 dark:bg-sky-950/50 dark:text-sky-200',
                 )}
               >
@@ -137,7 +149,7 @@ export function PublicTopBar({ mode = 'landing' }) {
           })}
           <Link
             to="/login"
-            className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center text-[11px] font-semibold leading-4 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-h-14 min-w-[4.9rem] flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-center text-[11px] font-semibold leading-4 text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LogIn className={cn('h-5 w-5', isRtl && 'rotate-180')} />
             <span>{t('auth.login')}</span>

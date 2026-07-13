@@ -8,26 +8,26 @@
   },
   "dailyOps": {
     "title": "Daily Operations",
-    "description": "Command center view of the day by provider and hour.",
+    "description": "Command center view of the day by doctor and hour.",
     "dateLabel": "Select day",
-    "gridTitle": "Daily schedule by provider",
+    "gridTitle": "Daily schedule by doctor",
     "hourColumn": "Time",
     "freeSlot": "Free",
     "refresh": "Refresh",
     "shiftFilter": "Shift",
     "shiftAuto": "Auto (by day)",
     "operationsWorkbenchTitle": "Daily operations workbench",
-    "operationsWorkbenchDescription": "Monitor today's patient flow by provider, time, and clinic profile.",
+    "operationsWorkbenchDescription": "Monitor today's patient flow by doctor, time, and clinic profile.",
     "visibleVisits": "Visible visits",
     "activeFlow": "Arrived or in progress",
-    "resourceCoverage": "Providers with visits",
+    "resourceCoverage": "Doctors with visits",
     "profileFilter": "Clinic profile",
     "allProfiles": "All profiles",
     "providerLoadValue": "{{active}} active / {{total}} total",
     "mobileAgendaTitle": "Today's agenda",
     "noAgendaVisits": "No visits match the selected filters.",
     "openVisit": "Open visit",
-    "createSlotAria": "Create visit for {{provider}} at {{time}}",
+    "createSlotAria": "Create visit for {{doctor}} at {{time}}",
     "activityTypes": {
       "session": "Session",
       "break": "Break",
@@ -132,7 +132,7 @@
     "payments": "Payments",
     "patientPayments": "Patient Payments",
     "reports": "Reports",
-    "doctors": "Providers",
+    "doctors": "Doctors",
     "users": "Users",
     "settings": "Settings",
     "profile": "Profile",
@@ -467,7 +467,7 @@
       "directoryDescription": "Select a company scope. Setup readiness checks {{month}} pricing; billing posture shows current invoice exposure.",
       "totalCount": "{{count}} total",
       "dialogDescription": "Company-level details live here. Branch pricing, access, and invoices are managed from branch workbenches.",
-      "provisionDescription": "Create a manager, branch manager, provider, or secretary under the selected clinic group. The temporary password must be changed on first login.",
+      "provisionDescription": "Create a manager, branch manager, doctor, or secretary under the selected clinic group. The temporary password must be changed on first login.",
       "tenantBoundaryTitle": "Company groups own people and patients.",
       "tenantBoundaryDescription": "Branches remain the subscribed client units for profiles, pricing, access blocks, invoices, and collections.",
       "searchPlaceholder": "Search company, slug, note, or ID...",
@@ -571,7 +571,7 @@
       "dailyOrderShort": "Order",
       "noFilteredUsers": "No users match these filters.",
       "provisionClinicUser": "Provision clinic user",
-      "provisionDescription": "Create a manager, branch manager, provider, or secretary for this clinic group. Temporary passwords must be changed on first login.",
+      "provisionDescription": "Create a manager, branch manager, doctor, or secretary for this clinic group. Temporary passwords must be changed on first login.",
       "temporaryPasswordDescription": "Users start with a temporary password and must set a permanent password on first login.",
       "columns": {
         "user": "User",
@@ -1096,7 +1096,7 @@
     "mySessionsToday": "My Visits Today",
     "sessionsToday": "Visits Today",
     "completedCount": "{{count}} completed",
-    "doctorsInSession": "Providers in visits",
+    "doctorsInSession": "Doctors in visits",
     "currentlyInSession": "currently serving patients",
     "avgTimingTitle": "Average wait & duration",
     "timeHealth": "Time health",
@@ -1107,9 +1107,9 @@
     "sessionsSnapshot": "Today's snapshot",
     "sessionsSnapshotHint": "Live status across all visits",
     "viewSessions": "Open visits board",
-    "doctorUtilization": "Provider utilization",
+    "doctorUtilization": "Doctor utilization",
     "utilizationHint": "Who is currently serving patients",
-    "viewDoctors": "Manage providers",
+    "viewDoctors": "Manage doctors",
     "utilizationFootnote": "Updates in real-time based on in-progress visits.",
     "upcomingTitle": "Upcoming appointments",
     "upcomingHint": "Next five confirmed visits",
@@ -1269,7 +1269,7 @@
     "createSession": "Create Visit",
     "editSession": "Edit Visit",
     "todaysSessions": "Today's Visits",
-    "doctor": "Provider",
+    "doctor": "Doctor",
     "patient": "Patient",
     "date": "Date",
     "startedAt": "Visit Time",
@@ -1302,7 +1302,7 @@
     "operationsMetricCompleted": "Completed",
     "operationsMetricCancelled": "Cancelled",
     "formCreateContextTitle": "Visit scheduling context",
-    "formCreateContextDescription": "Choose the patient, provider, time, profile, and commercial setup before the visit enters the branch schedule.",
+    "formCreateContextDescription": "Choose the patient, doctor, time, profile, and commercial setup before the visit enters the branch schedule.",
     "formEditContextTitle": "Visit update context",
     "formEditContextDescription": "Update visit setup without changing the operational status history.",
     "contextPatient": "Patient",
@@ -1327,7 +1327,7 @@
     "completionPaymentHint": "Completing a visit records it as branch activity and opens payment follow-up when money is still due.",
     "statusPermissionHint": "You can view this visit, but you do not have permission to change its status.",
     "filters": {
-      "searchPlaceholder": "Search by patient or provider",
+      "searchPlaceholder": "Search by patient or doctor",
       "statusLabel": "Status",
       "statusAll": "All statuses",
       "categoryLabel": "Category",
@@ -1361,10 +1361,10 @@
     "packageRequiresPatient": "Select a patient before choosing a package category.",
     "packageCostPositive": "Package visit cost must be greater than 0.",
     "packageInsufficientBalance": "Patient does not have enough balance for this package visit.",
-    "assessmentDoctorRestriction": "Assessment and reassessment visits have provider assignment restrictions.",
-    "assessmentLockedDoctorHint": "This provider cannot be assigned assessment or reassessment visits.",
+    "assessmentDoctorRestriction": "Assessment and reassessment visits have doctor assignment restrictions.",
+    "assessmentLockedDoctorHint": "This doctor cannot be assigned assessment or reassessment visits.",
     "assessmentCategoryForcesAssessment": "Category {{categoryName}} is treated as an assessment session.",
-    "reassessmentDoctorRestriction": "Only the assigned provider can create this reassessment visit.",
+    "reassessmentDoctorRestriction": "Only the assigned doctor can create this reassessment visit.",
     "reassessmentLockedDoctorHint": "This reassessment is locked to {{doctorName}}.",
     "crossBranchContext": "This visit was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",
     "profile": "Clinic profile"
@@ -1409,14 +1409,14 @@
     "title": "Reports",
     "commandCenterDescription": "Operational, financial, and audit views for managers who need to investigate what happened and what needs action.",
     "commandCenterTitle": "Reports command center",
-    "commandCenterSummary": "Start with the report that matches the operational question: money, patient balances, provider work, audit trail, or branch reconciliation.",
+    "commandCenterSummary": "Start with the report that matches the operational question: money, patient balances, doctor work, audit trail, or branch reconciliation.",
     "availableReports": "Available reports",
     "financialReports": "Financial workbenches",
     "auditReports": "Audit reports",
     "revenueReport": "Revenue Report",
     "sessionsReport": "Visits Report",
     "patientsReport": "Patients Report",
-    "doctorPerformance": "Provider Performance",
+    "doctorPerformance": "Doctor Performance",
     "auditLogs": "Audit Logs",
     "dateRange": "Date Range",
     "from": "From",
@@ -1459,8 +1459,8 @@
     "incomeType": "Income type",
     "packageIncome": "Package income",
     "individualIncome": "Individual income",
-    "providerVisitsTitle": "Provider visits",
-    "providerVisitsDescription": "Inspect provider schedules, visit status, timing, and revenue context.",
+    "providerVisitsTitle": "Doctor visits",
+    "providerVisitsDescription": "Inspect doctor schedules, visit status, timing, and revenue context.",
     "patientBalancesTitle": "Patient Unused Balances",
     "patientBalancesDescription": "Patients with positive unused balance in the system.",
     "balanceWorkbenchTitle": "Unused balance workbench",
@@ -1516,10 +1516,10 @@
     "voided": "Void"
   },
   "doctors": {
-    "title": "Providers",
-    "doctorLabel": "Provider",
-    "doctorPlaceholder": "Select a provider",
-    "selectDoctorHint": "Select a provider to view visits.",
+    "title": "Doctors",
+    "doctorLabel": "Doctor",
+    "doctorPlaceholder": "Select a doctor",
+    "selectDoctorHint": "Select a doctor to view visits.",
     "summaryTitle": "Summary",
     "totalSessions": "Total visits",
     "completedSessions": "Completed visits",
@@ -1543,7 +1543,7 @@
     "admin": "Platform Admin",
     "manager": "Manager",
     "branch_manager": "Branch Manager",
-    "doctor": "Provider",
+    "doctor": "Doctor",
     "secretary": "Secretary",
     "noUsers": "No users found",
     "shifts": "Shifts",
@@ -1652,9 +1652,12 @@
   "marketing": {
     "metaTitle": "Recovera | Clinic management built around your specialty",
     "nav": {
+      "about": "About",
       "profiles": "Clinic types",
       "experience": "How it helps",
+      "works": "Our work",
       "pricing": "Pricing",
+      "partners": "Partners",
       "mobileLabel": "Landing page sections"
     },
     "topbar": {
@@ -1716,6 +1719,30 @@
         ]
       }
     },
+    "about": {
+      "eyebrow": "Who we are",
+      "title": "A clinic software company focused on real operating pressure.",
+      "description": "Recovera is built for clinics that need their day to feel less scattered: fewer duplicated records, fewer disconnected follow-ups, and a clearer view of what every branch is doing.",
+      "promiseTitle": "The product idea",
+      "promise": "Start with a ready platform, then adapt the workflows, language, and commercial model around the branch and specialty instead of forcing every clinic into one generic template.",
+      "principles": [
+        {
+          "id": "operatingSystem",
+          "title": "Built around the clinic day",
+          "description": "Appointments, patients, visits, teams, and branch activity are treated as one operating rhythm, not separate tools."
+        },
+        {
+          "id": "specialtyAware",
+          "title": "Specialty-aware from the start",
+          "description": "Physiotherapy, medical, dental, laser, and dermatology teams can keep their own language and care details."
+        },
+        {
+          "id": "ownerClarity",
+          "title": "Clear enough for owners",
+          "description": "Managers and owners get practical visibility into activity, subscriptions, and branch performance without drowning the team in admin."
+        }
+      ]
+    },
     "profiles": {
       "eyebrow": "One platform, four ways of working",
       "title": "Your specialty should shape the system, not fight it.",
@@ -1735,7 +1762,12 @@
             "Follow activity across one branch or a growing clinic group"
           ],
           "flowLabel": "Physiotherapy workflow",
-          "flow": ["Welcome", "Assess", "Treat", "Follow up"]
+          "flow": [
+            "Welcome",
+            "Assess",
+            "Treat",
+            "Follow up"
+          ]
         },
         {
           "id": "medical",
@@ -1744,13 +1776,18 @@
           "kicker": "The right context before every consultation",
           "description": "Organize appointments, complaints, diagnoses, prescriptions, and follow-up plans in a workflow that stays focused on the consultation.",
           "points": [
-            "Prepare the provider with the patient history that matters",
+            "Prepare the doctor with the patient history that matters",
             "Keep consultation notes and next steps together",
             "Make follow-up appointments easier for reception to coordinate",
             "Give owners a clearer picture of branch activity"
           ],
           "flowLabel": "Medical clinic workflow",
-          "flow": ["Book", "Consult", "Plan", "Follow up"]
+          "flow": [
+            "Book",
+            "Consult",
+            "Plan",
+            "Follow up"
+          ]
         },
         {
           "id": "dental",
@@ -1765,7 +1802,12 @@
             "Track activity while each branch keeps its own daily rhythm"
           ],
           "flowLabel": "Dental clinic workflow",
-          "flow": ["Book", "Examine", "Treat", "Return"]
+          "flow": [
+            "Book",
+            "Examine",
+            "Treat",
+            "Return"
+          ]
         },
         {
           "id": "dermatology",
@@ -1780,7 +1822,12 @@
             "Keep every branch aligned without flattening how it works"
           ],
           "flowLabel": "Laser and dermatology workflow",
-          "flow": ["Consult", "Prepare", "Treat", "Aftercare"]
+          "flow": [
+            "Consult",
+            "Prepare",
+            "Treat",
+            "Aftercare"
+          ]
         }
       ]
     },
@@ -1797,9 +1844,9 @@
         },
         {
           "id": "care",
-          "title": "Give every provider the right context",
+          "title": "Give every doctor the right context",
           "description": "Each specialty sees the details, language, and follow-up flow that belongs to its own kind of care.",
-          "result": "A clearer visit for the provider and the patient."
+          "result": "A clearer visit for the doctor and the patient."
         },
         {
           "id": "insight",
@@ -1813,6 +1860,35 @@
         "title": "Care can continue smoothly across your branches.",
         "description": "When a patient already belongs to your clinic group, the next branch can build on that relationship instead of creating a disconnected record."
       }
+    },
+    "works": {
+      "eyebrow": "Our work",
+      "title": "Two product paths, one goal: cleaner clinic operations.",
+      "description": "Some clinics need a ready subscription platform. Others need a dedicated custom build outside Recovera. The work starts by understanding the operating model, then choosing the right path.",
+      "note": "The point is not to sell the same system to every clinic. The point is to match the technology to how the clinic actually works and grows.",
+      "items": [
+        {
+          "id": "recovera",
+          "kicker": "Subscription platform",
+          "title": "Recovera for branches that want a ready clinic system",
+          "description": "A multi-specialty management platform for appointments, patients, visits, teams, branch activity, and subscription-based access.",
+          "result": "Best when the clinic wants to start quickly and grow within a structured platform."
+        },
+        {
+          "id": "custom",
+          "kicker": "Dedicated build",
+          "title": "Custom clinic systems for special requirements",
+          "description": "A separate software project for organizations that need unusual workflows, private architecture, advanced integrations, or full ownership outside Recovera.",
+          "result": "Best when the requirements are too specific for a shared subscription product."
+        },
+        {
+          "id": "operations",
+          "kicker": "Workflow thinking",
+          "title": "Operational design before screens and forms",
+          "description": "Before building, the work clarifies roles, patient journeys, branch rules, reporting needs, and the decisions each screen should support.",
+          "result": "Best when the clinic needs software that matches real work, not just a prettier interface."
+        }
+      ]
     },
     "pricing": {
       "eyebrow": "Plans shaped around your branch",
@@ -1916,6 +1992,33 @@
         ]
       }
     },
+    "partners": {
+      "eyebrow": "Success partners",
+      "title": "Built with the people who carry the clinic day.",
+      "description": "Recovera is designed around the teams whose coordination makes the clinic feel professional to patients and manageable to owners.",
+      "items": [
+        {
+          "id": "owners",
+          "title": "Clinic owners",
+          "description": "Need clear visibility into branch activity, growth, subscriptions, and where attention is needed."
+        },
+        {
+          "id": "doctors",
+          "title": "Doctors and care teams",
+          "description": "Need the right patient context before the visit and a workflow that respects the specialty."
+        },
+        {
+          "id": "frontDesk",
+          "title": "Reception and secretaries",
+          "description": "Need fast patient logistics, appointment handling, and fewer repeated admin steps."
+        },
+        {
+          "id": "groups",
+          "title": "Growing clinic groups",
+          "description": "Need branch-level control while keeping patients, teams, and operations connected."
+        }
+      ]
+    },
     "final": {
       "eyebrow": "A better rhythm for every clinic day",
       "title": "One system that feels familiar to your team and clear to clinic owners.",
@@ -1925,23 +2028,27 @@
     },
     "footer": {
       "tagline": "Clinic management that adapts to your specialty."
+    },
+    "whatsapp": {
+      "label": "WhatsApp",
+      "aria": "Contact Recovera on WhatsApp"
     }
   },
   "validation": {
     "sessions": {
-      "doctorRequired": "Provider is required",
+      "doctorRequired": "Doctor is required",
       "patientRequired": "Patient is required",
       "dateRequired": "Visit date is required",
       "startedAtRequired": "Start time is required",
       "costPositive": "Cost must be positive",
-      "assessmentDoctorRestricted": "Selected provider cannot be assigned to assessment or reassessment visits.",
+      "assessmentDoctorRestricted": "Selected doctor cannot be assigned to assessment or reassessment visits.",
       "categoryCostRange": "Cost must be between {{min}} and {{max}}",
       "timeRange": "Visit time must be a whole hour between 10:00 and 24:00",
-      "slotConflict": "Cannot move this visit. The provider already has two visits in this time slot."
+      "slotConflict": "Cannot move this visit. The doctor already has two visits in this time slot."
     }
   },
   "clinicProfiles": {
-    "providerGeneric": "Provider",
+    "providerGeneric": "Doctor",
     "visits": {
       "physiotherapy": "Session",
       "medicalDoctor": "Visit",
@@ -1949,10 +2056,10 @@
       "laserDermatology": "Session"
     },
     "providers": {
-      "physiotherapy": "Therapist",
-      "medicalDoctor": "Clinician",
-      "dentist": "Dentist",
-      "laserDermatology": "Clinician"
+      "physiotherapy": "Doctor",
+      "medicalDoctor": "Doctor",
+      "dentist": "Doctor",
+      "laserDermatology": "Doctor"
     }
   },
   "profileDetails": {
@@ -2006,5 +2113,35 @@
     "sessionNumber": "Session number",
     "skinReaction": "Skin reaction",
     "aftercareInstructions": "Aftercare instructions"
+  },
+  "visitImages": {
+    "title": "Visit images",
+    "galleryTitle": "Patient visit images",
+    "uploadSelected": "Upload {{count}} images",
+    "preview": "Visit image preview",
+    "uploadHint": "Select up to {{count}} JPG, PNG, or WebP images. Each image may be up to 5 MB.",
+    "optimizing": "Optimizing {{current}} of {{total}}...",
+    "uploading": "Uploading {{current}} of {{total}}...",
+    "uploadSuccess": "{{count}} visit images uploaded successfully.",
+    "uploadFailed": "Upload stopped at {{file}}. Successful images were kept; retry the remaining selection.",
+    "selectionLimit": "Select no more than {{count}} images for the remaining visit capacity.",
+    "invalidType": "Choose a JPG, PNG, or WebP image.",
+    "tooLarge": "The image must be 5 MB or smaller.",
+    "optimizationFailed": "The image could not be prepared. Choose a smaller image.",
+    "loadFailed": "The protected image could not be loaded.",
+    "emptySession": "No images have been uploaded for this visit.",
+    "emptyGallery": "No visit images have been uploaded for this patient.",
+    "deleteTitle": "Delete visit image",
+    "deleteDescription": "This removes this image from the visit.",
+    "sessionCount": "{{count}} / {{max}} images",
+    "limitReached": "This visit has reached the maximum of {{max}} images.",
+    "imageCount": "{{count}} images",
+    "openPreview": "Open image preview",
+    "openVisit": "Open visit",
+    "total": "{{count}} images",
+    "rotate": "Rotate",
+    "saveFailed": "Failed to save visit image.",
+    "removeSuccess": "Visit image removed successfully.",
+    "removeFailed": "Failed to remove visit image."
   }
 }

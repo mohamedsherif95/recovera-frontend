@@ -195,7 +195,7 @@ export default function DoctorsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('doctors.title', { defaultValue: 'Providers' })} />
+      <PageHeader title={t('doctors.title', { defaultValue: 'Doctors' })} />
 
       <Card>
         <CardContent className="p-4 space-y-4">
@@ -203,7 +203,7 @@ export default function DoctorsPage() {
             <div className="grid gap-3 md:flex md:items-end">
               <div className="w-full md:w-64 space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">
-                  {t('doctors.doctorLabel', { defaultValue: 'Provider' })}
+                  {t('doctors.doctorLabel', { defaultValue: 'Doctor' })}
                 </label>
                 <AsyncSearchableSelect
                   options={doctorOptions}
@@ -215,7 +215,7 @@ export default function DoctorsPage() {
                     updateFiltersInUrl(nextDoctorId, fromDate, toDate, status, 1);
                   }}
                   placeholder={t('doctors.doctorPlaceholder', {
-                    defaultValue: 'Select a provider',
+                    defaultValue: 'Select a doctor',
                   })}
                   searchPlaceholder={t('sessions.filters.searchPlaceholder')}
                   onSearchChange={doctorLookup.setSearch}
@@ -318,7 +318,7 @@ export default function DoctorsPage() {
           ) : !selectedDoctorId ? (
             <div className="py-6 text-center text-muted-foreground text-sm">
               {t('doctors.selectDoctorHint', {
-                defaultValue: 'Select a provider to view visits.',
+                defaultValue: 'Select a doctor to view visits.',
               })}
             </div>
           ) : sessions.length === 0 ? (

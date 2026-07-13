@@ -17,7 +17,7 @@ export const CLINIC_PROFILE_REGISTRY = {
     visitLabelKey: "clinicProfiles.visits.physiotherapy",
     visitLabelDefault: "Session",
     providerLabelKey: "clinicProfiles.providers.physiotherapy",
-    providerLabelDefault: "Therapist",
+    providerLabelDefault: "Doctor",
     workflowModules: [
       CLINIC_PROFILE_WORKFLOWS.VISIT_CATEGORIES,
       CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
@@ -84,7 +84,7 @@ export const CLINIC_PROFILE_REGISTRY = {
     visitLabelKey: "clinicProfiles.visits.medicalDoctor",
     visitLabelDefault: "Visit",
     providerLabelKey: "clinicProfiles.providers.medicalDoctor",
-    providerLabelDefault: "Clinician",
+    providerLabelDefault: "Doctor",
     workflowModules: [],
     detailFields: [
       {
@@ -164,7 +164,7 @@ export const CLINIC_PROFILE_REGISTRY = {
     visitLabelKey: "clinicProfiles.visits.dentist",
     visitLabelDefault: "Visit",
     providerLabelKey: "clinicProfiles.providers.dentist",
-    providerLabelDefault: "Dentist",
+    providerLabelDefault: "Doctor",
     workflowModules: [],
     detailFields: [
       {
@@ -250,7 +250,7 @@ export const CLINIC_PROFILE_REGISTRY = {
     visitLabelKey: "clinicProfiles.visits.laserDermatology",
     visitLabelDefault: "Session",
     providerLabelKey: "clinicProfiles.providers.laserDermatology",
-    providerLabelDefault: "Clinician",
+    providerLabelDefault: "Doctor",
     workflowModules: [],
     detailFields: [
       {
@@ -376,7 +376,7 @@ export function getClinicProfileVisitLabel(profile, t) {
 
 export function getClinicProfileProviderLabel(profile, t) {
   const config = getClinicProfileConfig(profile);
-  if (!config) return "Provider";
+  if (!config) return "Doctor";
 
   return typeof t === "function"
     ? t(config.providerLabelKey, {

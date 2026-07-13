@@ -149,7 +149,7 @@ export default function Dashboard() {
                     <th className="px-3 py-2 font-medium">{t('sessions.endTime', { defaultValue: 'End time' })}</th>
                     <th className="px-3 py-2 font-medium">{t('sessions.patient')}</th>
                     <th className="px-3 py-2 font-medium">
-                      {t('clinicProfiles.providerGeneric', { defaultValue: 'Provider' })}
+                      {t('clinicProfiles.providerGeneric', { defaultValue: 'Doctor' })}
                     </th>
                     <th className="px-3 py-2 font-medium">{t('sessions.status')}</th>
                   </tr>

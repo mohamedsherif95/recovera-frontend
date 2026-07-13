@@ -53,7 +53,7 @@ const ROLE_LABELS = {
   },
   [USER_ROLES.DOCTOR]: {
     key: 'users.doctor',
-    defaultValue: 'Provider',
+    defaultValue: 'Doctor',
   },
   [USER_ROLES.SECRETARY]: {
     key: 'users.secretary',

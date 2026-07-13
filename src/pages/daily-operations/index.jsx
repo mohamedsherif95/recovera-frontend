@@ -398,7 +398,7 @@ export default function DailyOperationsPage() {
         })}
         description={t("dailyOps.operationsWorkbenchDescription", {
           defaultValue:
-            "Monitor today's patient flow by provider, time, and clinic profile.",
+            "Monitor today's patient flow by doctor, time, and clinic profile.",
         })}
       >
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
@@ -424,7 +424,7 @@ export default function DailyOperationsPage() {
           />
           <ImpactMetric
             label={t("dailyOps.resourceCoverage", {
-              defaultValue: "Providers with visits",
+              defaultValue: "Doctors with visits",
             })}
             value={`${providerWorkload.filter((provider) => provider.total > 0).length}/${doctors.length || 0}`}
           />
@@ -436,7 +436,7 @@ export default function DailyOperationsPage() {
           title={t("dailyOps.title", { defaultValue: "Daily Operations" })}
           description={t("dailyOps.description", {
             defaultValue:
-              "Command center view of today's workload by provider and hour.",
+              "Command center view of today's workload by doctor and hour.",
           })}
           className="mx-4 mt-4 sm:mx-6"
           actions={
@@ -729,8 +729,8 @@ export default function DailyOperationsPage() {
                               type="button"
                               aria-label={t("dailyOps.createSlotAria", {
                                 defaultValue:
-                                  "Create visit for {{provider}} at {{time}}",
-                                provider: doctor.name,
+                                  "Create visit for {{doctor}} at {{time}}",
+                                doctor: doctor.name,
                                 time: formatHourLabel(hour),
                               })}
                               onClick={() =>

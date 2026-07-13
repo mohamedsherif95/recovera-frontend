@@ -1,4 +1,5 @@
 import apiClient from "../client";
+import { parseProtectedImageResponse } from "@/lib/protectedImage";
 
 export const patientsApi = {
   /**
@@ -79,6 +80,27 @@ export const patientsApi = {
       params,
     });
     return response.data;
+  },
+
+  /**
+   * Get protected visit image metadata for this patient
+   */
+  getVisitImages: async (patientId, params = {}) => {
+    const response = await apiClient.get(`/patients/${patientId}/visit-images`, {
+      params,
+    });
+    return response.data;
+  },
+
+  /**
+   * Load protected patient visit image content.
+   */
+  getVisitImageContent: async (patientId, imageId) => {
+    const response = await apiClient.get(
+      `/patients/${patientId}/visit-images/${imageId}/content`,
+      { responseType: "blob" },
+    );
+    return parseProtectedImageResponse(response);
   },
 
   /**

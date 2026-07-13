@@ -1,4 +1,5 @@
 import apiClient from '../client';
+import { parseProtectedImageResponse } from '@/lib/protectedImage';
 
 export const sessionsApi = {
   /**
@@ -80,6 +81,55 @@ export const sessionsApi = {
     const response = await apiClient.delete(`/sessions/${sessionId}`);
     return response.data;
   },
+
+  /**
+   * List visit images for a session
+   */
+  getVisitImages: async (sessionId) => {
+    const response = await apiClient.get(`/sessions/${sessionId}/visit-images`);
+    return response.data;
+  },
+
+  /**
+   * Upload a visit image
+   */
+  uploadVisitImage: async (sessionId, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await apiClient.post(
+      `/sessions/${sessionId}/visit-images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      },
+    );
+    return response.data;
+  },
+
+  /**
+   * Load protected visit image content
+   */
+  getVisitImageContent: async (sessionId, imageId) => {
+    const response = await apiClient.get(
+      `/sessions/${sessionId}/visit-images/${imageId}/content`,
+      { responseType: 'blob' },
+    );
+    return parseProtectedImageResponse(response);
+  },
+
+  /**
+   * Delete a visit image
+   */
+  removeVisitImage: async (sessionId, imageId) => {
+    const response = await apiClient.delete(
+      `/sessions/${sessionId}/visit-images/${imageId}`,
+    );
+    return response.data;
+  },
+
   /**
    * List session categories
    */

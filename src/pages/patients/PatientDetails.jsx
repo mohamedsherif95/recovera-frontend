@@ -12,6 +12,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
@@ -45,6 +60,7 @@ import {
   formatDate,
   formatDateTime,
   formatTimeWithDate,
+  formatWesternNumber,
 } from "@/lib/utils";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
@@ -59,8 +75,17 @@ import {
   Wallet,
   CircleOff,
   XCircle,
+  ArrowRightLeft,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+const BALANCE_ACTION_TYPES = {
+  ADD_BALANCE: "add_balance",
+  ADD_DUE: "add_due",
+  CORRECT_BALANCE: "correct_balance",
+  MOVE_DUE_TO_BALANCE: "move_due_to_balance",
+  WRITE_OFF_DUE: "write_off_due",
+};
 
 const normalizeTextItems = (value) => {
   if (!value) return [];
@@ -140,14 +165,13 @@ export default function PatientDetailsPage() {
   const [selectedClinicalProfile, setSelectedClinicalProfile] = useState(null);
   const [isEditingProfileDetails, setIsEditingProfileDetails] = useState(false);
   const [profileDetailsDraft, setProfileDetailsDraft] = useState({});
-  const [addBalanceAmount, setAddBalanceAmount] = useState("");
-  const [addBalanceNote, setAddBalanceNote] = useState("");
-  const [setBalanceAmount, setSetBalanceAmount] = useState("");
-  const [setBalanceNote, setSetBalanceNote] = useState("");
-  const [addRemainingAmount, setAddRemainingAmount] = useState("");
-  const [addRemainingNote, setAddRemainingNote] = useState("");
-  const [transferAmount, setTransferAmount] = useState("");
-  const [transferNote, setTransferNote] = useState("");
+  const [balanceSheetOpen, setBalanceSheetOpen] = useState(false);
+  const [balanceActionType, setBalanceActionType] = useState(
+    BALANCE_ACTION_TYPES.ADD_BALANCE,
+  );
+  const [balanceActionAmount, setBalanceActionAmount] = useState("");
+  const [balanceTargetAmount, setBalanceTargetAmount] = useState("");
+  const [balanceActionNote, setBalanceActionNote] = useState("");
   const [balanceLogsPage, setBalanceLogsPage] = useState(1);
   const balanceLogsSectionRef = useRef(null);
   const hasScrolledToBalanceLogsRef = useRef(false);
@@ -352,6 +376,249 @@ export default function PatientDetailsPage() {
   const currentRemainingAmount = Number(
     selectedProfileSettings?.packageRemainingAmount ?? 0,
   );
+  const formatAmount = (value) => formatWesternNumber(value);
+  const formatSignedAmount = (value) => {
+    const numericValue = Number(value || 0);
+    if (numericValue > 0) return `+${formatAmount(numericValue)}`;
+    if (numericValue < 0) return `-${formatAmount(Math.abs(numericValue))}`;
+    return formatAmount(0);
+  };
+  const getPreviewDeltaBadgeClass = (value, negativeIsGood = false) => {
+    const numericValue = Number(value || 0);
+
+    if (numericValue === 0) {
+      return "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300";
+    }
+
+    const isPositiveOutcome = negativeIsGood
+      ? numericValue < 0
+      : numericValue > 0;
+
+    return isPositiveOutcome
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+      : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200";
+  };
+  const balanceActionOptions = useMemo(
+    () => [
+      {
+        value: BALANCE_ACTION_TYPES.ADD_BALANCE,
+        label: t("patients.balanceActionAddBalance", {
+          defaultValue: "Add available balance",
+        }),
+        description: t("patients.balanceActionAddBalanceHint", {
+          defaultValue: "Use when the patient pays into a package balance.",
+        }),
+        amountLabel: t("common.amount", { defaultValue: "Amount" }),
+      },
+      {
+        value: BALANCE_ACTION_TYPES.ADD_DUE,
+        label: t("patients.balanceActionAddDue", {
+          defaultValue: "Add amount due",
+        }),
+        description: t("patients.balanceActionAddDueHint", {
+          defaultValue: "Use when the patient still owes part of the package.",
+        }),
+        amountLabel: t("common.amount", { defaultValue: "Amount" }),
+      },
+      {
+        value: BALANCE_ACTION_TYPES.MOVE_DUE_TO_BALANCE,
+        label: t("patients.balanceActionMoveDue", {
+          defaultValue: "Move due amount to balance",
+        }),
+        description: t("patients.balanceActionMoveDueHint", {
+          defaultValue: "Use after collecting part of the amount due.",
+        }),
+        amountLabel: t("common.amount", { defaultValue: "Amount" }),
+      },
+      {
+        value: BALANCE_ACTION_TYPES.WRITE_OFF_DUE,
+        label: t("patients.balanceActionWriteOffDue", {
+          defaultValue: "Write off amount due",
+        }),
+        description: t("patients.balanceActionWriteOffDueHint", {
+          defaultValue: "Reduce the amount due without adding balance.",
+        }),
+        amountLabel: t("patients.writeOffAmount", {
+          defaultValue: "Write-off amount",
+        }),
+        requiresNote: true,
+      },
+      {
+        value: BALANCE_ACTION_TYPES.CORRECT_BALANCE,
+        label: t("patients.balanceActionCorrectBalance", {
+          defaultValue: "Correct available balance",
+        }),
+        description: t("patients.balanceActionCorrectBalanceHint", {
+          defaultValue: "Set the available balance to an exact value.",
+        }),
+        amountLabel: t("patients.newBalanceValue", {
+          defaultValue: "New balance value",
+        }),
+        usesTargetAmount: true,
+        requiresNote: true,
+      },
+    ],
+    [t],
+  );
+  const selectedBalanceAction =
+    balanceActionOptions.find((option) => option.value === balanceActionType) ||
+    balanceActionOptions[0];
+  const balanceAdjustmentPreview = useMemo(() => {
+    const amount = Number.parseInt(balanceActionAmount, 10);
+    const targetAmount = Number.parseInt(balanceTargetAmount, 10);
+    let balanceDelta = 0;
+    let remainingDelta = 0;
+    let reason = "remaining_adjustment";
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.ADD_BALANCE) {
+      balanceDelta = Number.isNaN(amount) ? 0 : amount;
+      reason = "package_payment";
+    } else if (balanceActionType === BALANCE_ACTION_TYPES.ADD_DUE) {
+      remainingDelta = Number.isNaN(amount) ? 0 : amount;
+    } else if (balanceActionType === BALANCE_ACTION_TYPES.MOVE_DUE_TO_BALANCE) {
+      balanceDelta = Number.isNaN(amount) ? 0 : amount;
+      remainingDelta = Number.isNaN(amount) ? 0 : -amount;
+    } else if (balanceActionType === BALANCE_ACTION_TYPES.WRITE_OFF_DUE) {
+      remainingDelta = Number.isNaN(amount) ? 0 : -amount;
+    } else if (balanceActionType === BALANCE_ACTION_TYPES.CORRECT_BALANCE) {
+      balanceDelta = Number.isNaN(targetAmount)
+        ? 0
+        : targetAmount - currentBalance;
+      reason = "manual_correction";
+    }
+
+    return {
+      balanceDelta,
+      remainingDelta,
+      reason,
+      nextBalance: currentBalance + balanceDelta,
+      nextRemainingAmount: currentRemainingAmount + remainingDelta,
+    };
+  }, [
+    balanceActionAmount,
+    balanceActionType,
+    balanceTargetAmount,
+    currentBalance,
+    currentRemainingAmount,
+  ]);
+
+  const validateBalanceAdjustment = () => {
+    const amount = Number.parseInt(balanceActionAmount, 10);
+    const targetAmount = Number.parseInt(balanceTargetAmount, 10);
+    const note = balanceActionNote.trim();
+
+    if (selectedBalanceAction?.requiresNote && !note) {
+      return t("patients.balanceAdjustmentReasonRequired", {
+        defaultValue: "Enter a reason before saving this adjustment.",
+      });
+    }
+
+    if (selectedBalanceAction?.usesTargetAmount) {
+      if (Number.isNaN(targetAmount) || targetAmount < 0) {
+        return t("patients.enterValidTargetBalance", {
+          defaultValue: "Enter a valid balance value.",
+        });
+      }
+
+      if (targetAmount === currentBalance) {
+        return t("patients.noBalanceChange", {
+          defaultValue: "New value is the same as current balance.",
+        });
+      }
+
+      return null;
+    }
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      return t("patients.enterValidAmount", {
+        defaultValue: "Enter a valid amount.",
+      });
+    }
+
+    if (
+      [
+        BALANCE_ACTION_TYPES.MOVE_DUE_TO_BALANCE,
+        BALANCE_ACTION_TYPES.WRITE_OFF_DUE,
+      ].includes(balanceActionType) &&
+      amount > currentRemainingAmount
+    ) {
+      return t("patients.transferExceedsRemaining", {
+        defaultValue: "Amount is higher than the remaining due amount.",
+      });
+    }
+
+    return null;
+  };
+
+  const buildBalanceAdjustmentDefaultNote = () => {
+    const amount = Number.parseInt(balanceActionAmount, 10);
+    const targetAmount = Number.parseInt(balanceTargetAmount, 10);
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.ADD_BALANCE) {
+      return t("patients.addedToBalanceNote", {
+        defaultValue: "Added {{amount}} to patient balance",
+        amount: formatAmount(amount),
+      });
+    }
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.ADD_DUE) {
+      return t("patients.increaseRemainingNote", {
+        defaultValue: "Increased remaining amount by {{amount}}",
+        amount: formatAmount(amount),
+      });
+    }
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.MOVE_DUE_TO_BALANCE) {
+      return t("patients.transferFromRemainingNote", {
+        defaultValue: "Moved {{amount}} from amount due to balance",
+        amount: formatAmount(amount),
+      });
+    }
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.CORRECT_BALANCE) {
+      return t("patients.balanceCorrectedNote", {
+        defaultValue: "Balance corrected from {{from}} to {{to}}",
+        from: formatAmount(currentBalance),
+        to: formatAmount(targetAmount),
+      });
+    }
+
+    return balanceActionNote.trim();
+  };
+
+  const handleSubmitBalanceAdjustment = () => {
+    const validationMessage = validateBalanceAdjustment();
+    if (validationMessage) {
+      toast.error(validationMessage);
+      return;
+    }
+
+    const note =
+      balanceActionNote.trim() || buildBalanceAdjustmentDefaultNote();
+    createPackageTransaction.mutate(
+      {
+        patientId: id,
+        data: {
+          reason: balanceAdjustmentPreview.reason,
+          balanceDelta:
+            balanceAdjustmentPreview.balanceDelta !== 0
+              ? balanceAdjustmentPreview.balanceDelta
+              : undefined,
+          remainingDelta:
+            balanceAdjustmentPreview.remainingDelta !== 0
+              ? balanceAdjustmentPreview.remainingDelta
+              : undefined,
+          notes: note || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setBalanceSheetOpen(false);
+          resetBalanceAdjustmentForm();
+        },
+      },
+    );
+  };
 
   const handleStartEditHistory = () => {
     setHistoryItems(currentHistoryItems.length ? currentHistoryItems : [""]);
@@ -496,157 +763,11 @@ export default function PatientDetailsPage() {
     );
   };
 
-  const submitPackageUpdate = ({
-    balanceDelta,
-    remainingDelta,
-    reason,
-    notes,
-    onSuccess,
-  }) => {
-    createPackageTransaction.mutate(
-      {
-        patientId: id,
-        data: {
-          reason,
-          balanceDelta: balanceDelta || undefined,
-          remainingDelta: remainingDelta || undefined,
-          notes: notes || undefined,
-        },
-      },
-      { onSuccess },
-    );
-  };
-
-  const handleAddToBalance = () => {
-    const amount = Number.parseInt(addBalanceAmount, 10);
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error(
-        t("patients.enterValidAmount", {
-          defaultValue: "Enter a valid amount.",
-        }),
-      );
-      return;
-    }
-
-    submitPackageUpdate({
-      balanceDelta: amount,
-      remainingDelta: 0,
-      reason: "package_payment",
-      notes:
-        addBalanceNote.trim() ||
-        t("patients.addedToBalanceNote", {
-          defaultValue: "Added {{amount}} to patient balance",
-          amount,
-        }),
-      onSuccess: () => {
-        setAddBalanceAmount("");
-        setAddBalanceNote("");
-      },
-    });
-  };
-
-  const handleSetBalance = () => {
-    const targetAmount = Number.parseInt(setBalanceAmount, 10);
-    if (Number.isNaN(targetAmount) || targetAmount < 0) {
-      toast.error(
-        t("patients.enterValidTargetBalance", {
-          defaultValue: "Enter a valid balance value.",
-        }),
-      );
-      return;
-    }
-
-    const correctionDelta = targetAmount - currentBalance;
-    if (correctionDelta === 0) {
-      toast.error(
-        t("patients.noBalanceChange", {
-          defaultValue: "New value is the same as current balance.",
-        }),
-      );
-      return;
-    }
-
-    submitPackageUpdate({
-      balanceDelta: correctionDelta,
-      remainingDelta: 0,
-      reason: "manual_correction",
-      notes:
-        setBalanceNote.trim() ||
-        t("patients.balanceCorrectedNote", {
-          defaultValue: "Balance corrected from {{from}} to {{to}}",
-          from: currentBalance,
-          to: targetAmount,
-        }),
-      onSuccess: () => {
-        setSetBalanceAmount("");
-        setSetBalanceNote("");
-      },
-    });
-  };
-
-  const handleMoveFromRemainingToBalance = () => {
-    const amount = Number.parseInt(transferAmount, 10);
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error(
-        t("patients.enterValidAmount", {
-          defaultValue: "Enter a valid amount.",
-        }),
-      );
-      return;
-    }
-
-    if (amount > currentRemainingAmount) {
-      toast.error(
-        t("patients.transferExceedsRemaining", {
-          defaultValue: "Amount is higher than the remaining due amount.",
-        }),
-      );
-      return;
-    }
-
-    submitPackageUpdate({
-      balanceDelta: amount,
-      remainingDelta: -amount,
-      reason: "remaining_adjustment",
-      notes:
-        transferNote.trim() ||
-        t("patients.transferFromRemainingNote", {
-          defaultValue: "Moved {{amount}} from amount due to balance",
-          amount,
-        }),
-      onSuccess: () => {
-        setTransferAmount("");
-        setTransferNote("");
-      },
-    });
-  };
-
-  const handleAddToRemainingAmount = () => {
-    const amount = Number.parseInt(addRemainingAmount, 10);
-    if (Number.isNaN(amount) || amount <= 0) {
-      toast.error(
-        t("patients.enterValidAmount", {
-          defaultValue: "Enter a valid amount.",
-        }),
-      );
-      return;
-    }
-
-    submitPackageUpdate({
-      balanceDelta: 0,
-      remainingDelta: amount,
-      reason: "remaining_adjustment",
-      notes:
-        addRemainingNote.trim() ||
-        t("patients.increaseRemainingNote", {
-          defaultValue: "Increased remaining amount by {{amount}}",
-          amount,
-        }),
-      onSuccess: () => {
-        setAddRemainingAmount("");
-        setAddRemainingNote("");
-      },
-    });
+  const resetBalanceAdjustmentForm = () => {
+    setBalanceActionType(BALANCE_ACTION_TYPES.ADD_BALANCE);
+    setBalanceActionAmount("");
+    setBalanceTargetAmount("");
+    setBalanceActionNote("");
   };
 
   const {
@@ -765,7 +886,9 @@ export default function PatientDetailsPage() {
     .filter(Boolean)
     .join(", ");
   const clinicalProfilesValue = clinicalProfiles.length
-    ? clinicalProfiles.map((profile) => getClinicProfileLabel(profile, t)).join(", ")
+    ? clinicalProfiles
+        .map((profile) => getClinicProfileLabel(profile, t))
+        .join(", ")
     : t("patients.noEnabledClinicalProfiles");
   const canDeactivateRelationship = (relationship) =>
     canEdit &&
@@ -789,10 +912,6 @@ export default function PatientDetailsPage() {
     );
   };
   const requestedSection = searchParams.get("section");
-  const formatSignedAmount = (value) => {
-    const numericValue = Number(value || 0);
-    return numericValue > 0 ? `+${numericValue}` : `${numericValue}`;
-  };
   const describeBalanceLogAction = (log) => {
     if (!log) return t("common.update", { defaultValue: "Update" });
 
@@ -815,6 +934,16 @@ export default function PatientDetailsPage() {
     ) {
       return t("patients.logActionMovedToBalance", {
         defaultValue: "Moved from amount due to balance",
+      });
+    }
+
+    if (
+      log.type === "remaining_adjustment" &&
+      Number(log.amount || 0) === 0 &&
+      Number(log.remainingDelta || 0) < 0
+    ) {
+      return t("patients.logActionReducedRemaining", {
+        defaultValue: "Reduced amount due",
       });
     }
 
@@ -1107,12 +1236,18 @@ export default function PatientDetailsPage() {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div className="grid gap-3 sm:grid-cols-2">
-              <ProfileMetric label={t("patients.fullName")} value={patient.fullName} />
+              <ProfileMetric
+                label={t("patients.fullName")}
+                value={patient.fullName}
+              />
               <ProfileMetric
                 label={t("patients.patientId")}
                 value={patient.patientCode ? `#${patient.patientCode}` : "--"}
               />
-              <ProfileMetric label={t("patients.phone")} value={patient.phone || "--"} />
+              <ProfileMetric
+                label={t("patients.phone")}
+                value={patient.phone || "--"}
+              />
               <ProfileMetric
                 label={t("patients.age")}
                 value={patient.age != null ? patient.age : "--"}
@@ -1172,7 +1307,8 @@ export default function PatientDetailsPage() {
                               })}
                             </Badge>
                           )}
-                          {currentBranchRelationship?.id === relationship.id && (
+                          {currentBranchRelationship?.id ===
+                            relationship.id && (
                             <Badge variant="outline">
                               {t("patients.currentBranch", {
                                 defaultValue: "Current branch",
@@ -1592,24 +1728,38 @@ export default function PatientDetailsPage() {
 
       {!isDoctorOnly && selectedSupportsTreatmentPackages && (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardHeader className="flex flex-col gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />
               {t("patients.balanceAndPackages", {
                 defaultValue: "Balance and package amount",
               })}
             </CardTitle>
+            {canEdit && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setBalanceSheetOpen(true)}
+                disabled={createPackageTransaction.isPending}
+                className="w-full sm:w-auto"
+              >
+                <ArrowRightLeft className="h-4 w-4" />
+                {t("patients.adjustBalance", {
+                  defaultValue: "Adjust balance",
+                })}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-md border bg-muted/20 p-3">
                 <div className="text-xs text-muted-foreground">
                   {t("patients.currentBalance", {
-                    defaultValue: "Current balance",
+                    defaultValue: "Available balance",
                   })}
                 </div>
                 <div className="mt-1 text-2xl font-bold text-primary">
-                  {currentBalance}
+                  {formatAmount(currentBalance)}
                 </div>
               </div>
               <div className="rounded-md border bg-muted/20 p-3">
@@ -1618,11 +1768,66 @@ export default function PatientDetailsPage() {
                     defaultValue: "Amount still due",
                   })}
                 </div>
-                <div className="mt-1 text-2xl font-bold">
-                  {currentRemainingAmount}
+                <div
+                  className={cn(
+                    "mt-1 text-2xl font-bold",
+                    currentRemainingAmount > 0 &&
+                      "text-amber-700 dark:text-amber-300",
+                  )}
+                >
+                  {formatAmount(currentRemainingAmount)}
                 </div>
               </div>
+              <div className="rounded-md border bg-muted/20 p-3">
+                <div className="text-xs text-muted-foreground">
+                  {t("patients.lastFinancialActivity", {
+                    defaultValue: "Last financial activity",
+                  })}
+                </div>
+                <div className="mt-1 truncate text-sm font-semibold">
+                  {isBalanceLogsLoading
+                    ? t("common.loading")
+                    : balanceLogs[0]
+                      ? describeBalanceLogAction(balanceLogs[0])
+                      : t("messages.noDataFound")}
+                </div>
+                {balanceLogs[0]?.createdAt ? (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {formatDateTime(balanceLogs[0].createdAt, "PP p")}
+                  </div>
+                ) : null}
+              </div>
             </div>
+
+            {currentRemainingAmount > 0 && (
+              <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+                <div className="font-medium">
+                  {t("patients.amountDueVisibleNotice", {
+                    amount: formatAmount(currentRemainingAmount),
+                    defaultValue:
+                      "This patient still has {{amount}} due. Review the balance before creating new visits.",
+                  })}
+                </div>
+                {canViewBalanceLogs && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      balanceLogsSectionRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                      });
+                    }}
+                    className="border-amber-300 bg-background text-amber-950 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-950"
+                  >
+                    {t("patients.reviewBalance", {
+                      defaultValue: "Review balance",
+                    })}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {isBalanceExhaustedAfterUse && (
               <div className="flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
@@ -1634,194 +1839,271 @@ export default function PatientDetailsPage() {
                 </span>
               </div>
             )}
-
-            {canEdit && (
-              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-semibold">
-                    {t("patients.addBalanceSimple", {
-                      defaultValue: "Add to balance",
-                    })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("patients.addBalanceSimpleHint", {
-                      defaultValue:
-                        "Use this when the patient pays part of a package.",
-                    })}
-                  </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={addBalanceAmount}
-                    onChange={(event) =>
-                      setAddBalanceAmount(event.target.value)
-                    }
-                    placeholder={t("common.amount")}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Input
-                    value={addBalanceNote}
-                    onChange={(event) => setAddBalanceNote(event.target.value)}
-                    placeholder={t("common.notes")}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={handleAddToBalance}
-                    disabled={createPackageTransaction.isPending}
-                  >
-                    {createPackageTransaction.isPending
-                      ? t("common.loading")
-                      : t("patients.addBalanceSimple", {
-                          defaultValue: "Add to balance",
-                        })}
-                  </Button>
-                </div>
-
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-semibold">
-                    {t("patients.increaseRemainingAmount", {
-                      defaultValue: "Increase remaining amount",
-                    })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("patients.increaseRemainingAmountHint", {
-                      defaultValue:
-                        "Use this when there is still an unpaid amount in the package.",
-                    })}
-                  </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={addRemainingAmount}
-                    onChange={(event) =>
-                      setAddRemainingAmount(event.target.value)
-                    }
-                    placeholder={t("common.amount")}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Input
-                    value={addRemainingNote}
-                    onChange={(event) =>
-                      setAddRemainingNote(event.target.value)
-                    }
-                    placeholder={t("common.notes")}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={handleAddToRemainingAmount}
-                    disabled={createPackageTransaction.isPending}
-                  >
-                    {createPackageTransaction.isPending
-                      ? t("common.loading")
-                      : t("patients.increaseRemainingAmount", {
-                          defaultValue: "Increase remaining amount",
-                        })}
-                  </Button>
-                </div>
-
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-semibold">
-                    {t("patients.correctBalance", {
-                      defaultValue: "Correct balance",
-                    })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("patients.correctBalanceHint", {
-                      defaultValue: "Set the balance to an exact value.",
-                    })}
-                  </div>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={setBalanceAmount}
-                    onChange={(event) =>
-                      setSetBalanceAmount(event.target.value)
-                    }
-                    placeholder={t("patients.newBalanceValue", {
-                      defaultValue: "New balance value",
-                    })}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Input
-                    value={setBalanceNote}
-                    onChange={(event) => setSetBalanceNote(event.target.value)}
-                    placeholder={t("common.notes")}
-                    disabled={createPackageTransaction.isPending}
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={handleSetBalance}
-                    disabled={createPackageTransaction.isPending}
-                  >
-                    {createPackageTransaction.isPending
-                      ? t("common.loading")
-                      : t("patients.correctBalance", {
-                          defaultValue: "Correct balance",
-                        })}
-                  </Button>
-                </div>
-
-                <div className="space-y-2 rounded-md border p-3">
-                  <div className="text-sm font-semibold">
-                    {t("patients.moveFromDueToBalance", {
-                      defaultValue: "Move from due amount to balance",
-                    })}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t("patients.moveFromDueToBalanceHint", {
-                      defaultValue:
-                        "Use this after collecting part of the due amount.",
-                    })}
-                  </div>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={transferAmount}
-                    onChange={(event) => setTransferAmount(event.target.value)}
-                    placeholder={t("common.amount")}
-                    disabled={
-                      createPackageTransaction.isPending ||
-                      currentRemainingAmount <= 0
-                    }
-                  />
-                  <Input
-                    value={transferNote}
-                    onChange={(event) => setTransferNote(event.target.value)}
-                    placeholder={t("common.notes")}
-                    disabled={
-                      createPackageTransaction.isPending ||
-                      currentRemainingAmount <= 0
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={handleMoveFromRemainingToBalance}
-                    disabled={
-                      createPackageTransaction.isPending ||
-                      currentRemainingAmount <= 0
-                    }
-                  >
-                    {createPackageTransaction.isPending
-                      ? t("common.loading")
-                      : t("patients.moveAmount", {
-                          defaultValue: "Move amount",
-                        })}
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
+      )}
+
+      {!isDoctorOnly && selectedSupportsTreatmentPackages && (
+        <Sheet
+          open={balanceSheetOpen}
+          onOpenChange={(open) => {
+            setBalanceSheetOpen(open);
+            if (!open && !createPackageTransaction.isPending) {
+              resetBalanceAdjustmentForm();
+            }
+          }}
+        >
+          <SheetContent className="w-full sm:max-w-xl lg:max-w-2xl">
+            <SheetHeader className="border-b px-6 py-5 pe-12">
+              <SheetTitle>
+                {t("patients.adjustBalance", {
+                  defaultValue: "Adjust balance",
+                })}
+              </SheetTitle>
+              <SheetDescription>
+                {t("patients.adjustBalanceDescription", {
+                  defaultValue:
+                    "Choose one financial action, review the result, then save it to the patient ledger.",
+                })}
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <div className="space-y-2">
+                <Label htmlFor="balance-action-type">
+                  {t("patients.balanceActionType", {
+                    defaultValue: "Action type",
+                  })}
+                </Label>
+                <Select
+                  value={balanceActionType}
+                  onValueChange={(value) => {
+                    setBalanceActionType(value);
+                    setBalanceActionAmount("");
+                    setBalanceTargetAmount("");
+                    setBalanceActionNote("");
+                  }}
+                  disabled={createPackageTransaction.isPending}
+                >
+                  <SelectTrigger id="balance-action-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {balanceActionOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedBalanceAction?.description && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedBalanceAction.description}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="balance-action-amount">
+                    {selectedBalanceAction?.amountLabel ||
+                      t("common.amount", { defaultValue: "Amount" })}
+                  </Label>
+                  <Input
+                    id="balance-action-amount"
+                    type="number"
+                    min={selectedBalanceAction?.usesTargetAmount ? 0 : 1}
+                    step={1}
+                    value={
+                      selectedBalanceAction?.usesTargetAmount
+                        ? balanceTargetAmount
+                        : balanceActionAmount
+                    }
+                    onChange={(event) => {
+                      if (selectedBalanceAction?.usesTargetAmount) {
+                        setBalanceTargetAmount(event.target.value);
+                      } else {
+                        setBalanceActionAmount(event.target.value);
+                      }
+                    }}
+                    disabled={createPackageTransaction.isPending}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="balance-action-note">
+                    {selectedBalanceAction?.requiresNote
+                      ? t("patients.reasonRequired", {
+                          defaultValue: "Reason",
+                        })
+                      : t("common.notes", { defaultValue: "Notes" })}
+                  </Label>
+                  <Textarea
+                    id="balance-action-note"
+                    rows={3}
+                    value={balanceActionNote}
+                    onChange={(event) =>
+                      setBalanceActionNote(event.target.value)
+                    }
+                    placeholder={
+                      selectedBalanceAction?.requiresNote
+                        ? t("patients.reasonRequiredPlaceholder", {
+                            defaultValue: "Required for this adjustment",
+                          })
+                        : t("common.notes", { defaultValue: "Notes" })
+                    }
+                    disabled={createPackageTransaction.isPending}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-md border bg-muted/20 p-3">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm font-semibold">
+                    {t("patients.adjustmentPreview", {
+                      defaultValue: "Adjustment preview",
+                    })}
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="max-w-full truncate rounded-full border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200"
+                  >
+                    {selectedBalanceAction?.label}
+                  </Badge>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="rounded-md border bg-background p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge variant="secondary" className="rounded-full">
+                        {t("patients.currentBalance", {
+                          defaultValue: "Available balance",
+                        })}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "rounded-full",
+                          getPreviewDeltaBadgeClass(
+                            balanceAdjustmentPreview.balanceDelta,
+                          ),
+                        )}
+                      >
+                        {t("patients.changeValue", {
+                          defaultValue: "Change: {{value}}",
+                          value: formatSignedAmount(
+                            balanceAdjustmentPreview.balanceDelta,
+                          ),
+                        })}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                          {t("patients.previewCurrent", {
+                            defaultValue: "Current",
+                          })}
+                        </div>
+                        <div className="mt-1 truncate text-sm font-semibold">
+                          {formatAmount(currentBalance)}
+                        </div>
+                      </div>
+                      <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                      <div className="min-w-0 text-end">
+                        <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                          {t("patients.previewAfter", {
+                            defaultValue: "After",
+                          })}
+                        </div>
+                        <div className="mt-1 truncate text-sm font-semibold">
+                          {formatAmount(balanceAdjustmentPreview.nextBalance)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border bg-background p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge
+                        variant="outline"
+                        className="rounded-full border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+                      >
+                        {t("patients.amountStillDue", {
+                          defaultValue: "Amount still due",
+                        })}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "rounded-full",
+                          getPreviewDeltaBadgeClass(
+                            balanceAdjustmentPreview.remainingDelta,
+                            true,
+                          ),
+                        )}
+                      >
+                        {t("patients.changeValue", {
+                          defaultValue: "Change: {{value}}",
+                          value: formatSignedAmount(
+                            balanceAdjustmentPreview.remainingDelta,
+                          ),
+                        })}
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                          {t("patients.previewCurrent", {
+                            defaultValue: "Current",
+                          })}
+                        </div>
+                        <div className="mt-1 truncate text-sm font-semibold">
+                          {formatAmount(currentRemainingAmount)}
+                        </div>
+                      </div>
+                      <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                      <div className="min-w-0 text-end">
+                        <div className="text-[11px] font-medium uppercase text-muted-foreground">
+                          {t("patients.previewAfter", {
+                            defaultValue: "After",
+                          })}
+                        </div>
+                        <div className="mt-1 truncate text-sm font-semibold">
+                          {formatAmount(
+                            balanceAdjustmentPreview.nextRemainingAmount,
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <SheetFooter className="border-t bg-background px-6 py-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setBalanceSheetOpen(false)}
+                disabled={createPackageTransaction.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSubmitBalanceAdjustment}
+                disabled={createPackageTransaction.isPending}
+              >
+                {createPackageTransaction.isPending
+                  ? t("common.loading")
+                  : t("patients.saveAdjustment", {
+                      defaultValue: "Save adjustment",
+                    })}
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       )}
 
       {selectedSupportsTreatmentPrograms && (
@@ -2084,7 +2366,9 @@ export default function PatientDetailsPage() {
                       {t("sessions.endTime", { defaultValue: "End time" })}
                     </th>
                     <th className="px-4 py-3 font-medium">
-                      {t("sessions.profile", { defaultValue: "Clinic profile" })}
+                      {t("sessions.profile", {
+                        defaultValue: "Clinic profile",
+                      })}
                     </th>
                     {sessionHistoryShowsCategories && (
                       <th className="px-4 py-3 font-medium">

@@ -18,12 +18,27 @@ export function cn(...inputs) {
  * Format currency (no decimals for Egyptian pounds)
  */
 export function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-EG', {
+  return new Intl.NumberFormat('en-EG-u-nu-latn', {
     style: 'currency',
     currency: 'EGP',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+    numberingSystem: 'latn',
   }).format(amount);
+}
+
+/**
+ * Format numbers with Western/Latin digits regardless of UI language.
+ */
+export function formatWesternNumber(amount, options = {}) {
+  const numericAmount = Number(amount ?? 0);
+  const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
+
+  return new Intl.NumberFormat('en-US-u-nu-latn', {
+    maximumFractionDigits: 0,
+    numberingSystem: 'latn',
+    ...options,
+  }).format(safeAmount);
 }
 
 /**
@@ -65,18 +80,18 @@ export const getCurrentLocalTime = () => getClinicCurrentTimeString();
  */
 export function formatTimeTo12Hour(time) {
   if (!time) return '--';
-  
+
   const parts = time.split(':');
   if (parts.length < 2) return time;
-  
+
   let hours = parseInt(parts[0], 10);
   const minutes = parts[1];
-  
+
   if (isNaN(hours)) return time;
-  
+
   const period = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12 || 12; // Convert 0 to 12 for midnight, 13-23 to 1-11
-  
+
   return `${hours}:${minutes} ${period}`;
 }
 

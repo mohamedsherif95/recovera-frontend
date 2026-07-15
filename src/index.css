@@ -209,3 +209,65 @@
       );
   }
 }
+
+.sheet-content[data-state='open'][data-side='right'] {
+  animation: sheet-swipe-in-right 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sheet-content[data-state='closed'][data-side='right'] {
+  animation: sheet-swipe-out-right 190ms cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+.sheet-content[data-state='open'][data-side='left'] {
+  animation: sheet-swipe-in-left 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.sheet-content[data-state='closed'][data-side='left'] {
+  animation: sheet-swipe-out-left 190ms cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+@keyframes sheet-swipe-in-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-swipe-out-right {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes sheet-swipe-in-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes sheet-swipe-out-left {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-content[data-state] {
+    animation-duration: 1ms;
+  }
+}

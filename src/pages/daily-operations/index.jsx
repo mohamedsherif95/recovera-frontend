@@ -445,10 +445,11 @@ export default function DailyOperationsPage() {
                   id="operations-date"
                   value={selectedDate}
                   onChange={handleDateChange}
+                  className="h-9 w-full xl:w-[180px]"
                 />
-                <div className="text-xs text-muted-foreground">
+                {/* <div className="text-xs text-muted-foreground">
                   {format(selectedDateObj, "PPPP", { locale })}
-                </div>
+                </div> */}
               </div>
 
               <div className="space-y-1">

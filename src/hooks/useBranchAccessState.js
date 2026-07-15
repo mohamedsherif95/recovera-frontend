@@ -2,19 +2,22 @@ import { useMemo } from 'react';
 import { useBranches } from '@/hooks/useBranches';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   canOverrideBranchScope,
   getAssignedBranches,
   resolveEffectiveBranchId,
   resolveEffectiveClinicId,
 } from '@/lib/branchScope';
-import { BRANCH_SUBSCRIPTION_ACCESS_STATUS } from '@/lib/constants';
+import { BRANCH_SUBSCRIPTION_ACCESS_STATUS, PERMISSIONS } from '@/lib/constants';
 
 export function useBranchAccessState() {
   const { user } = useAuthStore();
   const { clinicOverrideId, branchOverrideId } = useUIStore();
+  const { hasPermission } = usePermissions();
 
   const canOverrideBranch = canOverrideBranchScope(user);
+  const canViewBranches = hasPermission(PERMISSIONS['branches:view']);
   const assignedBranches = useMemo(() => getAssignedBranches(user), [user]);
   const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
   const effectiveBranchId = resolveEffectiveBranchId(user, branchOverrideId);
@@ -23,7 +26,7 @@ export function useBranchAccessState() {
   );
 
   const { data: branchesData } = useBranches({
-    enabled: Boolean(user && hasScopedBranchData),
+    enabled: Boolean(user && canViewBranches && hasScopedBranchData),
   });
 
   const fetchedBranches = hasScopedBranchData

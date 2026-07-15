@@ -1151,6 +1151,36 @@ export default function PatientDetailsPage() {
         }
       />
 
+      {hasOutstandingAmountDue && (
+        <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+          <div className="font-medium">
+            {t("patients.amountDueVisibleNotice", {
+              amount: formatAmount(currentRemainingAmount),
+              defaultValue:
+                "This patient still has {{amount}} due. Review the balance before creating new visits.",
+            })}
+          </div>
+          {canViewBalanceLogs && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                balanceLogsSectionRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              }}
+              className="border-amber-300 bg-background text-amber-950 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-950"
+            >
+              {t("patients.reviewBalance", {
+                defaultValue: "Review balance",
+              })}
+            </Button>
+          )}
+        </div>
+      )}
+
       <ImpactPanel
         icon={Building2}
         title={t("patients.patientOperationalContextTitle")}
@@ -1187,32 +1217,57 @@ export default function PatientDetailsPage() {
         </div>
       </ImpactPanel>
 
-      {canCreateSession && isCreatingSession && (
-        <SessionForm
-          initialValues={{
-            doctorId: undefined,
-            patientId: Number(id),
-            sessionDate: "",
-            sessionTime: "",
-            cost: showPhysiotherapyPatientSettings
-              ? (patient.defaultSessionCost ?? undefined)
-              : undefined,
-            categoryId: supportsVisitCategories
-              ? (patient.categoryId ?? patient.category?.id ?? undefined)
-              : undefined,
-            isAssessment: false,
+      {canCreateSession && (
+        <Sheet
+          open={isCreatingSession}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsCreatingSession(false);
+            }
           }}
-          fixedPatient={patient}
-          onSubmit={(values) =>
-            createSession.mutate(values, {
-              onSuccess: () => {
-                setIsCreatingSession(false);
-              },
-            })
-          }
-          onCancel={() => setIsCreatingSession(false)}
-          isSubmitting={createSession.isPending}
-        />
+        >
+          <SheetContent className="w-full overflow-y-auto sm:max-w-2xl lg:max-w-3xl">
+            <SheetHeader className="sr-only">
+              <SheetTitle>
+                {t("sessions.createSession", { defaultValue: "Create visit" })}
+              </SheetTitle>
+              <SheetDescription>
+                {t("patients.createVisitDrawerDescription", {
+                  defaultValue: "Create a new visit for this patient.",
+                })}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              {isCreatingSession && (
+                <SessionForm
+                  initialValues={{
+                    doctorId: undefined,
+                    patientId: Number(id),
+                    sessionDate: "",
+                    sessionTime: "",
+                    cost: showPhysiotherapyPatientSettings
+                      ? (patient.defaultSessionCost ?? undefined)
+                      : undefined,
+                    categoryId: supportsVisitCategories
+                      ? (patient.categoryId ?? patient.category?.id ?? undefined)
+                      : undefined,
+                    isAssessment: false,
+                  }}
+                  fixedPatient={patient}
+                  onSubmit={(values) =>
+                    createSession.mutate(values, {
+                      onSuccess: () => {
+                        setIsCreatingSession(false);
+                      },
+                    })
+                  }
+                  onCancel={() => setIsCreatingSession(false)}
+                  isSubmitting={createSession.isPending}
+                />
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
 
       {isEditing && canEdit && (
@@ -1821,36 +1876,6 @@ export default function PatientDetailsPage() {
                 ) : null}
               </div>
             </div>
-
-            {currentRemainingAmount > 0 && (
-              <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100 sm:flex-row sm:items-center sm:justify-between">
-                <div className="font-medium">
-                  {t("patients.amountDueVisibleNotice", {
-                    amount: formatAmount(currentRemainingAmount),
-                    defaultValue:
-                      "This patient still has {{amount}} due. Review the balance before creating new visits.",
-                  })}
-                </div>
-                {canViewBalanceLogs && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      balanceLogsSectionRef.current?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "start",
-                      });
-                    }}
-                    className="border-amber-300 bg-background text-amber-950 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-950"
-                  >
-                    {t("patients.reviewBalance", {
-                      defaultValue: "Review balance",
-                    })}
-                  </Button>
-                )}
-              </div>
-            )}
 
             {isBalanceExhaustedAfterUse && (
               <div className="flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300">

@@ -1159,6 +1159,7 @@
     "createVisitAmountDueConfirm": "Create visit",
     "createVisitAmountDueDescription": "{{patient}} still has {{amount}} due. Confirm before creating a new visit.",
     "createVisitAmountDueTitle": "Create visit with amount due?",
+    "createVisitDrawerDescription": "Create a new visit for this patient.",
     "lastFinancialActivity": "Last financial activity",
     "logActionReducedRemaining": "Reduced due amount",
     "previewAfter": "After",

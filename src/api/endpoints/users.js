@@ -15,6 +15,14 @@ export const usersApi = {
     return response.data;
   },
 
+  getDoctorLookup: async (params = {}, options = {}) => {
+    const response = await apiClient.get('/users/lookup/doctors', {
+      ...buildScopedRequestConfig(options),
+      params,
+    });
+    return response.data;
+  },
+
   create: async (data, options = {}) => {
     const response = await apiClient.post(
       '/users',

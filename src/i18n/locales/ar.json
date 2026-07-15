@@ -233,6 +233,7 @@
     "createVisitAmountDueConfirm": "إنشاء الزيارة",
     "createVisitAmountDueDescription": "على {{patient}} مبلغ مستحق قدره {{amount}}. أكّد قبل إنشاء زيارة جديدة.",
     "createVisitAmountDueTitle": "إنشاء زيارة مع وجود مبلغ مستحق؟",
+    "createVisitDrawerDescription": "إنشاء زيارة جديدة لهذا المريض.",
     "lastFinancialActivity": "آخر حركة مالية",
     "logActionReducedRemaining": "تخفيض المبلغ المستحق",
     "previewAfter": "بعد",

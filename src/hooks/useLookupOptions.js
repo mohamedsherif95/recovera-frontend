@@ -116,9 +116,8 @@ export function useDoctorLookupOptions({
     enabled,
     pageSize,
     fetchPage: (params) =>
-      usersApi.getAll({
+      usersApi.getDoctorLookup({
         ...params,
-        role: 'doctor',
         branchId: effectiveBranchId || undefined,
       }),
     toOption: (user) => ({

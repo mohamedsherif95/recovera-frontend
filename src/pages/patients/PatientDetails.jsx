@@ -149,6 +149,8 @@ export default function PatientDetailsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const updatePatient = useUpdatePatient();
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [createSessionDueConfirmOpen, setCreateSessionDueConfirmOpen] =
+    useState(false);
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [historyItems, setHistoryItems] = useState([]);
   const [reassessmentCycleLength, setReassessmentCycleLength] = useState("");
@@ -376,6 +378,8 @@ export default function PatientDetailsPage() {
   const currentRemainingAmount = Number(
     selectedProfileSettings?.packageRemainingAmount ?? 0,
   );
+  const hasOutstandingAmountDue =
+    selectedSupportsTreatmentPackages && currentRemainingAmount > 0;
   const formatAmount = (value) => formatWesternNumber(value);
   const formatSignedAmount = (value) => {
     const numericValue = Number(value || 0);
@@ -618,6 +622,25 @@ export default function PatientDetailsPage() {
         },
       },
     );
+  };
+
+  const handleCreateSessionClick = () => {
+    if (isCreatingSession) {
+      setIsCreatingSession(false);
+      return;
+    }
+
+    if (hasOutstandingAmountDue) {
+      setCreateSessionDueConfirmOpen(true);
+      return;
+    }
+
+    setIsCreatingSession(true);
+  };
+
+  const handleConfirmCreateSessionWithDue = () => {
+    setCreateSessionDueConfirmOpen(false);
+    setIsCreatingSession(true);
   };
 
   const handleStartEditHistory = () => {
@@ -1090,7 +1113,7 @@ export default function PatientDetailsPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setIsCreatingSession((prev) => !prev)}
+                onClick={handleCreateSessionClick}
               >
                 {isCreatingSession
                   ? t("common.close")
@@ -2530,6 +2553,25 @@ export default function PatientDetailsPage() {
           )}
         </CardContent>
       </Card>
+      <ConfirmDialog
+        open={createSessionDueConfirmOpen}
+        onOpenChange={setCreateSessionDueConfirmOpen}
+        title={t("patients.createVisitAmountDueTitle", {
+          defaultValue: "Create visit with amount due?",
+        })}
+        description={t("patients.createVisitAmountDueDescription", {
+          defaultValue:
+            "{{patient}} still has {{amount}} due. Confirm before creating a new visit.",
+          patient: patient.fullName,
+          amount: formatAmount(currentRemainingAmount),
+        })}
+        confirmText={t("patients.createVisitAmountDueConfirm", {
+          defaultValue: "Create visit",
+        })}
+        cancelText={t("common.cancel")}
+        variant="default"
+        onConfirm={handleConfirmCreateSessionWithDue}
+      />
       <ConfirmDialog
         open={Boolean(relationshipToDeactivate)}
         onOpenChange={(open) => {

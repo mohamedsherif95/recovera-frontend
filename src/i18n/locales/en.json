@@ -1558,7 +1558,8 @@
     "completedSessions": "Completed visits",
     "cancelledSessions": "Cancelled visits",
     "totalRevenue": "Total revenue",
-    "visitTypeAll": "All visit types"
+    "visitTypeAll": "All visit types",
+    "profileVisitTypeOption": "{{profile}} {{visitType}}"
   },
   "users": {
     "title": "Users",

@@ -21,29 +21,66 @@ import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
 import {
   CLINIC_PROFILE_WORKFLOWS,
   clinicProfileSupportsWorkflow,
+  getClinicProfileLabel,
   getClinicProfileVisitLabel,
 } from '@/lib/clinicProfiles';
 
 const VISIT_TYPE_FILTERS = {
   ALL: 'all',
-  SESSION: 'session',
-  ASSESSMENT: 'assessment',
-  REASSESSMENT: 'reassessment',
 };
 
+function formatVisitTypeLabel(visitType) {
+  if (!visitType) return '';
+  return String(visitType)
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getVisitTypeOptionValue(visitType) {
+  return `visit-type:${String(visitType).trim().toLowerCase()}`;
+}
+
+function getProfileVisitTypeOptionLabel(profile, visitTypeLabel, t) {
+  const profileLabel = getClinicProfileLabel(profile, t);
+  if (!profileLabel) return visitTypeLabel;
+
+  return t('doctors.profileVisitTypeOption', {
+    defaultValue: '{{profile}} {{visitType}}',
+    profile: profileLabel,
+    visitType: visitTypeLabel,
+  });
+}
+
 function getVisitTypeLabel(row, t) {
+  const profile = row.profile;
+
   if (row.isReassessment) {
-    return t('sessions.isReassessment', { defaultValue: 'Reassessment' });
+    return getProfileVisitTypeOptionLabel(
+      profile,
+      t('sessions.isReassessment', { defaultValue: 'Reassessment' }),
+      t,
+    );
   }
 
   if (row.isAssessment) {
-    return t('sessions.isAssessment', { defaultValue: 'Assessment' });
+    return getProfileVisitTypeOptionLabel(
+      profile,
+      t('sessions.isAssessment', { defaultValue: 'Assessment' }),
+      t,
+    );
   }
 
-  return (
-    row.visitType ||
-    getClinicProfileVisitLabel(row.profile, t) ||
-    t('sessions.session', { defaultValue: 'Visit' })
+  const visitTypeLabel =
+    formatVisitTypeLabel(row.visitType) ||
+    getClinicProfileVisitLabel(profile, t) ||
+    t('sessions.session', { defaultValue: 'Visit' });
+
+  return getProfileVisitTypeOptionLabel(
+    profile,
+    visitTypeLabel,
+    t,
   );
 }
 
@@ -128,43 +165,6 @@ export default function DoctorsPage() {
     { value: 'cancelled', label: t('status.cancelled', { defaultValue: 'Cancelled' }) },
   ], [t]);
 
-  const visitTypeOptions = useMemo(() => {
-    const regularVisitLabels = [
-      ...new Set(
-        enabledProfiles.map((profile) => getClinicProfileVisitLabel(profile, t)),
-      ),
-    ].filter(Boolean);
-    const regularVisitLabel =
-      regularVisitLabels.length === 1
-        ? regularVisitLabels[0]
-        : t('sessions.regularVisit', { defaultValue: 'Regular visit' });
-    const supportsAssessmentTracking = enabledProfiles.some((profile) =>
-      clinicProfileSupportsWorkflow(
-        profile,
-        CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
-      ),
-    );
-    const options = [
-      { value: VISIT_TYPE_FILTERS.ALL, label: t('common.all', { defaultValue: 'All' }) },
-      { value: VISIT_TYPE_FILTERS.SESSION, label: regularVisitLabel },
-    ];
-
-    if (supportsAssessmentTracking) {
-      options.push(
-        {
-          value: VISIT_TYPE_FILTERS.ASSESSMENT,
-          label: t('sessions.isAssessment', { defaultValue: 'Assessment' }),
-        },
-        {
-          value: VISIT_TYPE_FILTERS.REASSESSMENT,
-          label: t('sessions.isReassessment', { defaultValue: 'Reassessment' }),
-        },
-      );
-    }
-
-    return options;
-  }, [enabledProfiles, t]);
-
   const {
     data,
     isLoading,
@@ -206,6 +206,118 @@ export default function DoctorsPage() {
     if (Array.isArray(data?.sessions)) return data.sessions;
     return [];
   }, [data]);
+
+  const visitTypeFacets = useMemo(() => {
+    return Array.isArray(data?.visitTypeOptions) ? data.visitTypeOptions : [];
+  }, [data?.visitTypeOptions]);
+
+  const visitTypeOptions = useMemo(() => {
+    const options = [
+      { value: VISIT_TYPE_FILTERS.ALL, label: t('common.all', { defaultValue: 'All' }) },
+    ];
+    const existingOptionValues = new Set(options.map((option) => option.value));
+
+    const addOption = (option) => {
+      if (!option?.value || existingOptionValues.has(option.value)) return;
+      existingOptionValues.add(option.value);
+      options.push(option);
+    };
+
+    enabledProfiles.forEach((profile) => {
+      const profileVisitLabel = getClinicProfileVisitLabel(profile, t);
+
+      addOption({
+        value: `profile:${profile}`,
+        label: getProfileVisitTypeOptionLabel(profile, profileVisitLabel, t),
+      });
+
+      if (
+        clinicProfileSupportsWorkflow(
+          profile,
+          CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+        )
+      ) {
+        [
+          {
+            value: `assessment:${profile}`,
+            label: getProfileVisitTypeOptionLabel(
+              profile,
+              t('sessions.isAssessment', { defaultValue: 'Assessment' }),
+              t,
+            ),
+          },
+          {
+            value: `reassessment:${profile}`,
+            label: getProfileVisitTypeOptionLabel(
+              profile,
+              t('sessions.isReassessment', { defaultValue: 'Reassessment' }),
+              t,
+            ),
+          },
+        ].forEach(addOption);
+      }
+    });
+
+    visitTypeFacets.forEach((facet) => {
+      const profile = facet.profile;
+
+      if (facet.isReassessment && profile) {
+        addOption({
+          value: `reassessment:${profile}`,
+          label: getProfileVisitTypeOptionLabel(
+            profile,
+            t('sessions.isReassessment', { defaultValue: 'Reassessment' }),
+            t,
+          ),
+        });
+        return;
+      }
+
+      if (facet.isAssessment && profile) {
+        addOption({
+          value: `assessment:${profile}`,
+          label: getProfileVisitTypeOptionLabel(
+            profile,
+            t('sessions.isAssessment', { defaultValue: 'Assessment' }),
+            t,
+          ),
+        });
+        return;
+      }
+
+      const customVisitType = facet.visitType?.trim();
+      if (customVisitType) {
+        addOption({
+          value: getVisitTypeOptionValue(customVisitType),
+          label: formatVisitTypeLabel(customVisitType),
+        });
+        return;
+      }
+
+      if (profile) {
+        addOption({
+          value: `profile:${profile}`,
+          label: getProfileVisitTypeOptionLabel(
+            profile,
+            getClinicProfileVisitLabel(profile, t),
+            t,
+          ),
+        });
+      }
+    });
+
+    sessions.forEach((session) => {
+      const customVisitType = session.visitType?.trim();
+      if (!customVisitType) return;
+
+      addOption({
+        value: getVisitTypeOptionValue(customVisitType),
+        label: formatVisitTypeLabel(customVisitType),
+      });
+    });
+
+    return options;
+  }, [enabledProfiles, sessions, t, visitTypeFacets]);
 
   const summary = data?.summary || {};
   const totalSessions = data?.total ?? data?.meta?.total ?? summary.totalSessions ?? sessions.length;

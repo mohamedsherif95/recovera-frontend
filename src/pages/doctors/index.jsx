@@ -17,6 +17,35 @@ import { PERMISSIONS } from '@/lib/constants';
 import { formatDate, formatTimeTo12Hour, formatTimeWithDate } from '@/lib/utils';
 import { Loader2, RefreshCcw } from 'lucide-react';
 import { useDoctorLookupOptions } from '@/hooks/useLookupOptions';
+import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
+import {
+  CLINIC_PROFILE_WORKFLOWS,
+  clinicProfileSupportsWorkflow,
+  getClinicProfileVisitLabel,
+} from '@/lib/clinicProfiles';
+
+const VISIT_TYPE_FILTERS = {
+  ALL: 'all',
+  SESSION: 'session',
+  ASSESSMENT: 'assessment',
+  REASSESSMENT: 'reassessment',
+};
+
+function getVisitTypeLabel(row, t) {
+  if (row.isReassessment) {
+    return t('sessions.isReassessment', { defaultValue: 'Reassessment' });
+  }
+
+  if (row.isAssessment) {
+    return t('sessions.isAssessment', { defaultValue: 'Assessment' });
+  }
+
+  return (
+    row.visitType ||
+    getClinicProfileVisitLabel(row.profile, t) ||
+    t('sessions.session', { defaultValue: 'Visit' })
+  );
+}
 
 export default function DoctorsPage() {
   const { t, i18n } = useTranslation();
@@ -40,6 +69,10 @@ export default function DoctorsPage() {
     return searchParams.get('status') || 'all';
   });
 
+  const [visitType, setVisitTypeState] = useState(() => {
+    return searchParams.get('visitType') || VISIT_TYPE_FILTERS.ALL;
+  });
+
   const [page, setPageState] = useState(() => {
     const raw = searchParams.get('page');
     const parsed = raw ? parseInt(raw, 10) : 1;
@@ -50,13 +83,24 @@ export default function DoctorsPage() {
   const canView = can(PERMISSIONS['reports:view']);
 
   const doctorLookup = useDoctorLookupOptions();
+  const { enabledProfiles } = useActiveBranchProfiles();
 
-  const updateFiltersInUrl = (nextDoctorId, nextFromDate, nextToDate, nextStatus, nextPage) => {
+  const updateFiltersInUrl = (
+    nextDoctorId,
+    nextFromDate,
+    nextToDate,
+    nextStatus,
+    nextVisitType,
+    nextPage,
+  ) => {
     const params = {};
     if (nextDoctorId) params.doctorId = nextDoctorId;
     if (nextFromDate) params.from = nextFromDate;
     if (nextToDate) params.to = nextToDate;
     if (nextStatus && nextStatus !== 'all') params.status = nextStatus;
+    if (nextVisitType && nextVisitType !== VISIT_TYPE_FILTERS.ALL) {
+      params.visitType = nextVisitType;
+    }
     if (nextPage && nextPage !== 1) params.page = String(nextPage);
     setSearchParams(params, { replace: true });
   };
@@ -84,6 +128,43 @@ export default function DoctorsPage() {
     { value: 'cancelled', label: t('status.cancelled', { defaultValue: 'Cancelled' }) },
   ], [t]);
 
+  const visitTypeOptions = useMemo(() => {
+    const regularVisitLabels = [
+      ...new Set(
+        enabledProfiles.map((profile) => getClinicProfileVisitLabel(profile, t)),
+      ),
+    ].filter(Boolean);
+    const regularVisitLabel =
+      regularVisitLabels.length === 1
+        ? regularVisitLabels[0]
+        : t('sessions.regularVisit', { defaultValue: 'Regular visit' });
+    const supportsAssessmentTracking = enabledProfiles.some((profile) =>
+      clinicProfileSupportsWorkflow(
+        profile,
+        CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
+      ),
+    );
+    const options = [
+      { value: VISIT_TYPE_FILTERS.ALL, label: t('common.all', { defaultValue: 'All' }) },
+      { value: VISIT_TYPE_FILTERS.SESSION, label: regularVisitLabel },
+    ];
+
+    if (supportsAssessmentTracking) {
+      options.push(
+        {
+          value: VISIT_TYPE_FILTERS.ASSESSMENT,
+          label: t('sessions.isAssessment', { defaultValue: 'Assessment' }),
+        },
+        {
+          value: VISIT_TYPE_FILTERS.REASSESSMENT,
+          label: t('sessions.isReassessment', { defaultValue: 'Reassessment' }),
+        },
+      );
+    }
+
+    return options;
+  }, [enabledProfiles, t]);
+
   const {
     data,
     isLoading,
@@ -93,7 +174,15 @@ export default function DoctorsPage() {
   } = useQuery({
     queryKey: [
       'doctor-sessions-report',
-      { doctorId: selectedDoctorId, fromDate, toDate, status, page, limit: pageSize },
+      {
+        doctorId: selectedDoctorId,
+        fromDate,
+        toDate,
+        status,
+        visitType,
+        page,
+        limit: pageSize,
+      },
     ],
     queryFn: () =>
       reportsApi.getDoctorSessions({
@@ -101,6 +190,7 @@ export default function DoctorsPage() {
         from: fromDate || undefined,
         to: toDate || undefined,
         status: status !== 'all' ? status : undefined,
+        visitType: visitType !== VISIT_TYPE_FILTERS.ALL ? visitType : undefined,
         page,
         limit: pageSize,
       }),
@@ -140,6 +230,15 @@ export default function DoctorsPage() {
           const date = row.sessionDate || row.date;
           return date ? formatDate(date, 'PP') : '--';
         },
+      },
+      {
+        key: 'visitType',
+        header: t('sessions.visitType', { defaultValue: 'Visit type' }),
+        cell: (row) => (
+          <Badge variant="outline">
+            {getVisitTypeLabel(row, t)}
+          </Badge>
+        ),
       },
       {
         key: 'sessionTime',
@@ -212,7 +311,7 @@ export default function DoctorsPage() {
                     const nextDoctorId = val || '';
                     setSelectedDoctorIdState(nextDoctorId);
                     setPageState(1);
-                    updateFiltersInUrl(nextDoctorId, fromDate, toDate, status, 1);
+                    updateFiltersInUrl(nextDoctorId, fromDate, toDate, status, visitType, 1);
                   }}
                   placeholder={t('doctors.doctorPlaceholder', {
                     defaultValue: 'Select a doctor',
@@ -243,10 +342,29 @@ export default function DoctorsPage() {
                     const nextStatus = val || 'all';
                     setStatusState(nextStatus);
                     setPageState(1);
-                    updateFiltersInUrl(selectedDoctorId, fromDate, toDate, nextStatus, 1);
+                    updateFiltersInUrl(selectedDoctorId, fromDate, toDate, nextStatus, visitType, 1);
                   }}
                   placeholder={t('sessions.filters.statusAll', {
                     defaultValue: 'All statuses',
+                  })}
+                />
+              </div>
+
+              <div className="w-full md:w-48 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('sessions.visitType', { defaultValue: 'Visit type' })}
+                </label>
+                <SearchableSelect
+                  options={visitTypeOptions}
+                  value={visitType}
+                  onChange={(val) => {
+                    const nextVisitType = val || VISIT_TYPE_FILTERS.ALL;
+                    setVisitTypeState(nextVisitType);
+                    setPageState(1);
+                    updateFiltersInUrl(selectedDoctorId, fromDate, toDate, status, nextVisitType, 1);
+                  }}
+                  placeholder={t('doctors.visitTypeAll', {
+                    defaultValue: 'All visit types',
                   })}
                 />
               </div>
@@ -263,7 +381,7 @@ export default function DoctorsPage() {
                       const nextFrom = value || '';
                       setFromDateState(nextFrom);
                       setPageState(1);
-                      updateFiltersInUrl(selectedDoctorId, nextFrom, toDate, status, 1);
+                      updateFiltersInUrl(selectedDoctorId, nextFrom, toDate, status, visitType, 1);
                     }}
                     placeholder={t('reports.fromPlaceholder', {
                       defaultValue: 'From date',
@@ -281,7 +399,7 @@ export default function DoctorsPage() {
                       const nextTo = value || '';
                       setToDateState(nextTo);
                       setPageState(1);
-                      updateFiltersInUrl(selectedDoctorId, fromDate, nextTo, status, 1);
+                      updateFiltersInUrl(selectedDoctorId, fromDate, nextTo, status, visitType, 1);
                     }}
                     placeholder={t('reports.toPlaceholder', {
                       defaultValue: 'To date',
@@ -353,6 +471,9 @@ export default function DoctorsPage() {
                           {row.status ? t(`status.${row.status}`) : '--'}
                         </Badge>
                       </div>
+                      <Badge variant="outline" className="w-fit">
+                        {getVisitTypeLabel(row, t)}
+                      </Badge>
 
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
@@ -458,7 +579,7 @@ export default function DoctorsPage() {
                       onClick={() => {
                         const nextPage = Math.max(1, page - 1);
                         setPageState(nextPage);
-                        updateFiltersInUrl(selectedDoctorId, fromDate, toDate, status, nextPage);
+                        updateFiltersInUrl(selectedDoctorId, fromDate, toDate, status, visitType, nextPage);
                       }}
                     >
                       {t('common.previous')}
@@ -473,7 +594,7 @@ export default function DoctorsPage() {
                       onClick={() => {
                         const nextPage = Math.min(totalPages || 1, page + 1);
                         setPageState(nextPage);
-                        updateFiltersInUrl(selectedDoctorId, fromDate, toDate, status, nextPage);
+                        updateFiltersInUrl(selectedDoctorId, fromDate, toDate, status, visitType, nextPage);
                       }}
                     >
                       {t('common.next')}

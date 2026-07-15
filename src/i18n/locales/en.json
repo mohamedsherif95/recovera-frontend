@@ -1303,6 +1303,8 @@
     "doctor": "Doctor",
     "patient": "Patient",
     "date": "Date",
+    "visitType": "Visit type",
+    "regularVisit": "Regular visit",
     "startedAt": "Visit Time",
     "arrivalTime": "Arrival Time",
     "markArrival": "Mark patient arrival",
@@ -1555,7 +1557,8 @@
     "totalSessions": "Total visits",
     "completedSessions": "Completed visits",
     "cancelledSessions": "Cancelled visits",
-    "totalRevenue": "Total revenue"
+    "totalRevenue": "Total revenue",
+    "visitTypeAll": "All visit types"
   },
   "users": {
     "title": "Users",

@@ -377,6 +377,8 @@
     "doctor": "الطبيب",
     "patient": "المريض",
     "date": "التاريخ",
+    "visitType": "نوع الزيارة",
+    "regularVisit": "زيارة عادية",
     "startedAt": "وقت الزيارة",
     "arrivalTime": "وقت الوصول",
     "markArrival": "تسجيل وصول المريض",
@@ -629,7 +631,8 @@
     "totalSessions": "إجمالي الزيارات",
     "completedSessions": "الزيارات المكتملة",
     "cancelledSessions": "الزيارات الملغاة",
-    "totalRevenue": "إجمالي الإيرادات"
+    "totalRevenue": "إجمالي الإيرادات",
+    "visitTypeAll": "كل أنواع الزيارات"
   },
   "users": {
     "title": "المستخدمون",

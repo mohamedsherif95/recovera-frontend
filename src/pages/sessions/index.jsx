@@ -53,7 +53,7 @@ import {
   ClipboardCheck,
   Plus,
 } from "lucide-react";
-import { SessionForm } from "./SessionForm";
+import { SessionFormDrawer } from "./SessionFormDrawer";
 import { useAuthStore } from "@/store/authStore";
 import {
   CLINIC_PROFILE_WORKFLOWS,
@@ -439,7 +439,7 @@ export default function SessionsPage() {
               <Button
                 onClick={() => {
                   if (isReadOnlyBranch) return;
-                  setShowForm((prev) => !prev);
+                  setShowForm(true);
                 }}
                 disabled={isReadOnlyBranch}
                 title={isReadOnlyBranch ? readOnlyTooltip : undefined}
@@ -482,8 +482,16 @@ export default function SessionsPage() {
         </div>
       </ImpactPanel>
 
-      {showForm && !isReadOnlyBranch && can(PERMISSIONS["sessions:create"]) && (
-        <SessionForm
+      {!isReadOnlyBranch && can(PERMISSIONS["sessions:create"]) && (
+        <SessionFormDrawer
+          open={showForm}
+          onOpenChange={(open) => {
+            if (!open) {
+              handleCancelForm();
+            } else {
+              setShowForm(true);
+            }
+          }}
           initialValues={initialFormValues}
           lockDoctor={lockDoctor}
           onSubmit={(values) => {

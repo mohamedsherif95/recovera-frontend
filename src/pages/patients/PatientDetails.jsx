@@ -53,7 +53,7 @@ import {
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
 import { PatientForm } from "./PatientForm";
-import { SessionForm } from "../sessions/SessionForm";
+import { SessionFormDrawer } from "../sessions/SessionFormDrawer";
 import { useCreateSession } from "@/hooks/useSessions";
 import {
   cn,
@@ -1218,56 +1218,40 @@ export default function PatientDetailsPage() {
       </ImpactPanel>
 
       {canCreateSession && (
-        <Sheet
+        <SessionFormDrawer
           open={isCreatingSession}
           onOpenChange={(open) => {
             if (!open) {
               setIsCreatingSession(false);
             }
           }}
-        >
-          <SheetContent className="w-full overflow-y-auto sm:max-w-2xl lg:max-w-3xl">
-            <SheetHeader className="sr-only">
-              <SheetTitle>
-                {t("sessions.createSession", { defaultValue: "Create visit" })}
-              </SheetTitle>
-              <SheetDescription>
-                {t("patients.createVisitDrawerDescription", {
-                  defaultValue: "Create a new visit for this patient.",
-                })}
-              </SheetDescription>
-            </SheetHeader>
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              {isCreatingSession && (
-                <SessionForm
-                  initialValues={{
-                    doctorId: undefined,
-                    patientId: Number(id),
-                    sessionDate: "",
-                    sessionTime: "",
-                    cost: showPhysiotherapyPatientSettings
-                      ? (patient.defaultSessionCost ?? undefined)
-                      : undefined,
-                    categoryId: supportsVisitCategories
-                      ? (patient.categoryId ?? patient.category?.id ?? undefined)
-                      : undefined,
-                    isAssessment: false,
-                  }}
-                  fixedPatient={patient}
-                  onSubmit={(values) =>
-                    createSession.mutate(values, {
-                      onSuccess: () => {
-                        setIsCreatingSession(false);
-                      },
-                    })
-                  }
-                  onCancel={() => setIsCreatingSession(false)}
-                  isSubmitting={createSession.isPending}
-                />
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+          description={t("patients.createVisitDrawerDescription", {
+            defaultValue: "Create a new visit for this patient.",
+          })}
+          initialValues={{
+            doctorId: undefined,
+            patientId: Number(id),
+            sessionDate: "",
+            sessionTime: "",
+            cost: showPhysiotherapyPatientSettings
+              ? (patient.defaultSessionCost ?? undefined)
+              : undefined,
+            categoryId: supportsVisitCategories
+              ? (patient.categoryId ?? patient.category?.id ?? undefined)
+              : undefined,
+            isAssessment: false,
+          }}
+          fixedPatient={patient}
+          onSubmit={(values) =>
+            createSession.mutate(values, {
+              onSuccess: () => {
+                setIsCreatingSession(false);
+              },
+            })
+          }
+          onCancel={() => setIsCreatingSession(false)}
+          isSubmitting={createSession.isPending}
+        />
       )}
 
       {isEditing && canEdit && (

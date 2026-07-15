@@ -1297,6 +1297,7 @@
   "sessions": {
     "title": "Visits",
     "createSession": "Create Visit",
+    "createVisitDrawerDescription": "Create a new visit.",
     "editSession": "Edit Visit",
     "todaysSessions": "Today's Visits",
     "doctor": "Doctor",

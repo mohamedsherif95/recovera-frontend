@@ -623,6 +623,7 @@ export default function BranchSubscriptionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const canView = can(PERMISSIONS['branchSubscriptions:view']);
   const canManage = can(PERMISSIONS['branchSubscriptions:manage']);
+  const canViewBranches = can(PERMISSIONS['branches:view']);
   const needsClinicSelection = !platformAdminClinicId;
   const platformScopeOptions = platformAdminClinicId
     ? { platformClinicId: platformAdminClinicId }
@@ -639,7 +640,8 @@ export default function BranchSubscriptionsPage() {
     refetch: refetchBranches,
     isFetching: isBranchesFetching,
   } = useBranches({
-    enabled: Boolean(canView && !needsClinicSelection),
+    enabled: Boolean(canView && canViewBranches && !needsClinicSelection),
+    suppressPermissionToast: true,
     ...platformScopeOptions,
   });
 

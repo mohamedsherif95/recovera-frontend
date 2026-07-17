@@ -91,10 +91,13 @@ export function usePatientLookupOptions({
     enabled,
     pageSize,
     fetchPage: (params) =>
-      patientsApi.getAll({
-        ...params,
-        scope,
-      }),
+      patientsApi.getAll(
+        {
+          ...params,
+          scope,
+        },
+        { suppressPermissionToast: true },
+      ),
     toOption: (patient) => ({
       value: String(patient.id),
       label: patient.fullName || patient.patientCode || `#${patient.id}`,
@@ -116,10 +119,13 @@ export function useDoctorLookupOptions({
     enabled,
     pageSize,
     fetchPage: (params) =>
-      usersApi.getDoctorLookup({
-        ...params,
-        branchId: effectiveBranchId || undefined,
-      }),
+      usersApi.getDoctorLookup(
+        {
+          ...params,
+          branchId: effectiveBranchId || undefined,
+        },
+        { suppressPermissionToast: true },
+      ),
     toOption: (user) => ({
       value: String(user.id),
       label: user.fullName || user.username || `#${user.id}`,
@@ -136,7 +142,8 @@ export function useSessionLookupOptions({
     queryKey: ['lookup', 'sessions'],
     enabled,
     pageSize,
-    fetchPage: (params) => sessionsApi.getAll(params),
+    fetchPage: (params) =>
+      sessionsApi.getAll(params, { suppressPermissionToast: true }),
     toOption: (session) => ({
       value: String(session.id),
       label: `${session.patient?.fullName || 'Unknown patient'} - ${session.sessionDate || ''}`,

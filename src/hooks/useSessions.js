@@ -17,11 +17,13 @@ export function useSessions(filters = {}) {
 }
 
 export function useSessionCategories(options = {}) {
+  const { suppressPermissionToast = true, ...queryOptions } = options;
+
   return useQuery({
     queryKey: ["sessions", "categories"],
-    queryFn: sessionsApi.getCategories,
+    queryFn: () => sessionsApi.getCategories({ suppressPermissionToast }),
     staleTime: 5 * 60 * 1000,
-    ...options,
+    ...queryOptions,
   });
 }
 

@@ -931,6 +931,7 @@ export default function PlatformBillingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const canView = can(PERMISSIONS['platformBilling:view']);
   const canManage = can(PERMISSIONS['platformBilling:manage']);
+  const canViewBranches = can(PERMISSIONS['branches:view']);
   const needsClinicSelection = !platformAdminClinicId;
   const platformScopeOptions = platformAdminClinicId
     ? { platformClinicId: platformAdminClinicId }
@@ -948,7 +949,8 @@ export default function PlatformBillingPage() {
 
   const { data: branchesData, isLoading: branchesLoading } = useBranches(
     {
-      enabled: Boolean(canView && !needsClinicSelection),
+      enabled: Boolean(canView && canViewBranches && !needsClinicSelection),
+      suppressPermissionToast: true,
       ...platformScopeOptions,
     },
   );

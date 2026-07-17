@@ -46,9 +46,10 @@ import { Badge } from '@/components/ui/badge';
 import { useCreateClinic, useUpdateClinic } from '@/hooks/useClinics';
 import { useCreateUser } from '@/hooks/useUsers';
 import { useBranches } from '@/hooks/useBranches';
+import { usePermissions } from '@/hooks/usePermissions';
 import { usePlatformClinicGroups } from '@/hooks/usePlatformAdmin';
 import { accessApi } from '@/api/endpoints/access';
-import { DOCTOR_SHIFT, USER_ROLES } from '@/lib/constants';
+import { DOCTOR_SHIFT, PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { useUIStore } from '@/store/uiStore';
 import { formatCurrency } from '@/lib/utils';
 
@@ -242,7 +243,9 @@ function ClinicSetupActions({ clinic, onEditClinic, onProvisionUser, t }) {
 
 export default function ClinicsPage() {
   const { t, i18n } = useTranslation();
+  const { can } = usePermissions();
   const { setPlatformAdminClinicId } = useUIStore();
+  const canViewBranches = can(PERMISSIONS['branches:view']);
   const [clinicDialogOpen, setClinicDialogOpen] = useState(false);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingClinic, setEditingClinic] = useState(null);
@@ -271,7 +274,8 @@ export default function ClinicsPage() {
   });
   const selectedProvisionClinicId = Number(userForm.clinicId || 0) || null;
   const { data: branchOptionsData } = useBranches({
-    enabled: Boolean(userDialogOpen && selectedProvisionClinicId),
+    enabled: Boolean(canViewBranches && userDialogOpen && selectedProvisionClinicId),
+    suppressPermissionToast: true,
     platformClinicId: selectedProvisionClinicId ?? undefined,
   });
 

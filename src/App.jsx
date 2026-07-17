@@ -4,6 +4,13 @@ import { Toaster, ToastBar, toast } from 'react-hot-toast';
 import { ThemeProvider } from '@/components/theme-provider';
 import { router } from '@/routes';
 
+const shouldSuppressQueryToast = (error) =>
+  Boolean(
+    error?.config?.suppressErrorToast ||
+      (error?.response?.status === 403 && error?.config?.suppressPermissionToast) ||
+      (error?.response?.status === 404 && error?.config?.suppressNotFoundToast),
+  );
+
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,6 +19,8 @@ const queryClient = new QueryClient({
       retry: 2,
       refetchOnWindowFocus: false,
       onError: (error) => {
+        if (shouldSuppressQueryToast(error)) return;
+
         const message = error?.response?.data?.message || 'Failed to load data';
         toast.error(message);
       },

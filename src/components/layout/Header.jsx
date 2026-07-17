@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useClinics } from '@/hooks/useClinics';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogOut, Settings, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PERMISSIONS } from '@/lib/constants';
 import {
   canSwitchAssignedBranches,
   canOverrideBranchScope,
@@ -49,24 +51,34 @@ export function Header() {
   } = useUIStore();
   const { logout } = useAuth();
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
   const isPlatformAdmin = canOverrideClinicScope(user);
   const canOverrideBranch = canOverrideBranchScope(user);
+  const canViewClinics = can(PERMISSIONS['clinics:viewAll']);
+  const canViewBranches = can(PERMISSIONS['branches:view']);
   const canSwitchAssigned = canSwitchAssignedBranches(user);
   const assignedBranches = getAssignedBranches(user);
-  const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin));
+  const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin && canViewClinics));
   const clinics = Array.isArray(clinicsData)
     ? clinicsData
     : Array.isArray(clinicsData?.data)
       ? clinicsData.data
       : [];
   const effectiveClinicId = resolveEffectiveClinicId(user, clinicOverrideId);
-  const { data: branchesData } = useBranches(Boolean(canOverrideBranch && effectiveClinicId));
+  const canLoadOverrideBranches = Boolean(
+    canOverrideBranch && canViewBranches && effectiveClinicId,
+  );
+  const { data: branchesData } = useBranches({
+    enabled: canLoadOverrideBranches,
+    suppressPermissionToast: true,
+  });
   const fetchedBranches = Array.isArray(branchesData)
     ? branchesData
     : Array.isArray(branchesData?.data)
       ? branchesData.data
       : [];
-  const branches = canOverrideBranch ? fetchedBranches : assignedBranches;
+  const branches =
+    canOverrideBranch && canViewBranches ? fetchedBranches : assignedBranches;
   const fallbackDefaultBranch = branches.find((branch) => branch.isDefault) || branches[0] || null;
   const effectiveBranchId =
     resolveEffectiveBranchId(user, branchOverrideId) ?? fallbackDefaultBranch?.id ?? null;
@@ -131,7 +143,7 @@ export function Header() {
 
         {/* Push items to the far right */}
         <div className="flex items-center gap-2 ms-auto">
-          {isPlatformAdmin && (
+          {isPlatformAdmin && canViewClinics && (
             <Select
               value={clinicOverrideId ? String(clinicOverrideId) : 'none'}
               onValueChange={(value) => {
@@ -153,7 +165,9 @@ export function Header() {
               </SelectContent>
             </Select>
           )}
-          {(canOverrideBranch || canSwitchAssigned) && effectiveClinicId && branches.length > 0 && (
+          {((canOverrideBranch && canViewBranches) || canSwitchAssigned) &&
+            effectiveClinicId &&
+            branches.length > 0 && (
             <Select
               value={effectiveBranchId ? String(effectiveBranchId) : 'auto'}
               onValueChange={(value) => {

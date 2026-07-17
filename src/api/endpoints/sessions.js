@@ -1,12 +1,16 @@
 import apiClient from '../client';
 import { parseProtectedImageResponse } from '@/lib/protectedImage';
+import { buildRequestControlConfig } from '../scopeConfig';
 
 export const sessionsApi = {
   /**
    * List sessions (doctors see only their own)
    */
-  getAll: async (params = {}) => {
-    const response = await apiClient.get('/sessions', { params });
+  getAll: async (params = {}, options = {}) => {
+    const response = await apiClient.get('/sessions', {
+      ...buildRequestControlConfig(options),
+      params,
+    });
     return response.data;
   },
 
@@ -133,8 +137,11 @@ export const sessionsApi = {
   /**
    * List session categories
    */
-  getCategories: async () => {
-    const response = await apiClient.get('/sessions/categories');
+  getCategories: async (options = {}) => {
+    const response = await apiClient.get(
+      '/sessions/categories',
+      buildRequestControlConfig(options),
+    );
     return response.data;
   },
 };

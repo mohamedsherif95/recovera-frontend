@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { branchesApi } from '@/api/endpoints/branches';
-import { QUERY_KEYS } from '@/lib/constants';
+import { PERMISSIONS, QUERY_KEYS } from '@/lib/constants';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function useBranches(optionsOrEnabled = true) {
+  const { can } = usePermissions();
   const options =
     typeof optionsOrEnabled === 'boolean'
       ? { enabled: optionsOrEnabled }
@@ -13,8 +15,11 @@ export function useBranches(optionsOrEnabled = true) {
     clinicOverrideId,
     branchOverrideId,
     platformClinicId,
+    requireViewPermission = true,
+    suppressPermissionToast = true,
     ...queryOptions
   } = options;
+  const canViewBranches = can(PERMISSIONS['branches:view']);
 
   return useQuery({
     queryKey: [
@@ -28,23 +33,36 @@ export function useBranches(optionsOrEnabled = true) {
         clinicOverrideId,
         branchOverrideId,
         platformClinicId,
+        suppressPermissionToast,
       }),
-    enabled,
+    enabled: Boolean(enabled && (!requireViewPermission || canViewBranches)),
     staleTime: 60 * 1000,
     ...queryOptions,
   });
 }
 
 export function useBranchCredits(params = {}, enabled = true, options = {}) {
+  const { can } = usePermissions();
+  const {
+    requireViewPermission = true,
+    suppressPermissionToast = true,
+    ...requestOptions
+  } = options;
+  const canViewCredits = can(PERMISSIONS['branchCredits:view']);
+
   return useQuery({
     queryKey: [
       QUERY_KEYS.BRANCHES,
       'credits',
       params,
-      options.platformClinicId ?? '__platform-active__',
+      requestOptions.platformClinicId ?? '__platform-active__',
     ],
-    queryFn: () => branchesApi.getCredits(params, options),
-    enabled,
+    queryFn: () =>
+      branchesApi.getCredits(params, {
+        ...requestOptions,
+        suppressPermissionToast,
+      }),
+    enabled: Boolean(enabled && (!requireViewPermission || canViewCredits)),
     keepPreviousData: true,
     staleTime: 60 * 1000,
   });

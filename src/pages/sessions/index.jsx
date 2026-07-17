@@ -106,6 +106,12 @@ export default function SessionsPage() {
     PERMISSIONS["sessions:viewOwn"],
   ]);
 
+  const canSeeFinancialAndCategory = hasAnyRole([
+    USER_ROLES.MANAGER,
+    USER_ROLES.SECRETARY,
+  ]);
+  const canViewCategories = canSeeFinancialAndCategory;
+
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -123,11 +129,6 @@ export default function SessionsPage() {
     setPage(1);
   }, [fromDate, toDate, statusFilter, categoryFilter, debouncedSearch]);
 
-  const canSeeFinancialAndCategory = hasAnyRole([
-    USER_ROLES.MANAGER,
-    USER_ROLES.SECRETARY,
-  ]);
-
   const { data, isLoading, isError, refetch } = useSessions({
     page,
     limit: pageSize,
@@ -138,7 +139,10 @@ export default function SessionsPage() {
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const categoriesQuery = useSessionCategories();
+  const categoriesQuery = useSessionCategories({
+    enabled: canViewCategories,
+    suppressPermissionToast: true,
+  });
 
   const categoryOptions = useMemo(() => {
     const data = categoriesQuery.data;

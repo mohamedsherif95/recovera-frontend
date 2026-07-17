@@ -51,6 +51,9 @@ const extractEnvelopeData = (payload) => {
   return payload.data;
 };
 
+const shouldSuppressToast = (config, flag) =>
+  Boolean(config?.suppressErrorToast || config?.[flag]);
+
 apiClient.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().token;
@@ -133,11 +136,11 @@ const handleApiError = async (error) => {
     window.location.href = '/login';
   }
 
-  if (status === 403) {
+  if (status === 403 && !shouldSuppressToast(originalRequest, 'suppressPermissionToast')) {
     toast.error('You do not have permission to perform this action');
   }
 
-  if (status === 404) {
+  if (status === 404 && !shouldSuppressToast(originalRequest, 'suppressNotFoundToast')) {
     toast.error('Resource not found');
   }
 

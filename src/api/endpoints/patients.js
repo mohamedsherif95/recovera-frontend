@@ -1,12 +1,16 @@
 import apiClient from "../client";
 import { parseProtectedImageResponse } from "@/lib/protectedImage";
+import { buildRequestControlConfig } from "../scopeConfig";
 
 export const patientsApi = {
   /**
    * List patients with optional query params
    */
-  getAll: async (params = {}) => {
-    const response = await apiClient.get("/patients", { params });
+  getAll: async (params = {}, options = {}) => {
+    const response = await apiClient.get("/patients", {
+      ...buildRequestControlConfig(options),
+      params,
+    });
     return response.data;
   },
 

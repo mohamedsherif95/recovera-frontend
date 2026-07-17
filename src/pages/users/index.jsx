@@ -116,6 +116,7 @@ export default function UsersPage() {
   const canCreateUser = can(PERMISSIONS['users:create']);
   const canManageRoles = isPlatformAdmin && can(PERMISSIONS['users:manageRoles']);
   const canToggleStatus = can(PERMISSIONS['users:update']);
+  const canViewBranches = can(PERMISSIONS['branches:view']);
   const effectiveClinicId = isPlatformAdminRoute
     ? platformAdminClinicId
     : resolveEffectiveClinicId(currentUser, clinicOverrideId);
@@ -160,7 +161,8 @@ export default function UsersPage() {
   const createUser = useCreateUser();
   const { data: clinicsData } = useClinics(Boolean(isPlatformAdmin && canCreateUser));
   const { data: currentBranchesData } = useBranches({
-    enabled: Boolean(effectiveClinicId),
+    enabled: Boolean(canViewBranches && effectiveClinicId),
+    suppressPermissionToast: true,
     ...platformScopeOptions,
   });
 
@@ -204,7 +206,10 @@ export default function UsersPage() {
       ? Number(createForm.clinicId || 0) || null
       : effectiveClinicId;
   const { data: createBranchesData } = useBranches({
-    enabled: Boolean(canCreateUser && createDialogOpen && selectedCreateClinicId),
+    enabled: Boolean(
+      canViewBranches && canCreateUser && createDialogOpen && selectedCreateClinicId,
+    ),
+    suppressPermissionToast: true,
     platformClinicId: isPlatformAdmin ? selectedCreateClinicId ?? undefined : undefined,
   });
   const createBranches = useMemo(() => {

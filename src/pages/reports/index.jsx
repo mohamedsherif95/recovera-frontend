@@ -5,6 +5,7 @@ import {
   Banknote,
   ClipboardList,
   GitBranch,
+  ReceiptText,
   Shield,
   Stethoscope,
   Wallet,
@@ -28,6 +29,9 @@ export default function ReportsPage() {
     PERMISSIONS['branches:view'],
     PERMISSIONS['branchCredits:view'],
   ]);
+  const canOpenExpenseReports = canAny([PERMISSIONS['expenses:view']]);
+  const financialWorkbenchCount =
+    (canOpenMoneyReports ? 2 : 0) + (canOpenExpenseReports ? 1 : 0);
 
   const reportCards = [
     ...(canOpenMoneyReports
@@ -56,6 +60,22 @@ export default function ReportsPage() {
                 'Find patients with positive balance and open their balance history.',
             }),
             to: '/patient-payments/balances',
+          },
+        ]
+      : []),
+    ...(canOpenExpenseReports
+      ? [
+          {
+            key: 'expenses',
+            icon: ReceiptText,
+            title: t('branchExpenses.title', {
+              defaultValue: 'Branch expenses',
+            }),
+            description: t('branchExpenses.reportCardDescription', {
+              defaultValue:
+                'Record branch operating expenses, categories, voided corrections, and spend analysis.',
+            }),
+            to: '/branch-expenses',
           },
         ]
       : []),
@@ -142,7 +162,7 @@ export default function ReportsPage() {
             label={t('reports.financialReports', {
               defaultValue: 'Financial workbenches',
             })}
-            value={canOpenMoneyReports ? 2 : 0}
+            value={financialWorkbenchCount}
           />
           <ImpactMetric
             label={t('reports.auditReports', { defaultValue: 'Audit reports' })}

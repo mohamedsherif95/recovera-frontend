@@ -77,6 +77,7 @@ export const QUERY_KEYS = {
   PLATFORM_BILLING: 'platformBilling',
   PLATFORM_ADMIN: 'platformAdmin',
   INVOICES: 'invoices',
+  BRANCH_EXPENSES: 'branchExpenses',
 };
 
 export const PLATFORM_INVOICE_STATUS_LABELS = {
@@ -126,6 +127,12 @@ export const PERMISSIONS = {
   "invoices:view": "invoices:view",
   "invoices:create": "invoices:create",
   "invoices:void": "invoices:void",
+  "expenses:view": "expenses:view",
+  "expenses:create": "expenses:create",
+  "expenses:update": "expenses:update",
+  "expenses:void": "expenses:void",
+  "expenses:manageCategories": "expenses:manageCategories",
+  "expenses:viewAnalysis": "expenses:viewAnalysis",
   "branches:view": "branches:view",
   "branches:create": "branches:create",
   "branches:update": "branches:update",

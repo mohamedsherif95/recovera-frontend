@@ -40,6 +40,7 @@ import PlatformOnboardingPage from '@/pages/platform-onboarding';
 import PlatformAdminPage from '@/pages/platform-admin';
 import PlatformAdminAuditPage from '@/pages/platform-admin-audit';
 import InvoicesPage from '@/pages/invoices';
+import BranchExpensesPage from '@/pages/branch-expenses';
 
 const UnauthorizedPage = () => {
   const { t } = useTranslation();
@@ -393,6 +394,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['invoices:view']}>
             <InvoicesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'branch-expenses',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['expenses:view']}>
+            <BranchExpensesPage />
           </ProtectedRoute>
         ),
       },

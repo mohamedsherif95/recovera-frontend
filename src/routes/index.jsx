@@ -41,6 +41,7 @@ import PlatformAdminPage from '@/pages/platform-admin';
 import PlatformAdminAuditPage from '@/pages/platform-admin-audit';
 import InvoicesPage from '@/pages/invoices';
 import BranchExpensesPage from '@/pages/branch-expenses';
+import PayrollPage from '@/pages/payroll';
 
 const UnauthorizedPage = () => {
   const { t } = useTranslation();
@@ -402,6 +403,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['expenses:view']}>
             <BranchExpensesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'payroll',
+        element: (
+          <ProtectedRoute requiredPermission="payroll:view">
+            <PayrollPage />
           </ProtectedRoute>
         ),
       },

@@ -106,6 +106,28 @@ function ExpenseStatusBadge({ status, t }) {
   );
 }
 
+function GeneratedExpenseBadge({ sourceType, t }) {
+  if (!sourceType) return null;
+  return (
+    <Badge
+      variant="outline"
+      className="border-sky-200 text-sky-700 dark:border-sky-900/70 dark:text-sky-300"
+    >
+      {sourceType === 'payroll'
+        ? t('branchExpenses.generatedPayroll', {
+            defaultValue: 'Payroll',
+          })
+        : t('branchExpenses.generatedExpense', {
+            defaultValue: 'Generated',
+          })}
+    </Badge>
+  );
+}
+
+function isGeneratedExpense(expense) {
+  return Boolean(expense?.sourceType || expense?.sourceId);
+}
+
 function ExpenseForm({
   categories,
   form,
@@ -633,7 +655,12 @@ export default function BranchExpensesPage() {
       {
         key: 'status',
         header: t('branchExpenses.status.label', { defaultValue: 'Status' }),
-        cell: (row) => <ExpenseStatusBadge status={row.status} t={t} />,
+        cell: (row) => (
+          <div className="flex flex-wrap gap-1">
+            <ExpenseStatusBadge status={row.status} t={t} />
+            <GeneratedExpenseBadge sourceType={row.sourceType} t={t} />
+          </div>
+        ),
       },
       {
         key: 'actions',
@@ -641,7 +668,9 @@ export default function BranchExpensesPage() {
         cellClassName: 'text-right',
         cell: (row) => (
           <div className="flex justify-end gap-1">
-            {canUpdate && row.status !== VOIDED_STATUS && (
+            {canUpdate &&
+              row.status !== VOIDED_STATUS &&
+              !isGeneratedExpense(row) && (
               <Button
                 type="button"
                 variant="ghost"
@@ -655,7 +684,7 @@ export default function BranchExpensesPage() {
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
-            {canVoid && row.status !== VOIDED_STATUS && (
+            {canVoid && row.status !== VOIDED_STATUS && !isGeneratedExpense(row) && (
               <Button
                 type="button"
                 variant="ghost"
@@ -690,13 +719,18 @@ export default function BranchExpensesPage() {
         </div>
         <div className="text-right">
           <div className="font-semibold">{formatCurrency(row.amount || 0)}</div>
-          <ExpenseStatusBadge status={row.status} t={t} />
+          <div className="mt-1 flex flex-wrap justify-end gap-1">
+            <ExpenseStatusBadge status={row.status} t={t} />
+            <GeneratedExpenseBadge sourceType={row.sourceType} t={t} />
+          </div>
         </div>
       </div>
       <div className="text-sm text-muted-foreground">
         {row.payee || t('branchExpenses.noPayee', { defaultValue: 'No payee' })}
       </div>
-      {(canUpdate || canVoid) && row.status !== VOIDED_STATUS && (
+      {(canUpdate || canVoid) &&
+        row.status !== VOIDED_STATUS &&
+        !isGeneratedExpense(row) && (
         <div className="flex gap-2">
           {canUpdate && (
             <Button size="sm" variant="outline" onClick={() => openEditExpense(row)}>

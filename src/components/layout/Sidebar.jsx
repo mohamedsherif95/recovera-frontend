@@ -18,6 +18,7 @@ import {
   FileText,
   Building2,
   Wallet,
+  WalletCards,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
@@ -111,6 +112,14 @@ const navigationSections = [
         href: '/branch-expenses',
         icon: Wallet,
         permission: PERMISSIONS['expenses:view'],
+        hideForDoctorOnly: true,
+      },
+      {
+        name: 'nav.payroll',
+        label: 'Payroll',
+        href: '/payroll',
+        icon: WalletCards,
+        permission: 'payroll:view',
         hideForDoctorOnly: true,
       },
     ],

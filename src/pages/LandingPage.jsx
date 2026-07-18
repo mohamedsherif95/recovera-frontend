@@ -21,8 +21,10 @@ import {
   Users,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { LandingBanner } from '@/components/marketing/LandingBanner';
 import { PublicTopBar } from '@/components/layout/PublicTopBar';
 import { Button } from '@/components/ui/button';
+import { usePublicLandingBanner } from '@/hooks/usePublicContent';
 import { cn } from '@/lib/utils';
 import '@/styles/landing.css';
 
@@ -79,6 +81,7 @@ export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const isRtl = i18n.dir() === 'rtl';
   const progressRef = useRef(null);
+  const { data: landingBanner } = usePublicLandingBanner();
 
   const profiles = asArray(t('marketing.profiles.items', { returnObjects: true }));
   const experienceSteps = asArray(
@@ -140,6 +143,7 @@ export default function LandingPage() {
         style={{ transformOrigin: isRtl ? 'right center' : 'left center' }}
       />
       <PublicTopBar mode="landing" />
+      <LandingBanner settings={landingBanner} isRtl={isRtl} />
 
       <main>
         <section className="landing-hero relative isolate overflow-hidden border-b border-sky-200/70 bg-[#f4fbfc] dark:border-slate-700 dark:bg-[#172329]">

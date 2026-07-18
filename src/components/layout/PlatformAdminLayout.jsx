@@ -10,6 +10,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -109,6 +110,13 @@ const platformNavigation = [
       PERMISSIONS['branches:view'],
       PERMISSIONS['users:viewAll'],
     ],
+  },
+  {
+    name: 'platformAdmin.landingBanner.nav',
+    label: 'Landing banner',
+    href: '/platform-admin/landing-banner',
+    icon: Megaphone,
+    permission: PERMISSIONS['platformContent:manage'],
   },
   {
     name: 'nav.branchSubscriptions',

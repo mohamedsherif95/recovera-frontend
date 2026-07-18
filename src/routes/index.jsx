@@ -39,6 +39,7 @@ import PlatformGovernancePage from '@/pages/platform-governance';
 import PlatformOnboardingPage from '@/pages/platform-onboarding';
 import PlatformAdminPage from '@/pages/platform-admin';
 import PlatformAdminAuditPage from '@/pages/platform-admin-audit';
+import PlatformAdminLandingBannerPage from '@/pages/platform-admin-landing-banner';
 import InvoicesPage from '@/pages/invoices';
 import BranchExpensesPage from '@/pages/branch-expenses';
 import PayrollPage from '@/pages/payroll';
@@ -206,6 +207,16 @@ export const router = createBrowserRouter([
             ]}
           >
             <PlatformAdminAuditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'landing-banner',
+        element: (
+          <ProtectedRoute
+            requiredPermission={PERMISSIONS['platformContent:manage']}
+          >
+            <PlatformAdminLandingBannerPage />
           </ProtectedRoute>
         ),
       },

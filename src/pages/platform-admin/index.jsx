@@ -12,6 +12,7 @@ import {
   FileWarning,
   FileSearch,
   History,
+  Megaphone,
   Receipt,
   RefreshCcw,
   ShieldCheck,
@@ -91,6 +92,15 @@ const modules = [
     href: '/platform-admin/audit',
     icon: FileSearch,
     permission: PERMISSIONS['users:manageRoles'],
+  },
+  {
+    titleKey: 'platformAdmin.modules.landingBanner.title',
+    titleDefault: 'Landing banner',
+    descriptionKey: 'platformAdmin.modules.landingBanner.description',
+    descriptionDefault: 'Edit the moving public home-page announcement.',
+    href: '/platform-admin/landing-banner',
+    icon: Megaphone,
+    permission: PERMISSIONS['platformContent:manage'],
   },
   {
     titleKey: 'platformAdmin.modules.branchSubscriptions.title',

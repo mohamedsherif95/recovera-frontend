@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformAdminApi } from '@/api/endpoints/platformAdmin';
 import { QUERY_KEYS } from '@/lib/constants';
 
@@ -52,5 +52,33 @@ export function usePlatformAdminAuditEvents(params = {}, options = {}) {
     enabled,
     staleTime: 30 * 1000,
     ...queryOptions,
+  });
+}
+
+export function usePlatformLandingBanner(options = {}) {
+  const { enabled = true, ...queryOptions } = options;
+
+  return useQuery({
+    queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'landing-banner'],
+    queryFn: platformAdminApi.getLandingBanner,
+    enabled,
+    staleTime: 30 * 1000,
+    ...queryOptions,
+  });
+}
+
+export function useUpdatePlatformLandingBanner() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: platformAdminApi.updateLandingBanner,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PLATFORM_ADMIN, 'landing-banner'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.PUBLIC_CONTENT, 'landing-banner'],
+      });
+    },
   });
 }

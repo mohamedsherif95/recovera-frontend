@@ -383,6 +383,69 @@
       "collectedTotal": "Collected total",
       "openBilling": "Open billing"
     },
+    "landingBanner": {
+      "nav": "Landing banner",
+      "title": "Landing banner",
+      "description": "Control the moving announcement shown on the public home page.",
+      "contentTitle": "Message",
+      "enabled": "Show banner on the public home page",
+      "enabledHint": "Turn this off to keep the draft saved without displaying it.",
+      "messageRequired": "Add Arabic and English messages before showing the banner.",
+      "loadError": "Could not load landing banner settings.",
+      "saveSuccess": "Landing banner saved.",
+      "saveError": "Could not save landing banner.",
+      "motionTitle": "Style and motion",
+      "colorsTitle": "Colors",
+      "previewTitle": "Live preview",
+      "enabledBadge": "Visible",
+      "hiddenBadge": "Hidden",
+      "languages": {
+        "ar": "Arabic",
+        "en": "English"
+      },
+      "fields": {
+        "kicker": "Kicker",
+        "message": "Main message",
+        "details": "Supporting detail",
+        "ctaLabel": "CTA label",
+        "ctaHref": "CTA link",
+        "variant": "Variant",
+        "density": "Density",
+        "direction": "Direction",
+        "speedSeconds": "Speed in seconds",
+        "pauseOnHover": "Pause on hover",
+        "showIcon": "Show icon",
+        "backgroundColor": "Background",
+        "textColor": "Text",
+        "accentColor": "CTA background",
+        "accentTextColor": "CTA text",
+        "borderColor": "Border"
+      },
+      "options": {
+        "variant": {
+          "solid": "Solid",
+          "soft": "Soft",
+          "outline": "Outline"
+        },
+        "density": {
+          "compact": "Compact",
+          "comfortable": "Comfortable",
+          "spacious": "Spacious"
+        },
+        "direction": {
+          "left": "Move left",
+          "right": "Move right"
+        }
+      },
+      "preview": {
+        "language": "Language",
+        "message": "Message",
+        "variant": "Variant",
+        "density": "Density",
+        "motion": "Motion",
+        "lastSaved": "Last saved"
+      }
+    },
     "modules": {
       "onboarding": {
         "title": "Branch onboarding",
@@ -415,6 +478,10 @@
       "platformBilling": {
         "title": "Platform billing",
         "description": "Generate branch invoices, download artifacts, and record collections."
+      },
+      "landingBanner": {
+        "title": "Landing banner",
+        "description": "Configure the public home page moving announcement."
       }
     },
     "branchAdministration": {
@@ -1982,12 +2049,7 @@
             "Follow activity across one branch or a growing clinic group"
           ],
           "flowLabel": "Physiotherapy workflow",
-          "flow": [
-            "Welcome",
-            "Assess",
-            "Treat",
-            "Follow up"
-          ]
+          "flow": ["Welcome", "Assess", "Treat", "Follow up"]
         },
         {
           "id": "medical",
@@ -2002,12 +2064,7 @@
             "Give owners a clearer picture of branch activity"
           ],
           "flowLabel": "Medical clinic workflow",
-          "flow": [
-            "Book",
-            "Consult",
-            "Plan",
-            "Follow up"
-          ]
+          "flow": ["Book", "Consult", "Plan", "Follow up"]
         },
         {
           "id": "dental",
@@ -2022,12 +2079,7 @@
             "Track activity while each branch keeps its own daily rhythm"
           ],
           "flowLabel": "Dental clinic workflow",
-          "flow": [
-            "Book",
-            "Examine",
-            "Treat",
-            "Return"
-          ]
+          "flow": ["Book", "Examine", "Treat", "Return"]
         },
         {
           "id": "dermatology",
@@ -2042,12 +2094,7 @@
             "Keep every branch aligned without flattening how it works"
           ],
           "flowLabel": "Laser and dermatology workflow",
-          "flow": [
-            "Consult",
-            "Prepare",
-            "Treat",
-            "Aftercare"
-          ]
+          "flow": ["Consult", "Prepare", "Treat", "Aftercare"]
         }
       ]
     },

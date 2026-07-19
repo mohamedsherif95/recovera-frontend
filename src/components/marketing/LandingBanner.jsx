@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import {
   getSafeLandingBannerHref,
   normalizeLandingBanner,
+  resolveLandingBannerContent,
 } from "@/lib/landingBanner";
 import { cn } from "@/lib/utils";
 import "@/styles/landing.css";
@@ -21,8 +22,16 @@ function BannerMessage({ banner }) {
   );
 }
 
-export function LandingBanner({ settings, isRtl = false, preview = false }) {
-  const banner = normalizeLandingBanner(settings);
+export function LandingBanner({
+  settings,
+  isRtl = false,
+  language = "ar",
+  preview = false,
+}) {
+  const banner = resolveLandingBannerContent(
+    normalizeLandingBanner(settings),
+    language,
+  );
   const href = getSafeLandingBannerHref(banner.ctaHref);
 
   if (!preview && (!banner.enabled || !banner.message)) {

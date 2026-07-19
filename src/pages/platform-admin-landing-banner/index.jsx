@@ -30,37 +30,151 @@ import {
   usePlatformLandingBanner,
   useUpdatePlatformLandingBanner,
 } from "@/hooks/usePlatformAdmin";
-import { normalizeLandingBanner } from "@/lib/landingBanner";
+import {
+  getLandingBannerLanguage,
+  normalizeLandingBanner,
+  resolveLandingBannerContent,
+} from "@/lib/landingBanner";
 import { cn } from "@/lib/utils";
 
 const variantOptions = [
-  { value: "solid", label: "Solid" },
-  { value: "soft", label: "Soft" },
-  { value: "outline", label: "Outline" },
+  {
+    value: "solid",
+    labelKey: "platformAdmin.landingBanner.options.variant.solid",
+    defaultLabel: "Solid",
+  },
+  {
+    value: "soft",
+    labelKey: "platformAdmin.landingBanner.options.variant.soft",
+    defaultLabel: "Soft",
+  },
+  {
+    value: "outline",
+    labelKey: "platformAdmin.landingBanner.options.variant.outline",
+    defaultLabel: "Outline",
+  },
 ];
 
 const densityOptions = [
-  { value: "compact", label: "Compact" },
-  { value: "comfortable", label: "Comfortable" },
-  { value: "spacious", label: "Spacious" },
+  {
+    value: "compact",
+    labelKey: "platformAdmin.landingBanner.options.density.compact",
+    defaultLabel: "Compact",
+  },
+  {
+    value: "comfortable",
+    labelKey: "platformAdmin.landingBanner.options.density.comfortable",
+    defaultLabel: "Comfortable",
+  },
+  {
+    value: "spacious",
+    labelKey: "platformAdmin.landingBanner.options.density.spacious",
+    defaultLabel: "Spacious",
+  },
 ];
 
 const directionOptions = [
-  { value: "left", label: "Move left" },
-  { value: "right", label: "Move right" },
+  {
+    value: "left",
+    labelKey: "platformAdmin.landingBanner.options.direction.left",
+    defaultLabel: "Move left",
+  },
+  {
+    value: "right",
+    labelKey: "platformAdmin.landingBanner.options.direction.right",
+    defaultLabel: "Move right",
+  },
 ];
 
 const colorFields = [
-  { key: "backgroundColor", label: "Background" },
-  { key: "textColor", label: "Text" },
-  { key: "accentColor", label: "CTA background" },
-  { key: "accentTextColor", label: "CTA text" },
-  { key: "borderColor", label: "Border" },
+  {
+    key: "backgroundColor",
+    labelKey: "platformAdmin.landingBanner.fields.backgroundColor",
+    defaultLabel: "Background",
+  },
+  {
+    key: "textColor",
+    labelKey: "platformAdmin.landingBanner.fields.textColor",
+    defaultLabel: "Text",
+  },
+  {
+    key: "accentColor",
+    labelKey: "platformAdmin.landingBanner.fields.accentColor",
+    defaultLabel: "CTA background",
+  },
+  {
+    key: "accentTextColor",
+    labelKey: "platformAdmin.landingBanner.fields.accentTextColor",
+    defaultLabel: "CTA text",
+  },
+  {
+    key: "borderColor",
+    labelKey: "platformAdmin.landingBanner.fields.borderColor",
+    defaultLabel: "Border",
+  },
+];
+
+const languagePanels = [
+  {
+    language: "ar",
+    titleKey: "platformAdmin.landingBanner.languages.ar",
+    defaultTitle: "Arabic",
+    dir: "rtl",
+  },
+  {
+    language: "en",
+    titleKey: "platformAdmin.landingBanner.languages.en",
+    defaultTitle: "English",
+    dir: "ltr",
+  },
+];
+
+const localizedContentFields = [
+  {
+    key: "kicker",
+    labelKey: "platformAdmin.landingBanner.fields.kicker",
+    defaultLabel: "Kicker",
+    maxLength: 60,
+    control: "input",
+  },
+  {
+    key: "message",
+    labelKey: "platformAdmin.landingBanner.fields.message",
+    defaultLabel: "Main message",
+    maxLength: 240,
+    control: "textarea",
+  },
+  {
+    key: "details",
+    labelKey: "platformAdmin.landingBanner.fields.details",
+    defaultLabel: "Supporting detail",
+    maxLength: 180,
+    control: "input",
+  },
+  {
+    key: "ctaLabel",
+    labelKey: "platformAdmin.landingBanner.fields.ctaLabel",
+    defaultLabel: "CTA label",
+    maxLength: 48,
+    control: "input",
+  },
+  {
+    key: "ctaHref",
+    labelKey: "platformAdmin.landingBanner.fields.ctaHref",
+    defaultLabel: "CTA link",
+    maxLength: 500,
+    control: "input",
+  },
 ];
 
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 const toFormState = (settings) => normalizeLandingBanner(settings);
+
+const hasText = (value) => String(value || "").trim().length > 0;
+
+const hasRequiredLocalizedText = (localizedValue) =>
+  languagePanels.every(({ language }) => hasText(localizedValue?.[language]));
 
 export default function PlatformAdminLandingBannerPage() {
   const { t, i18n } = useTranslation();
@@ -70,7 +184,12 @@ export default function PlatformAdminLandingBannerPage() {
   const updateMutation = useUpdatePlatformLandingBanner();
   const [form, setForm] = useState(() => toFormState());
   const previewSettings = useMemo(() => normalizeLandingBanner(form), [form]);
-  const saveBlocked = form.enabled && !String(form.message || "").trim();
+  const previewContent = useMemo(
+    () => resolveLandingBannerContent(previewSettings, i18n.language),
+    [i18n.language, previewSettings],
+  );
+  const activePreviewLanguage = getLandingBannerLanguage(i18n.language);
+  const saveBlocked = form.enabled && !hasRequiredLocalizedText(form.message);
 
   useEffect(() => {
     if (data) {
@@ -82,6 +201,16 @@ export default function PlatformAdminLandingBannerPage() {
     setForm((current) => ({
       ...current,
       [field]: value,
+    }));
+  };
+
+  const updateLocalizedField = (field, language, value) => {
+    setForm((current) => ({
+      ...current,
+      [field]: {
+        ...(current[field] || {}),
+        [language]: value,
+      },
     }));
   };
 
@@ -214,70 +343,26 @@ export default function PlatformAdminLandingBannerPage() {
                   </span>
                 </label>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Field label="Kicker" htmlFor="banner-kicker">
-                    <Input
-                      id="banner-kicker"
-                      value={form.kicker}
-                      maxLength={60}
-                      onChange={(event) =>
-                        updateField("kicker", event.target.value)
-                      }
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {languagePanels.map((panel) => (
+                    <LocalizedContentPanel
+                      key={panel.language}
+                      panel={panel}
+                      form={form}
+                      t={t}
+                      onChange={updateLocalizedField}
                     />
-                  </Field>
-                  <Field label="CTA label" htmlFor="banner-cta-label">
-                    <Input
-                      id="banner-cta-label"
-                      value={form.ctaLabel}
-                      maxLength={48}
-                      onChange={(event) =>
-                        updateField("ctaLabel", event.target.value)
-                      }
-                    />
-                  </Field>
+                  ))}
                 </div>
 
-                <Field label="Main message" htmlFor="banner-message">
-                  <Textarea
-                    id="banner-message"
-                    value={form.message}
-                    maxLength={240}
-                    className="min-h-24"
-                    onChange={(event) =>
-                      updateField("message", event.target.value)
-                    }
-                  />
-                  {saveBlocked && (
-                    <p className="text-xs font-medium text-destructive">
-                      {t("platformAdmin.landingBanner.messageRequired", {
-                        defaultValue:
-                          "Add a message before showing the banner.",
-                      })}
-                    </p>
-                  )}
-                </Field>
-
-                <Field label="Supporting detail" htmlFor="banner-details">
-                  <Input
-                    id="banner-details"
-                    value={form.details}
-                    maxLength={180}
-                    onChange={(event) =>
-                      updateField("details", event.target.value)
-                    }
-                  />
-                </Field>
-
-                <Field label="CTA link" htmlFor="banner-cta-href">
-                  <Input
-                    id="banner-cta-href"
-                    value={form.ctaHref}
-                    maxLength={500}
-                    onChange={(event) =>
-                      updateField("ctaHref", event.target.value)
-                    }
-                  />
-                </Field>
+                {saveBlocked && (
+                  <p className="text-xs font-medium text-destructive">
+                    {t("platformAdmin.landingBanner.messageRequired", {
+                      defaultValue:
+                        "Add Arabic and English messages before showing the banner.",
+                    })}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -293,27 +378,44 @@ export default function PlatformAdminLandingBannerPage() {
               <CardContent className="space-y-5">
                 <div className="grid gap-4 md:grid-cols-3">
                   <SelectField
-                    label="Variant"
+                    label={t("platformAdmin.landingBanner.fields.variant", {
+                      defaultValue: "Variant",
+                    })}
                     value={form.variant}
                     options={variantOptions}
+                    t={t}
                     onChange={(value) => updateField("variant", value)}
                   />
                   <SelectField
-                    label="Density"
+                    label={t("platformAdmin.landingBanner.fields.density", {
+                      defaultValue: "Density",
+                    })}
                     value={form.density}
                     options={densityOptions}
+                    t={t}
                     onChange={(value) => updateField("density", value)}
                   />
                   <SelectField
-                    label="Direction"
+                    label={t("platformAdmin.landingBanner.fields.direction", {
+                      defaultValue: "Direction",
+                    })}
                     value={form.direction}
                     options={directionOptions}
+                    t={t}
                     onChange={(value) => updateField("direction", value)}
                   />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                  <Field label="Speed in seconds" htmlFor="banner-speed">
+                  <Field
+                    label={t(
+                      "platformAdmin.landingBanner.fields.speedSeconds",
+                      {
+                        defaultValue: "Speed in seconds",
+                      },
+                    )}
+                    htmlFor="banner-speed"
+                  >
                     <Input
                       id="banner-speed"
                       type="number"
@@ -327,12 +429,17 @@ export default function PlatformAdminLandingBannerPage() {
                   </Field>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <ToggleField
-                      label="Pause on hover"
+                      label={t(
+                        "platformAdmin.landingBanner.fields.pauseOnHover",
+                        { defaultValue: "Pause on hover" },
+                      )}
                       checked={form.pauseOnHover}
                       onChange={(value) => updateField("pauseOnHover", value)}
                     />
                     <ToggleField
-                      label="Show icon"
+                      label={t("platformAdmin.landingBanner.fields.showIcon", {
+                        defaultValue: "Show icon",
+                      })}
                       checked={form.showIcon}
                       onChange={(value) => updateField("showIcon", value)}
                     />
@@ -355,7 +462,9 @@ export default function PlatformAdminLandingBannerPage() {
                   {colorFields.map((field) => (
                     <ColorField
                       key={field.key}
-                      label={field.label}
+                      label={t(field.labelKey, {
+                        defaultValue: field.defaultLabel,
+                      })}
                       value={form[field.key]}
                       onChange={(value) => updateField(field.key, value)}
                     />
@@ -391,19 +500,57 @@ export default function PlatformAdminLandingBannerPage() {
                   <LandingBanner
                     settings={previewSettings}
                     isRtl={isRtl}
+                    language={i18n.language}
                     preview
                   />
                 </div>
                 <div className="grid gap-3 text-sm text-muted-foreground">
-                  <PreviewRow label="Variant" value={previewSettings.variant} />
-                  <PreviewRow label="Density" value={previewSettings.density} />
                   <PreviewRow
-                    label="Motion"
+                    label={t("platformAdmin.landingBanner.preview.language", {
+                      defaultValue: "Language",
+                    })}
+                    value={
+                      activePreviewLanguage === "ar"
+                        ? t("platformAdmin.landingBanner.languages.ar", {
+                            defaultValue: "Arabic",
+                          })
+                        : t("platformAdmin.landingBanner.languages.en", {
+                            defaultValue: "English",
+                          })
+                    }
+                  />
+                  <PreviewRow
+                    label={t("platformAdmin.landingBanner.preview.message", {
+                      defaultValue: "Message",
+                    })}
+                    value={previewContent.message || "--"}
+                  />
+                  <PreviewRow
+                    label={t("platformAdmin.landingBanner.preview.variant", {
+                      defaultValue: "Variant",
+                    })}
+                    value={previewSettings.variant}
+                  />
+                  <PreviewRow
+                    label={t("platformAdmin.landingBanner.preview.density", {
+                      defaultValue: "Density",
+                    })}
+                    value={previewSettings.density}
+                  />
+                  <PreviewRow
+                    label={t("platformAdmin.landingBanner.preview.motion", {
+                      defaultValue: "Motion",
+                    })}
                     value={`${previewSettings.direction}, ${previewSettings.speedSeconds}s`}
                   />
                   {data?.updatedAt && (
                     <PreviewRow
-                      label="Last saved"
+                      label={t(
+                        "platformAdmin.landingBanner.preview.lastSaved",
+                        {
+                          defaultValue: "Last saved",
+                        },
+                      )}
                       value={new Date(data.updatedAt).toLocaleString()}
                     />
                   )}
@@ -417,6 +564,57 @@ export default function PlatformAdminLandingBannerPage() {
   );
 }
 
+function LocalizedContentPanel({ panel, form, t, onChange }) {
+  return (
+    <div className="rounded-md border bg-muted/20 p-4" dir={panel.dir}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">
+          {t(panel.titleKey, { defaultValue: panel.defaultTitle })}
+        </h3>
+        <Badge variant="outline">{panel.language.toUpperCase()}</Badge>
+      </div>
+      <div className="space-y-4">
+        {localizedContentFields.map((field) => {
+          const id = `banner-${field.key}-${panel.language}`;
+          const value = form[field.key]?.[panel.language] || "";
+          const inputDir = field.key === "ctaHref" ? "ltr" : panel.dir;
+
+          return (
+            <Field
+              key={field.key}
+              label={t(field.labelKey, { defaultValue: field.defaultLabel })}
+              htmlFor={id}
+            >
+              {field.control === "textarea" ? (
+                <Textarea
+                  id={id}
+                  value={value}
+                  maxLength={field.maxLength}
+                  className="min-h-24"
+                  dir={inputDir}
+                  onChange={(event) =>
+                    onChange(field.key, panel.language, event.target.value)
+                  }
+                />
+              ) : (
+                <Input
+                  id={id}
+                  value={value}
+                  maxLength={field.maxLength}
+                  dir={inputDir}
+                  onChange={(event) =>
+                    onChange(field.key, panel.language, event.target.value)
+                  }
+                />
+              )}
+            </Field>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, htmlFor, children }) {
   return (
     <div className="space-y-2">
@@ -426,7 +624,7 @@ function Field({ label, htmlFor, children }) {
   );
 }
 
-function SelectField({ label, value, options, onChange }) {
+function SelectField({ label, value, options, t, onChange }) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -437,7 +635,7 @@ function SelectField({ label, value, options, onChange }) {
         <SelectContent>
           {options.map((option) => (
             <SelectItem key={option.value} value={option.value}>
-              {option.label}
+              {t(option.labelKey, { defaultValue: option.defaultLabel })}
             </SelectItem>
           ))}
         </SelectContent>

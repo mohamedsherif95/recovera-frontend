@@ -76,6 +76,7 @@ export const QUERY_KEYS = {
   BRANCH_SUBSCRIPTIONS: 'branchSubscriptions',
   PLATFORM_BILLING: 'platformBilling',
   PLATFORM_ADMIN: 'platformAdmin',
+  PUBLIC_CONTENT: 'publicContent',
   INVOICES: 'invoices',
   BRANCH_EXPENSES: 'branchExpenses',
 };
@@ -140,6 +141,8 @@ export const PERMISSIONS = {
   "branchSubscriptions:manage": "branchSubscriptions:manage",
   "platformBilling:view": "platformBilling:view",
   "platformBilling:manage": "platformBilling:manage",
+  "platformContent:view": "platformContent:view",
+  "platformContent:manage": "platformContent:manage",
   "branchCredits:view": "branchCredits:view",
   "branchCredits:reconcile": "branchCredits:reconcile",
   "reports:view": "reports:view",

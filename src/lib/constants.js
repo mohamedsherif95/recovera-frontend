@@ -1,58 +1,61 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://app--recovera-dev--m6q9yrrjpy95.code.run';
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Recovera';
+import { env } from "./env";
+
+export const API_BASE_URL = env.apiBaseUrl;
+export const API_TIMEOUT_MS = env.apiTimeoutMs;
+export const APP_NAME = env.appName;
 
 // Doctor shifts
 export const DOCTOR_SHIFT = {
-  SATURDAY: 'saturday',
-  SUNDAY: 'sunday',
+  SATURDAY: "saturday",
+  SUNDAY: "sunday",
 };
 
 // Session statuses
 export const SESSION_STATUS = {
-  SCHEDULED: 'scheduled',
-  ARRIVED: 'arrived',
-  IN_PROGRESS: 'in_progress',
-  COMPLETED: 'completed',
-  CANCELLED: 'cancelled',
+  SCHEDULED: "scheduled",
+  ARRIVED: "arrived",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
 };
 
 // Schedule statuses
 export const SCHEDULE_STATUS = {
-  ONGOING: 'ongoing',
-  COMPLETED: 'completed',
+  ONGOING: "ongoing",
+  COMPLETED: "completed",
 };
 
 // Payment methods
 export const PAYMENT_METHODS = {
-  CASH: 'cash',
-  INSTAPAY: 'instapay',
-  E_WALLET: 'e_wallet',
+  CASH: "cash",
+  INSTAPAY: "instapay",
+  E_WALLET: "e_wallet",
 };
 
 export const CLINIC_PROFILES = {
-  PHYSIOTHERAPY: 'physiotherapy',
-  MEDICAL_DOCTOR: 'medical_doctor',
-  DENTIST: 'dentist',
-  LASER_DERMATOLOGY: 'laser_dermatology',
+  PHYSIOTHERAPY: "physiotherapy",
+  MEDICAL_DOCTOR: "medical_doctor",
+  DENTIST: "dentist",
+  LASER_DERMATOLOGY: "laser_dermatology",
 };
 
 export const BRANCH_SUBSCRIPTION_ACCESS_STATUS = {
-  ACTIVE: 'active',
-  SUSPENDED: 'suspended',
+  ACTIVE: "active",
+  SUSPENDED: "suspended",
 };
 
 export const BRANCH_PRICING_MODELS = {
-  FLEXIBLE_USAGE: 'flexible_usage',
-  CAPACITY_PACKAGE: 'capacity_package',
+  FLEXIBLE_USAGE: "flexible_usage",
+  CAPACITY_PACKAGE: "capacity_package",
 };
 
 // User roles
 export const USER_ROLES = {
-  ADMIN: 'admin',
-  MANAGER: 'manager',
-  BRANCH_MANAGER: 'branch_manager',
-  DOCTOR: 'doctor',
-  SECRETARY: 'secretary',
+  ADMIN: "admin",
+  MANAGER: "manager",
+  BRANCH_MANAGER: "branch_manager",
+  DOCTOR: "doctor",
+  SECRETARY: "secretary",
 };
 
 // Pagination
@@ -61,32 +64,32 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 // Query keys
 export const QUERY_KEYS = {
-  AUTH: 'auth',
-  USERS: 'users',
-  PATIENTS: 'patients',
-  SESSIONS: 'sessions',
-  SCHEDULES: 'schedules',
-  PAYMENTS: 'payments',
-  REPORTS: 'reports',
-  DASHBOARD: 'dashboard',
-  AUDIT: 'audit',
-  PERMISSIONS: 'permissions',
-  CLINICS: 'clinics',
-  BRANCHES: 'branches',
-  BRANCH_SUBSCRIPTIONS: 'branchSubscriptions',
-  PLATFORM_BILLING: 'platformBilling',
-  PLATFORM_ADMIN: 'platformAdmin',
-  PUBLIC_CONTENT: 'publicContent',
-  INVOICES: 'invoices',
-  BRANCH_EXPENSES: 'branchExpenses',
-  PROFILE_SERVICES: 'profileServices',
+  AUTH: "auth",
+  USERS: "users",
+  PATIENTS: "patients",
+  SESSIONS: "sessions",
+  SCHEDULES: "schedules",
+  PAYMENTS: "payments",
+  REPORTS: "reports",
+  DASHBOARD: "dashboard",
+  AUDIT: "audit",
+  PERMISSIONS: "permissions",
+  CLINICS: "clinics",
+  BRANCHES: "branches",
+  BRANCH_SUBSCRIPTIONS: "branchSubscriptions",
+  PLATFORM_BILLING: "platformBilling",
+  PLATFORM_ADMIN: "platformAdmin",
+  PUBLIC_CONTENT: "publicContent",
+  INVOICES: "invoices",
+  BRANCH_EXPENSES: "branchExpenses",
+  PROFILE_SERVICES: "profileServices",
 };
 
 export const PLATFORM_INVOICE_STATUS_LABELS = {
-  issued: 'Issued',
-  partially_paid: 'Partially paid',
-  paid: 'Paid',
-  voided: 'Voided',
+  issued: "Issued",
+  partially_paid: "Partially paid",
+  paid: "Paid",
+  voided: "Voided",
 };
 
 export const PERMISSIONS = {
@@ -150,5 +153,5 @@ export const PERMISSIONS = {
   "branchCredits:reconcile": "branchCredits:reconcile",
   "reports:view": "reports:view",
   "sessions:update": "sessions:update",
-  "reports:viewDailyOperations": "reports:viewDailyOperations"
-}
+  "reports:viewDailyOperations": "reports:viewDailyOperations",
+};

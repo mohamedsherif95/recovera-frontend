@@ -1,13 +1,14 @@
-import { DateTime } from 'luxon';
+import { DateTime } from "luxon";
+import { env } from "@/lib/env";
 
-export const DEFAULT_BUSINESS_TIME_ZONE = 'Africa/Cairo';
-const DATE_ONLY_FORMAT = 'yyyy-MM-dd';
-const MONTH_INPUT_FORMAT = 'yyyy-MM';
+export const DEFAULT_BUSINESS_TIME_ZONE = "Africa/Cairo";
+const DATE_ONLY_FORMAT = "yyyy-MM-dd";
+const MONTH_INPUT_FORMAT = "yyyy-MM";
 const DATETIME_LOCAL_FORMAT = "yyyy-MM-dd'T'HH:mm";
 const OFFSET_PATTERN = /(?:Z|[+-]\d{2}:?\d{2})$/i;
 
 export function getBusinessTimeZone() {
-  return import.meta.env.VITE_APP_BUSINESS_TIME_ZONE || DEFAULT_BUSINESS_TIME_ZONE;
+  return env.businessTimeZone || DEFAULT_BUSINESS_TIME_ZONE;
 }
 
 export function clinicNow() {
@@ -23,19 +24,22 @@ export function getClinicCurrentMonthInput() {
 }
 
 export function getClinicCurrentBillingMonth() {
-  return clinicNow().startOf('month').toFormat(DATE_ONLY_FORMAT);
+  return clinicNow().startOf("month").toFormat(DATE_ONLY_FORMAT);
 }
 
 export function getClinicNextMonthInput() {
-  return clinicNow().plus({ months: 1 }).startOf('month').toFormat(MONTH_INPUT_FORMAT);
+  return clinicNow()
+    .plus({ months: 1 })
+    .startOf("month")
+    .toFormat(MONTH_INPUT_FORMAT);
 }
 
 export function getClinicMonthStartDateOnly() {
-  return clinicNow().startOf('month').toFormat(DATE_ONLY_FORMAT);
+  return clinicNow().startOf("month").toFormat(DATE_ONLY_FORMAT);
 }
 
 export function getClinicMonthEndDateOnly() {
-  return clinicNow().endOf('month').toFormat(DATE_ONLY_FORMAT);
+  return clinicNow().endOf("month").toFormat(DATE_ONLY_FORMAT);
 }
 
 export function getClinicDateDaysAgo(days) {
@@ -44,11 +48,11 @@ export function getClinicDateDaysAgo(days) {
 
 export function addDaysToDateOnly(dateOnly, days) {
   const parsed = parseDateOnly(dateOnly);
-  return parsed ? parsed.plus({ days }).toFormat(DATE_ONLY_FORMAT) : '';
+  return parsed ? parsed.plus({ days }).toFormat(DATE_ONLY_FORMAT) : "";
 }
 
 export function parseDateOnly(value) {
-  const raw = String(value || '').trim();
+  const raw = String(value || "").trim();
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!match) return null;
 
@@ -58,7 +62,7 @@ export function parseDateOnly(value) {
     return null;
   }
 
-  return parsed.startOf('day');
+  return parsed.startOf("day");
 }
 
 export function dateOnlyToDate(value) {
@@ -103,7 +107,7 @@ export function toDateFnsCompatibleDate(value) {
 }
 
 export function getClinicCurrentTimeString() {
-  return clinicNow().toFormat('HH:mm:ss');
+  return clinicNow().toFormat("HH:mm:ss");
 }
 
 export function clinicDateTimeLocalNow() {
@@ -111,19 +115,23 @@ export function clinicDateTimeLocalNow() {
 }
 
 export function clinicDateTimeLocalToIso(value) {
-  const parsed = DateTime.fromFormat(String(value || ''), DATETIME_LOCAL_FORMAT, {
-    zone: getBusinessTimeZone(),
-  });
+  const parsed = DateTime.fromFormat(
+    String(value || ""),
+    DATETIME_LOCAL_FORMAT,
+    {
+      zone: getBusinessTimeZone(),
+    },
+  );
 
   return parsed.isValid ? parsed.toUTC().toISO() : null;
 }
 
 export function dateOnlyToUtcStartIso(value) {
   const parsed = parseDateOnly(value);
-  return parsed ? parsed.startOf('day').toUTC().toISO() : null;
+  return parsed ? parsed.startOf("day").toUTC().toISO() : null;
 }
 
 export function dateOnlyToUtcEndIso(value) {
   const parsed = parseDateOnly(value);
-  return parsed ? parsed.endOf('day').toUTC().toISO() : null;
+  return parsed ? parsed.endOf("day").toUTC().toISO() : null;
 }

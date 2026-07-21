@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 const GTM_SCRIPT_ID = "recovera-gtm-script";
 const DATA_LAYER_NAME = "dataLayer";
 
@@ -14,10 +16,9 @@ export const ANALYTICS_EVENTS = Object.freeze({
 
 const getWindow = () => (typeof window === "undefined" ? null : window);
 
-const getGtmId = () => String(import.meta.env.VITE_GTM_ID || "").trim();
+const getGtmId = () => env.gtmId;
 
-const getAnalyticsDebugEnabled = () =>
-  String(import.meta.env.VITE_ANALYTICS_DEBUG || "").toLowerCase() === "true";
+const getAnalyticsDebugEnabled = () => env.analyticsDebug;
 
 export const createAnalyticsEventId = () => {
   const currentWindow = getWindow();
@@ -40,7 +41,9 @@ export const initDataLayer = () => {
 
 const cleanPayload = (payload) =>
   Object.fromEntries(
-    Object.entries(payload).filter(([, value]) => value !== undefined && value !== null),
+    Object.entries(payload).filter(
+      ([, value]) => value !== undefined && value !== null,
+    ),
   );
 
 export const pushDataLayerEvent = (event, payload = {}) => {
@@ -103,7 +106,8 @@ const getPageArea = (pathname) => {
 
 const getCurrentPagePayload = (location, previousUrl = "") => {
   const currentWindow = getWindow();
-  const pathname = location?.pathname || currentWindow?.location?.pathname || "/";
+  const pathname =
+    location?.pathname || currentWindow?.location?.pathname || "/";
   const search = location?.search || currentWindow?.location?.search || "";
   const hash = location?.hash || currentWindow?.location?.hash || "";
   const pageArea = getPageArea(pathname);
@@ -121,7 +125,11 @@ const getCurrentPagePayload = (location, previousUrl = "") => {
   };
 };
 
-export const trackPageView = ({ location, previousUrl = "", source = "router" } = {}) =>
+export const trackPageView = ({
+  location,
+  previousUrl = "",
+  source = "router",
+} = {}) =>
   pushDataLayerEvent(ANALYTICS_EVENTS.PAGE_VIEW, {
     ...getCurrentPagePayload(location, previousUrl),
     page_view_source: source,
@@ -219,7 +227,11 @@ export const getAnalyticsDestinationType = (href = "") => {
 };
 
 const withDestinationContext = (payload = {}) => {
-  const href = payload.destination_url || payload.cta_href || payload.banner_cta_href || "";
+  const href =
+    payload.destination_url ||
+    payload.cta_href ||
+    payload.banner_cta_href ||
+    "";
   const destinationType = getAnalyticsDestinationType(href);
 
   return cleanPayload({
@@ -227,7 +239,9 @@ const withDestinationContext = (payload = {}) => {
     destination_type: payload.destination_type || destinationType,
     recommended_meta_event:
       payload.recommended_meta_event ||
-      (["whatsapp", "email", "phone"].includes(destinationType) ? "Contact" : undefined),
+      (["whatsapp", "email", "phone"].includes(destinationType)
+        ? "Contact"
+        : undefined),
   });
 };
 

@@ -407,7 +407,7 @@ export default function PatientDetailsPage() {
       {
         value: BALANCE_ACTION_TYPES.ADD_BALANCE,
         label: t("patients.balanceActionAddBalance", {
-          defaultValue: "Add available balance",
+          defaultValue: "Add additional balance",
         }),
         description: t("patients.balanceActionAddBalanceHint", {
           defaultValue: "Use when the patient pays into a package balance.",
@@ -420,7 +420,8 @@ export default function PatientDetailsPage() {
           defaultValue: "Add amount due",
         }),
         description: t("patients.balanceActionAddDueHint", {
-          defaultValue: "Use when the patient still owes part of the package.",
+          defaultValue:
+            "Use this when the patient has an unpaid amount that should be tracked.",
         }),
         amountLabel: t("common.amount", { defaultValue: "Amount" }),
       },
@@ -440,7 +441,8 @@ export default function PatientDetailsPage() {
           defaultValue: "Write off amount due",
         }),
         description: t("patients.balanceActionWriteOffDueHint", {
-          defaultValue: "Reduce the amount due without adding balance.",
+          defaultValue:
+            "Use this when part of the due amount should be removed without becoming balance.",
         }),
         amountLabel: t("patients.writeOffAmount", {
           defaultValue: "Write-off amount",
@@ -450,7 +452,7 @@ export default function PatientDetailsPage() {
       {
         value: BALANCE_ACTION_TYPES.CORRECT_BALANCE,
         label: t("patients.balanceActionCorrectBalance", {
-          defaultValue: "Correct available balance",
+          defaultValue: "correct available balance",
         }),
         description: t("patients.balanceActionCorrectBalanceHint", {
           defaultValue: "Set the available balance to an exact value.",
@@ -567,7 +569,7 @@ export default function PatientDetailsPage() {
 
     if (balanceActionType === BALANCE_ACTION_TYPES.ADD_DUE) {
       return t("patients.increaseRemainingNote", {
-        defaultValue: "Increased remaining amount by {{amount}}",
+        defaultValue: "Increased amount due by {{amount}}",
         amount: formatAmount(amount),
       });
     }
@@ -575,6 +577,13 @@ export default function PatientDetailsPage() {
     if (balanceActionType === BALANCE_ACTION_TYPES.MOVE_DUE_TO_BALANCE) {
       return t("patients.transferFromRemainingNote", {
         defaultValue: "Moved {{amount}} from amount due to balance",
+        amount: formatAmount(amount),
+      });
+    }
+
+    if (balanceActionType === BALANCE_ACTION_TYPES.WRITE_OFF_DUE) {
+      return t("patients.writeOffRemainingNote", {
+        defaultValue: "Wrote off {{amount}} from amount due",
         amount: formatAmount(amount),
       });
     }

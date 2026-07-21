@@ -51,6 +51,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "view": "View",
+    "add": "Add",
     "create": "Add",
     "search": "Search",
     "clear": "Clear",
@@ -70,6 +71,8 @@
     "yes": "Yes",
     "no": "No",
     "actions": "Actions",
+    "active": "Active",
+    "inactive": "Inactive",
     "paginationSummary": "from {{from}} to {{to}} of total {{total}}",
     "notes": "Notes",
     "amount": "Amount",
@@ -77,7 +80,10 @@
     "noData": "No data",
     "unknown": "Unknown",
     "download": "Download",
-    "manage": "Manage"
+    "manage": "Manage",
+    "reset": "Reset",
+    "saveChanges": "Save changes",
+    "saving": "Saving..."
   },
   "dateRange": {
     "today": "Today",
@@ -246,6 +252,7 @@
     "scopeHint": "Platform work is isolated here. Workspace override remains for support and incident handling.",
     "scopeRequired": "Uses admin scope",
     "selectScopeFirst": "Select an admin scope before continuing.",
+    "selectClinicFirst": "Select a clinic first",
     "auditReason": "Admin reason",
     "auditReasonPlaceholder": "Describe why this admin change is being made.",
     "auditReasonHint": "Saved with the platform audit event.",
@@ -254,6 +261,9 @@
     "expandSidebar": "Expand sidebar",
     "scopedOverview": "Selected clinic scope",
     "governance": "Governance",
+    "table": {
+      "action": "Action"
+    },
     "audit": {
       "nav": "Audit trail",
       "badge": "Admin audit",
@@ -1212,16 +1222,16 @@
     "adjustBalanceDescription": "Choose the adjustment type, enter the amount or new value, then review the impact before saving.",
     "adjustmentPreview": "Adjustment preview",
     "amountDueVisibleNotice": "This patient still has {{amount}} due. Review the balance before creating new visits.",
-    "balanceActionAddBalance": "Add available balance",
+    "balanceActionAddBalance": "Add additional balance",
     "balanceActionAddBalanceHint": "Use this when a payment should become usable visit balance.",
     "balanceActionAddDue": "Add amount due",
-    "balanceActionAddDueHint": "Use this when the patient still owes money that should be tracked.",
-    "balanceActionCorrectBalance": "Correct available balance",
+    "balanceActionAddDueHint": "Use this when the patient has an unpaid amount that should be tracked.",
+    "balanceActionCorrectBalance": "correct available balance",
     "balanceActionCorrectBalanceHint": "Set the current usable balance after a financial review.",
     "balanceActionMoveDue": "Move due amount to balance",
     "balanceActionMoveDueHint": "Use this when part of the due amount has been paid and should become usable balance.",
     "balanceActionType": "Adjustment type",
-    "balanceActionWriteOffDue": "Write off due amount",
+    "balanceActionWriteOffDue": "Write off amount due",
     "balanceActionWriteOffDueHint": "Use this when part of the due amount should be removed without becoming balance.",
     "balanceAdjustmentReasonRequired": "Add a reason before saving this balance adjustment.",
     "changeValue": "Change: {{value}}",
@@ -1303,6 +1313,7 @@
     "addedToBalanceNote": "Added to patient balance",
     "balanceCorrectedNote": "Balance manually corrected",
     "increaseRemainingNote": "Increased remaining amount by {{amount}}",
+    "writeOffRemainingNote": "Wrote off {{amount}} from amount due",
     "transferFromRemainingNote": "Moved from due amount to balance",
     "unknownPatient": "Unknown patient",
     "medicalHistory": "Medical History",
@@ -1365,6 +1376,7 @@
   },
   "sessions": {
     "title": "Visits",
+    "session": "Visit",
     "createSession": "Create Visit",
     "createVisitDrawerDescription": "Create a new visit.",
     "editSession": "Edit Visit",
@@ -1815,6 +1827,7 @@
   },
   "users": {
     "title": "Users",
+    "user": "User",
     "createUser": "Create User",
     "editUser": "Edit User",
     "userDetails": "User Details",
@@ -1887,7 +1900,8 @@
       "reconciled": "Reconciled"
     },
     "selectClinicFirst": "Select a clinic in the top bar to manage its branches.",
-    "primaryBranch": "Primary branch"
+    "primaryBranch": "Primary branch",
+    "readOnly": "Read-only"
   },
   "profile": {
     "title": "Profile",
@@ -2299,6 +2313,114 @@
     "whatsapp": {
       "label": "WhatsApp",
       "aria": "Contact Recovera on WhatsApp"
+    }
+  },
+  "profileServices": {
+    "title": "Visit services",
+    "description": "Set branch-level visit options for each enabled profile.",
+    "selectClinicFirstDescription": "Clinic scope is required before branch setup can load.",
+    "branchContext": "Branch context",
+    "branchContextDescription": "Settings apply to the selected branch and its enabled profiles.",
+    "selectBranch": "Select branch",
+    "enabledProfiles": "Enabled profiles",
+    "noProfiles": "No enabled profiles",
+    "status": "Status",
+    "profileCount": "Profiles",
+    "enabledServiceCount": "Enabled",
+    "disabledServiceCount": "Disabled",
+    "noBranches": "No branches are available in the current scope.",
+    "noBranchProfiles": "This branch does not have enabled profiles yet.",
+    "profiles": "Profiles",
+    "profile": "Profile",
+    "defaultDuration": "Default duration",
+    "profileActive": "Profile active in branch operations",
+    "profileActiveDescription": "Turns this profile on or off for branch day-to-day work.",
+    "services": "Visit options",
+    "servicesDescription": "Available visit options for this profile in the selected branch.",
+    "noServices": "No visit options are available for this profile.",
+    "defaultDurationPositive": "Default duration must be a whole number greater than 0",
+    "durationMinutesValue": "{{count}} min",
+    "notes": {
+      "physiotherapy": {
+        "title": "Assessment, sessions, and packages",
+        "description": "Full release profile for physiotherapy day-to-day work."
+      },
+      "medicalDoctor": {
+        "title": "Consultations and follow-ups",
+        "description": "MVP profile focused on visit tracking and basic billing."
+      },
+      "dentist": {
+        "title": "Exams and procedures",
+        "description": "MVP profile focused on dental visits and procedure context."
+      },
+      "laserDermatology": {
+        "title": "Consultations and device visits",
+        "description": "MVP profile focused on laser sessions and treatment area context."
+      }
+    },
+    "categories": {
+      "assessment": "Assessment",
+      "treatment": "Treatment",
+      "package": "Package",
+      "consultation": "Consultation",
+      "follow_up": "Follow-up",
+      "procedure": "Procedure",
+      "exam": "Exam",
+      "course": "Treatment plan"
+    },
+    "visitTypes": {
+      "assessment": "Assessment",
+      "session": "Session",
+      "reassessment": "Reassessment",
+      "package_session": "Package session",
+      "consultation": "Consultation",
+      "follow_up": "Follow-up",
+      "procedure_add_on": "Procedure add-on",
+      "exam": "Exam",
+      "cleaning": "Cleaning",
+      "procedure": "Procedure",
+      "course_session": "Treatment plan session"
+    },
+    "catalog": {
+      "physio_assessment": {
+        "name": "Physiotherapy assessment"
+      },
+      "physio_session": {
+        "name": "Physiotherapy session"
+      },
+      "physio_reassessment": {
+        "name": "Physiotherapy reassessment"
+      },
+      "physio_package_session": {
+        "name": "Package treatment session"
+      },
+      "medical_consultation": {
+        "name": "Medical consultation"
+      },
+      "medical_follow_up": {
+        "name": "Medical follow-up"
+      },
+      "medical_procedure_add_on": {
+        "name": "Medical procedure add-on"
+      },
+      "dental_exam": {
+        "name": "Dental exam"
+      },
+      "dental_cleaning": {
+        "name": "Dental cleaning"
+      },
+      "dental_procedure": {
+        "name": "Dental procedure"
+      },
+      "laser_consultation": {
+        "name": "Laser/derm consultation"
+      },
+      "laser_session": {
+        "name": "Laser/derm treatment session"
+      },
+      "laser_course_session": {
+        "name": "Treatment plan session"
+      }
     }
   },
   "validation": {

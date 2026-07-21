@@ -5,7 +5,9 @@ export function normalizeSearchText(value) {
     .trim()
     .toLowerCase()
     // Remove Arabic diacritics and tatweel.
-    .replace(/[\u0640\u064b-\u065f\u0670]/g, '')
+    .replace(/\u0640/g, '')
+    .replace(/[\u064b-\u065f]/g, '')
+    .replace(/\u0670/g, '')
     // Normalize Arabic letter variants.
     .replace(/[\u0623\u0625\u0622\u0671]/g, '\u0627')
     .replace(/\u0649/g, '\u064a')

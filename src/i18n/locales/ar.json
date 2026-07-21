@@ -48,6 +48,7 @@
     "delete": "حذف",
     "edit": "تعديل",
     "view": "عرض",
+    "add": "إضافة",
     "create": "إنشاء",
     "search": "بحث",
     "filter": "تصفية",
@@ -63,6 +64,8 @@
     "yes": "نعم",
     "no": "لا",
     "actions": "الإجراءات",
+    "active": "نشط",
+    "inactive": "غير نشط",
     "paginationSummary": "من {{from}} إلى {{to}} من مجموع {{total}}",
     "notes": "ملاحظات",
     "amount": "المبلغ",
@@ -77,7 +80,10 @@
     "unknown": "غير معروف",
     "update": "تحديث",
     "download": "تنزيل",
-    "manage": "إدارة"
+    "manage": "إدارة",
+    "reset": "إعادة ضبط",
+    "saveChanges": "حفظ التغييرات",
+    "saving": "جاري الحفظ..."
   },
   "dateRange": {
     "today": "اليوم",
@@ -321,6 +327,7 @@
     "increaseRemainingAmountHint": "استخدمها عند وجود مبلغ إضافي مستحق على الباقة.",
     "logActionIncreasedRemaining": "زيادة المبلغ المتبقي",
     "increaseRemainingNote": "تمت زيادة المبلغ المتبقي بمقدار {{amount}}",
+    "writeOffRemainingNote": "تم إسقاط {{amount}} من المبلغ المستحق",
     "newPatient": "مريض جديد",
     "existingPatient": "مريض موجود",
     "newPatientIntakeDescription": "إنشاء ملف مريض على مستوى الشركة وربطه بهذا الفرع.",
@@ -372,6 +379,7 @@
   },
   "sessions": {
     "title": "الزيارات",
+    "session": "زيارة",
     "createSession": "إضافة زيارة",
     "createVisitDrawerDescription": "إنشاء زيارة جديدة.",
     "editSession": "تعديل الزيارة",
@@ -818,10 +826,11 @@
     "cancelledSessions": "الزيارات الملغاة",
     "totalRevenue": "إجمالي الإيرادات",
     "visitTypeAll": "كل أنواع الزيارات",
-    "profileVisitTypeOption": "{{visitType}} {{profile}}"
+    "profileVisitTypeOption": "زيارة {{profile}} - {{visitType}}"
   },
   "users": {
     "title": "المستخدمون",
+    "user": "المستخدم",
     "createUser": "إضافة مستخدم",
     "editUser": "تعديل المستخدم",
     "userDetails": "تفاصيل المستخدم",
@@ -1264,6 +1273,114 @@
       "aria": "تواصل مع Recovera على واتساب"
     }
   },
+  "profileServices": {
+    "title": "خيارات الزيارات",
+    "description": "حدد خيارات الزيارة لكل تخصص مفعل داخل الفرع.",
+    "selectClinicFirstDescription": "يجب تحديد نطاق العيادة قبل تحميل إعدادات الفروع.",
+    "branchContext": "سياق الفرع",
+    "branchContextDescription": "تُطبّق الإعدادات على الفرع المحدد والتخصصات المفعلة فيه.",
+    "selectBranch": "اختر الفرع",
+    "enabledProfiles": "التخصصات المفعلة",
+    "noProfiles": "لا توجد تخصصات مفعلة",
+    "status": "الحالة",
+    "profileCount": "التخصصات",
+    "enabledServiceCount": "مفعلة",
+    "disabledServiceCount": "معطلة",
+    "noBranches": "لا توجد فروع في النطاق الحالي.",
+    "noBranchProfiles": "هذا الفرع ليس به تخصصات مفعلة بعد.",
+    "profiles": "التخصصات",
+    "profile": "التخصص",
+    "defaultDuration": "المدة الافتراضية",
+    "profileActive": "التخصص مفعل في تشغيل الفرع",
+    "profileActiveDescription": "يشغّل أو يوقف هذا التخصص داخل العمل اليومي للفرع.",
+    "services": "خيارات الزيارة",
+    "servicesDescription": "خيارات الزيارة المتاحة لهذا التخصص داخل الفرع المحدد.",
+    "noServices": "لا توجد خيارات زيارة متاحة لهذا التخصص.",
+    "defaultDurationPositive": "يجب أن تكون المدة الافتراضية رقمًا صحيحًا أكبر من صفر",
+    "durationMinutesValue": "{{count}} دقيقة",
+    "notes": {
+      "physiotherapy": {
+        "title": "الكشف والجلسات والباقات",
+        "description": "التخصص الكامل لتشغيل العلاج الطبيعي اليومي."
+      },
+      "medicalDoctor": {
+        "title": "الاستشارات والمتابعات",
+        "description": "تخصص أولي يركز على متابعة الزيارات والفوترة الأساسية."
+      },
+      "dentist": {
+        "title": "الفحوصات والإجراءات",
+        "description": "تخصص أولي يركز على زيارات الأسنان وسياق الإجراء."
+      },
+      "laserDermatology": {
+        "title": "الاستشارات وجلسات الأجهزة",
+        "description": "تخصص أولي يركز على جلسات الليزر ومنطقة العلاج."
+      }
+    },
+    "categories": {
+      "assessment": "كشف",
+      "treatment": "علاج",
+      "package": "باقة",
+      "consultation": "استشارة",
+      "follow_up": "متابعة",
+      "procedure": "إجراء",
+      "exam": "فحص",
+      "course": "خطة علاج"
+    },
+    "visitTypes": {
+      "assessment": "كشف",
+      "session": "جلسة",
+      "reassessment": "إعادة كشف",
+      "package_session": "جلسة من باقة",
+      "consultation": "استشارة",
+      "follow_up": "متابعة",
+      "procedure_add_on": "إجراء إضافي",
+      "exam": "فحص",
+      "cleaning": "تنظيف",
+      "procedure": "إجراء",
+      "course_session": "جلسة ضمن خطة علاج"
+    },
+    "catalog": {
+      "physio_assessment": {
+        "name": "كشف علاج طبيعي"
+      },
+      "physio_session": {
+        "name": "جلسة علاج طبيعي"
+      },
+      "physio_reassessment": {
+        "name": "إعادة كشف علاج طبيعي"
+      },
+      "physio_package_session": {
+        "name": "جلسة علاج من باقة"
+      },
+      "medical_consultation": {
+        "name": "استشارة طبية"
+      },
+      "medical_follow_up": {
+        "name": "متابعة طبية"
+      },
+      "medical_procedure_add_on": {
+        "name": "إجراء طبي إضافي"
+      },
+      "dental_exam": {
+        "name": "فحص أسنان"
+      },
+      "dental_cleaning": {
+        "name": "تنظيف أسنان"
+      },
+      "dental_procedure": {
+        "name": "إجراء أسنان"
+      },
+      "laser_consultation": {
+        "name": "استشارة ليزر وجلدية"
+      },
+      "laser_session": {
+        "name": "جلسة ليزر أو جلدية"
+      },
+      "laser_course_session": {
+        "name": "جلسة ضمن خطة علاج"
+      }
+    }
+  },
   "validation": {
     "sessions": {
       "doctorRequired": "يجب اختيار الطبيب",
@@ -1319,7 +1436,8 @@
       "reconciled": "تمت التسوية"
     },
     "selectClinicFirst": "اختر عيادة من الشريط العلوي لإدارة فروعها.",
-    "primaryBranch": "الفرع الأساسي"
+    "primaryBranch": "الفرع الأساسي",
+    "readOnly": "قراءة فقط"
   },
   "platformOnboarding": {
     "nav": "تهيئة عميل",
@@ -1413,6 +1531,7 @@
     "scopeHint": "أعمال المنصة معزولة هنا. يظل تجاوز مساحة العمل مخصصاً للدعم ومعالجة الحالات.",
     "scopeRequired": "يستخدم نطاق الإدارة",
     "selectScopeFirst": "حدد نطاق إدارة قبل المتابعة.",
+    "selectClinicFirst": "اختر عيادة أولًا",
     "auditReason": "سبب إداري",
     "auditReasonPlaceholder": "اكتب سبب إجراء هذا التغيير الإداري.",
     "auditReasonHint": "يتم حفظه مع حدث تدقيق المنصة.",
@@ -1420,6 +1539,9 @@
     "collapseSidebar": "طي الشريط الجانبي",
     "expandSidebar": "توسيع الشريط الجانبي",
     "governance": "الحوكمة",
+    "table": {
+      "action": "الإجراء"
+    },
     "audit": {
       "nav": "سجل التدقيق",
       "badge": "تدقيق الإدارة",

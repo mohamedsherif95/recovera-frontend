@@ -390,7 +390,10 @@ export default function PlatformGovernancePage() {
 
   const roles = useMemo(() => {
     const roleList = Array.isArray(rolesQuery.data) ? rolesQuery.data : [];
-    return [...roleList].sort((left, right) => {
+    return roleList.map((role) => ({
+      ...role,
+      permissions: role.permissions || [],
+    })).sort((left, right) => {
       const leftIndex = ROLE_ORDER.indexOf(left.name);
       const rightIndex = ROLE_ORDER.indexOf(right.name);
       return (

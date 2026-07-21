@@ -1,11 +1,18 @@
+import { useRef } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import {
   getSafeLandingBannerHref,
   normalizeLandingBanner,
   resolveLandingBannerContent,
 } from "@/lib/landingBanner";
+import {
+  trackLandingBannerCtaClick,
+  trackLandingBannerHover,
+} from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import "@/styles/landing.css";
+
+const BANNER_HOVER_THROTTLE_MS = 2000;
 
 function BannerMessage({ banner }) {
   return (
@@ -28,6 +35,7 @@ export function LandingBanner({
   language = "ar",
   preview = false,
 }) {
+  const lastHoverTrackedAtRef = useRef(0);
   const banner = resolveLandingBannerContent(
     normalizeLandingBanner(settings),
     language,
@@ -38,9 +46,37 @@ export function LandingBanner({
     return null;
   }
 
+  const trackingPayload = {
+    banner_language: language,
+    banner_variant: banner.variant,
+    banner_density: banner.density,
+    banner_direction: banner.direction,
+    banner_pause_on_hover: banner.pauseOnHover,
+    banner_show_icon: banner.showIcon,
+    banner_has_cta: Boolean(banner.ctaLabel && href),
+    banner_cta_label: banner.ctaLabel || "",
+    banner_cta_href: href || "",
+  };
+
+  const handleBannerHover = () => {
+    if (preview) return;
+
+    const now = Date.now();
+    if (now - lastHoverTrackedAtRef.current < BANNER_HOVER_THROTTLE_MS) return;
+
+    lastHoverTrackedAtRef.current = now;
+    trackLandingBannerHover(trackingPayload);
+  };
+
+  const handleBannerCtaClick = () => {
+    if (preview) return;
+    trackLandingBannerCtaClick(trackingPayload);
+  };
+
   return (
     <section
       aria-label={banner.kicker || "Site announcement"}
+      onPointerEnter={handleBannerHover}
       className={cn(
         "landing-config-banner",
         `landing-config-banner-${banner.variant}`,
@@ -79,6 +115,7 @@ export function LandingBanner({
             className="landing-config-banner-cta"
             target={href.startsWith("http") ? "_blank" : undefined}
             rel={href.startsWith("http") ? "noreferrer" : undefined}
+            onClick={handleBannerCtaClick}
           >
             <span>{banner.ctaLabel}</span>
             <ArrowRight className={cn("h-4 w-4", isRtl && "rotate-180")} />

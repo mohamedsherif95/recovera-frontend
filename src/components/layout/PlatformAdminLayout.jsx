@@ -17,6 +17,7 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
+  SlidersHorizontal,
   User,
   Users,
   X,
@@ -82,6 +83,13 @@ const platformNavigation = [
     href: '/platform-admin/branches',
     icon: Building2,
     permission: PERMISSIONS['branches:view'],
+  },
+  {
+    name: 'nav.profileServices',
+    label: 'Visit services',
+    href: '/platform-admin/profile-services',
+    icon: SlidersHorizontal,
+    permission: PERMISSIONS['profileServices:view'],
   },
   {
     name: 'nav.users',

@@ -43,6 +43,7 @@ import PlatformAdminLandingBannerPage from '@/pages/platform-admin-landing-banne
 import InvoicesPage from '@/pages/invoices';
 import BranchExpensesPage from '@/pages/branch-expenses';
 import PayrollPage from '@/pages/payroll';
+import ProfileServicesPage from '@/pages/profile-services';
 
 const UnauthorizedPage = () => {
   const { t } = useTranslation();
@@ -156,6 +157,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission={PERMISSIONS['branches:view']}>
             <BranchesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'profile-services',
+        element: (
+          <ProtectedRoute requiredPermission={PERMISSIONS['profileServices:view']}>
+            <ProfileServicesPage />
           </ProtectedRoute>
         ),
       },

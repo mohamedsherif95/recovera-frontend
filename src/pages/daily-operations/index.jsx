@@ -1,8 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { format } from "date-fns";
-import { arSA, enUS } from "date-fns/locale";
 import {
   Activity,
   CalendarClock,
@@ -55,7 +53,7 @@ import {
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
-import { dateOnlyToDate, getClinicTodayDateOnly } from "@/lib/time";
+import { getClinicTodayDateOnly } from "@/lib/time";
 
 // Static time slots; API returns a flat sessions array with `slot` matching these labels (24h).
 // Rows are fixed from 10:00 to 24:00.
@@ -187,15 +185,6 @@ export default function DailyOperationsPage() {
     setShiftFilterState(value);
     updateFiltersInUrl(selectedDate, value);
   };
-
-  const locale = useMemo(() => {
-    if (i18n.language === "ar") return arSA;
-    return enUS;
-  }, [i18n.language]);
-
-  const selectedDateObj = useMemo(() => {
-    return dateOnlyToDate(selectedDate) || dateOnlyToDate(getClinicTodayDateOnly());
-  }, [selectedDate]);
 
   const isRtl = i18n.language === "ar";
 

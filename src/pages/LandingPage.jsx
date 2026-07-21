@@ -25,6 +25,7 @@ import { LandingBanner } from "@/components/marketing/LandingBanner";
 import { PublicTopBar } from "@/components/layout/PublicTopBar";
 import { Button } from "@/components/ui/button";
 import { usePublicLandingBanner } from "@/hooks/usePublicContent";
+import { trackContactClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import "@/styles/landing.css";
 
@@ -1054,6 +1055,15 @@ function PricingVisual({ model }) {
 }
 
 function WhatsAppFloatingCta({ t }) {
+  const handleClick = () => {
+    trackContactClick({
+      contact_method: "whatsapp",
+      cta_location: "landing_floating_cta",
+      cta_label: t("marketing.whatsapp.label"),
+      destination_url: WHATSAPP_HREF,
+    });
+  };
+
   return (
     <a
       href={WHATSAPP_HREF}
@@ -1061,6 +1071,7 @@ function WhatsAppFloatingCta({ t }) {
       rel="noreferrer"
       className="landing-whatsapp-float"
       aria-label={t("marketing.whatsapp.aria")}
+      onClick={handleClick}
     >
       <span className="landing-whatsapp-icon" aria-hidden="true">
         <WhatsAppGlyph />

@@ -228,9 +228,9 @@ export function SessionForm({
     () => getProfileDetailFields(activeProfile),
     [activeProfile],
   );
+  const showProfileDetailFields = isEditing && profileDetailFields.length > 0;
   const activeVisitLabel = getClinicProfileVisitLabel(activeProfile, t);
   const activeProviderLabel = getClinicProfileProviderLabel(activeProfile, t);
-
   useEffect(() => {
     const fallbackProfile = enabledProfiles[0] || CLINIC_PROFILES.PHYSIOTHERAPY;
     if (!selectedProfile || !enabledProfiles.includes(selectedProfile)) {
@@ -421,10 +421,14 @@ export function SessionForm({
       payload.categoryNotes = null;
     }
 
-    payload.profileDetails = cleanProfileDetails(
-      profileDetailFields,
-      payload.profileDetails || {},
-    );
+    if (isEditing) {
+      payload.profileDetails = cleanProfileDetails(
+        profileDetailFields,
+        payload.profileDetails || {},
+      );
+    } else {
+      delete payload.profileDetails;
+    }
 
     const isAssessment =
       supportsAssessmentTracking &&
@@ -1146,7 +1150,7 @@ export function SessionForm({
             </div>
           )}
 
-          {profileDetailFields.length > 0 && (
+          {showProfileDetailFields && (
             <div className="space-y-4 rounded-md border bg-muted/10 p-4 md:col-span-2">
               <div>
                 <h3 className="text-sm font-semibold">

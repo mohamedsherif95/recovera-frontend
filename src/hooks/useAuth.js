@@ -15,7 +15,6 @@ export function useAuth() {
     setRolesPermissionsMap,
     derivePermissionsFromRoles,
     clearPermissions,
-    rolesPermissionsMap,
   } = usePermissionsStore();
 
   // Login mutation

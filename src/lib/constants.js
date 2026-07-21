@@ -79,6 +79,7 @@ export const QUERY_KEYS = {
   PUBLIC_CONTENT: 'publicContent',
   INVOICES: 'invoices',
   BRANCH_EXPENSES: 'branchExpenses',
+  PROFILE_SERVICES: 'profileServices',
 };
 
 export const PLATFORM_INVOICE_STATUS_LABELS = {
@@ -134,6 +135,8 @@ export const PERMISSIONS = {
   "expenses:void": "expenses:void",
   "expenses:manageCategories": "expenses:manageCategories",
   "expenses:viewAnalysis": "expenses:viewAnalysis",
+  "profileServices:view": "profileServices:view",
+  "profileServices:manage": "profileServices:manage",
   "branches:view": "branches:view",
   "branches:create": "branches:create",
   "branches:update": "branches:update",

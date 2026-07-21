@@ -57,22 +57,10 @@ import {
   getClinicProfileLabel,
   getClinicProfileProviderLabel,
 } from "@/lib/clinicProfiles";
-
-const statusBadgeClasses = {
-  scheduled:
-    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
-  arrived:
-    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
-  in_progress:
-    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
-  completed:
-    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
-  cancelled:
-    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
-};
-
-const getStatusBadgeClass = (status) =>
-  statusBadgeClasses[status] || "border-border bg-muted/30";
+import {
+  getClinicProfileBadgeVariant,
+  getSessionStatusBadgeVariant,
+} from "@/lib/visualTokens";
 
 const getStatusActionLabel = (statusKey, t) => {
   if (statusKey === SESSION_STATUS.ARRIVED) {
@@ -419,7 +407,10 @@ export default function SessionDetailsPage() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle>
           {t("sessions.sessionInfo")}
-          <Badge variant="outline" className="mx-3 align-middle">
+          <Badge
+            variant={getClinicProfileBadgeVariant(sessionProfile)}
+            className="mx-3 align-middle"
+          >
             {profileLabel}
           </Badge>
           {supportsAssessmentTracking && session.isReassessment ? (
@@ -566,10 +557,7 @@ export default function SessionDetailsPage() {
           <ImpactMetric
             label={t("sessions.currentStatus")}
             value={
-              <Badge
-                variant="outline"
-                className={getStatusBadgeClass(session.status)}
-              >
+              <Badge variant={getSessionStatusBadgeVariant(session.status)}>
                 {session.status ? t(`status.${session.status}`) : "--"}
               </Badge>
             }
@@ -1074,7 +1062,7 @@ export default function SessionDetailsPage() {
       />
 
       {isCrossBranchSession && (
-        <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100">
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 shadow-sm dark:border-blue-900 dark:bg-blue-950/35 dark:text-blue-100">
           {t("sessions.crossBranchContext", {
             defaultValue:
               "This visit was served in {{serviceBranch}} while the patient primary branch is {{primaryBranch}}.",

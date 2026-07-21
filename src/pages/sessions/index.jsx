@@ -60,23 +60,10 @@ import {
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
-
-const statusBadgeClasses = {
-  scheduled:
-    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
-  arrived:
-    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
-  in_progress:
-    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
-  completed:
-    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
-  cancelled:
-    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
-};
-
-function getStatusBadgeClass(status) {
-  return statusBadgeClasses[status] || "border-border bg-muted/30";
-}
+import {
+  getClinicProfileBadgeVariant,
+  getSessionStatusBadgeVariant,
+} from "@/lib/visualTokens";
 
 export default function SessionsPage() {
   const { t, i18n } = useTranslation();
@@ -260,13 +247,18 @@ export default function SessionsPage() {
               row.patient?.sessionsUntilReassessment === 0 &&
               !row.isAssessment &&
               !row.isReassessment && (
-                <BellRing
-                  className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
-                  aria-hidden="true"
+                <Badge
+                  variant="warning"
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center p-0"
                   title={t("patients.reassessmentDue", {
                     defaultValue: "Reassessment due",
                   })}
-                />
+                >
+                  <BellRing
+                    className="h-3 w-3"
+                    aria-hidden="true"
+                  />
+                </Badge>
               )}
           </span>
         ),
@@ -275,7 +267,11 @@ export default function SessionsPage() {
         key: "profile",
         header: t("sessions.profile", { defaultValue: "Clinic profile" }),
         cell: (row) => (
-          <Badge variant="outline">
+          <Badge
+            variant={getClinicProfileBadgeVariant(
+              row.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
+            )}
+          >
             {getClinicProfileLabel(
               row.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
               t,
@@ -341,7 +337,9 @@ export default function SessionsPage() {
         header: t("sessions.status"),
         cell: (row) => (
           <div className="flex items-center gap-2">
-            <span>{t(`status.${row.status}`)}</span>
+            <Badge variant={getSessionStatusBadgeVariant(row.status)}>
+              {t(`status.${row.status}`)}
+            </Badge>
             {clinicProfileSupportsWorkflow(
               row.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
               CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
@@ -659,7 +657,10 @@ export default function SessionsPage() {
                               : t("patients.patientId")}
                           </div>
                         </div>
-                        <Badge variant="outline" className="shrink-0">
+                        <Badge
+                          variant={getClinicProfileBadgeVariant(rowProfile)}
+                          className="shrink-0"
+                        >
                           {getClinicProfileLabel(rowProfile, t)}
                         </Badge>
                       </div>
@@ -701,10 +702,9 @@ export default function SessionsPage() {
                           </div>
                           <div className="mt-1 flex items-center gap-2 font-medium">
                             <Badge
-                              variant="outline"
-                              className={getStatusBadgeClass(row.status)}
+                              variant={getSessionStatusBadgeVariant(row.status)}
                             >
-                            <span>{t(`status.${row.status}`)}</span>
+                              <span>{t(`status.${row.status}`)}</span>
                             </Badge>
                             {supportsAssessmentTracking &&
                             row.isReassessment ? (

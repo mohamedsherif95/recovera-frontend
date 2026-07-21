@@ -1290,6 +1290,7 @@
     "noBranchProfiles": "هذا الفرع ليس به تخصصات مفعلة بعد.",
     "profiles": "التخصصات",
     "profile": "التخصص",
+    "selected": "محدد",
     "defaultDuration": "المدة الافتراضية",
     "profileActive": "التخصص مفعل في تشغيل الفرع",
     "profileActiveDescription": "يشغّل أو يوقف هذا التخصص داخل العمل اليومي للفرع.",

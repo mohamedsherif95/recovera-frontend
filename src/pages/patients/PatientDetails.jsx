@@ -52,6 +52,10 @@ import {
   getClinicProfileDetailFields,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
+import {
+  getClinicProfileBadgeVariant,
+  getClinicProfileSurfaceClass,
+} from "@/lib/visualTokens";
 import { PatientForm } from "./PatientForm";
 import { SessionFormDrawer } from "../sessions/SessionFormDrawer";
 import { useCreateSession } from "@/hooks/useSessions";
@@ -1091,26 +1095,32 @@ export default function PatientDetailsPage() {
             {patient.fullName}
             {supportsAssessmentTracking &&
               patient.sessionsUntilReassessment === 0 && (
-                <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+                <Badge
+                  variant="warning"
+                  className="inline-flex h-7 w-7 items-center justify-center p-0"
+                  title={t("patients.reassessmentDue", {
+                    defaultValue: "Reassessment due",
+                  })}
+                >
                   <BellRing
-                    className="h-5 w-5 text-sky-500 dark:text-sky-400 flex-shrink-0"
+                    className="h-4 w-4"
                     aria-hidden="true"
-                    title={t("patients.reassessmentDue", {
-                      defaultValue: "Reassessment due",
-                    })}
                   />
-                </span>
+                </Badge>
               )}
             {supportsTreatmentPackages && isBalanceExhaustedAfterUse && (
-              <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+              <Badge
+                variant="danger"
+                className="inline-flex h-7 w-7 items-center justify-center p-0"
+                title={t("patients.balanceExhaustedAfterUse", {
+                  defaultValue: "Previously had balance, now exhausted",
+                })}
+              >
                 <CircleOff
-                  className="h-5 w-5 text-sky-600 dark:text-sky-300"
+                  className="h-4 w-4"
                   aria-hidden="true"
-                  title={t("patients.balanceExhaustedAfterUse", {
-                    defaultValue: "Previously had balance, now exhausted",
-                  })}
                 />
-              </span>
+              </Badge>
             )}
           </div>
         }
@@ -1422,7 +1432,9 @@ export default function PatientDetailsPage() {
               <FileText className="h-5 w-5 text-primary" />
               {t("patients.branchClinicalRecords")}
               {activeClinicalProfileLabel && (
-                <Badge variant="secondary">{activeClinicalProfileLabel}</Badge>
+                <Badge variant={getClinicProfileBadgeVariant(activeClinicalProfile)}>
+                  {activeClinicalProfileLabel}
+                </Badge>
               )}
             </CardTitle>
             {canEdit && showSelectedProfileSettings && isEditingHistory ? (
@@ -1491,7 +1503,7 @@ export default function PatientDetailsPage() {
                         className={cn(
                           "inline-flex min-h-10 items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition-colors",
                           isSelected
-                            ? "border-primary bg-primary text-primary-foreground"
+                            ? getClinicProfileSurfaceClass(profile)
                             : "bg-background hover:bg-muted",
                         )}
                         onClick={() => setSelectedClinicalProfile(profile)}
@@ -1502,7 +1514,7 @@ export default function PatientDetailsPage() {
                             "h-2 w-2 rounded-full",
                             hasRecord
                               ? isSelected
-                                ? "bg-primary-foreground"
+                                ? "bg-current"
                                 : "bg-primary"
                               : "bg-muted-foreground/40",
                           )}
@@ -1871,7 +1883,7 @@ export default function PatientDetailsPage() {
             </div>
 
             {isBalanceExhaustedAfterUse && (
-              <div className="flex items-center gap-2 rounded-md border border-sky-200 bg-sky-50 p-2 text-xs text-sky-700 dark:border-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+              <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-200">
                 <CircleOff className="h-4 w-4" />
                 <span>
                   {t("patients.balanceExhaustedAfterUse", {
@@ -2006,8 +2018,14 @@ export default function PatientDetailsPage() {
                     })}
                   </div>
                   <Badge
-                    variant="outline"
-                    className="max-w-full truncate rounded-full border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-200"
+                    variant={
+                      balanceActionType === BALANCE_ACTION_TYPES.CORRECT_BALANCE
+                        ? "warning"
+                        : balanceActionType === BALANCE_ACTION_TYPES.WRITE_OFF_DUE
+                          ? "danger"
+                          : "info"
+                    }
+                    className="max-w-full truncate"
                   >
                     {selectedBalanceAction?.label}
                   </Badge>

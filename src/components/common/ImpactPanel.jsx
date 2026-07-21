@@ -2,8 +2,13 @@ import { cn } from '@/lib/utils';
 
 const impactToneClasses = {
   neutral: {
-    container: 'border-border bg-muted/20',
-    icon: 'bg-background text-muted-foreground',
+    container: 'border-border/80 bg-card/90',
+    icon: 'bg-primary/10 text-primary',
+  },
+  info: {
+    container:
+      'border-sky-200 bg-sky-50/70 dark:border-sky-900/70 dark:bg-sky-950/20',
+    icon: 'bg-sky-100 text-sky-700 dark:bg-sky-950/70 dark:text-sky-300',
   },
   commercial: {
     container:
@@ -58,7 +63,7 @@ export function ImpactPanel({
 
 export function ImpactMetric({ label, value }) {
   return (
-    <div className="min-w-0 rounded-md border bg-background/80 p-3">
+    <div className="min-w-0 rounded-md border bg-background/85 p-3 shadow-sm">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 break-words text-sm font-semibold">{value ?? '--'}</div>
     </div>

@@ -44,6 +44,11 @@ import {
 } from '@/lib/constants';
 import { resolveEffectiveBranchId, resolveEffectiveClinicId } from '@/lib/branchScope';
 import { getClinicProfileLabel } from '@/lib/clinicProfiles';
+import {
+  getClinicProfileBadgeVariant,
+  getClinicProfileIconTileClass,
+  getClinicProfileSurfaceClass,
+} from '@/lib/visualTokens';
 import { cn } from '@/lib/utils';
 
 const PROFILE_SETUP_NOTES = {
@@ -571,21 +576,34 @@ export default function ProfileServicesPage() {
                     className={cn(
                       'flex w-full items-start gap-3 rounded-md border px-3 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       active
-                        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                        ? cn(getClinicProfileSurfaceClass(profile), 'shadow-sm')
                         : 'bg-background hover:bg-muted/60',
                     )}
                   >
-                    <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
+                        getClinicProfileIconTileClass(profile),
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold">
+                      <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
                         {getClinicProfileLabel(profile, t)}
+                        <Badge
+                          variant={getClinicProfileBadgeVariant(profile)}
+                          className="px-1.5 py-0 text-[10px]"
+                        >
+                          {active
+                            ? t('profileServices.selected', { defaultValue: 'Selected' })
+                            : t('profileServices.profile', { defaultValue: 'Profile' })}
+                        </Badge>
                       </span>
                       <span
                         className={cn(
                           'mt-1 block text-xs',
-                          active
-                            ? 'text-primary-foreground/80'
-                            : 'text-muted-foreground',
+                          'text-muted-foreground',
                         )}
                       >
                         {noteTitle}
@@ -601,10 +619,17 @@ export default function ProfileServicesPage() {
             <Card>
               <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between md:space-y-0">
                 <div>
-                  <CardTitle className="text-base">
-                    {selectedProfile
-                      ? getClinicProfileLabel(selectedProfile, t)
-                      : t('profileServices.profile', { defaultValue: 'Profile' })}
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+                    <span>
+                      {selectedProfile
+                        ? getClinicProfileLabel(selectedProfile, t)
+                        : t('profileServices.profile', { defaultValue: 'Profile' })}
+                    </span>
+                    {selectedProfile && (
+                      <Badge variant={getClinicProfileBadgeVariant(selectedProfile)}>
+                        {t('profileServices.profile', { defaultValue: 'Profile' })}
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription className="mt-1 flex items-start gap-2">
                     <ProfileNoteIcon className="mt-0.5 h-4 w-4 shrink-0" />
@@ -618,16 +643,16 @@ export default function ProfileServicesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {isReadOnlyBranch && (
-                    <Badge variant="outline">
+                    <Badge variant="warning">
                       {t('branches.readOnly', { defaultValue: 'Read-only' })}
                     </Badge>
                   )}
                   {activeSetting?.isActive === false ? (
-                    <Badge variant="secondary">
+                    <Badge variant="neutral">
                       {t('common.inactive', { defaultValue: 'Inactive' })}
                     </Badge>
                   ) : (
-                    <Badge>
+                    <Badge variant="success">
                       {t('common.active', { defaultValue: 'Active' })}
                     </Badge>
                   )}
@@ -730,9 +755,20 @@ export default function ProfileServicesPage() {
                               <span className="block break-words text-sm font-medium">
                                 {getCatalogServiceName(service, t)}
                               </span>
-                              <span className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                {category && <span>{category}</span>}
-                                {visitType && <span>{visitType}</span>}
+                              <span className="mt-1 flex flex-wrap gap-2">
+                                {category && (
+                                  <Badge variant="neutral" className="px-1.5 py-0 text-[10px]">
+                                    {category}
+                                  </Badge>
+                                )}
+                                {visitType && (
+                                  <Badge
+                                    variant={getClinicProfileBadgeVariant(selectedProfile)}
+                                    className="px-1.5 py-0 text-[10px]"
+                                  >
+                                    {visitType}
+                                  </Badge>
+                                )}
                               </span>
                             </span>
                           </span>

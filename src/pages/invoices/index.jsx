@@ -36,6 +36,7 @@ import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 import { formatCurrency, formatDateTime } from '@/lib/utils';
+import { getInvoiceStatusBadgeVariant } from '@/lib/visualTokens';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
   dateOnlyToDate,
@@ -63,14 +64,6 @@ const parseDateOnlyString = (value) => {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const getStatusBadgeClass = (status) => {
-  if (status === 'void') {
-    return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800';
-  }
-
-  return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
 };
 
 export default function InvoicesPage() {
@@ -571,7 +564,7 @@ export default function InvoicesPage() {
                               })}
                         </td>
                         <td className="px-3 py-2">
-                          <Badge variant="outline" className={getStatusBadgeClass(invoice.status)}>
+                          <Badge variant={getInvoiceStatusBadgeVariant(invoice.status)}>
                             {invoice.status === 'void'
                               ? t('reports.voided', { defaultValue: 'Void' })
                               : t('status.active', { defaultValue: 'Active' })}

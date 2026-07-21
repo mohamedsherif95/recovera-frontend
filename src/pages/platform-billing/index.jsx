@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import toast from 'react-hot-toast';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
   AlertTriangle,
   CalendarClock,
@@ -9,6 +9,7 @@ import {
   ClipboardList,
   Circle,
   Download,
+  Eye,
   FileCheck2,
   FileSpreadsheet,
   FileText,
@@ -18,15 +19,15 @@ import {
   RefreshCcw,
   ReceiptText,
   WalletCards,
-} from 'lucide-react';
-import { PageHeader } from '@/components/common/PageHeader';
+} from "lucide-react";
+import { PageHeader } from "@/components/common/PageHeader";
 import {
   ActionWeightItem,
   ActionWeightPanel,
-} from '@/components/common/ActionWeightPanel';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from "@/components/common/ActionWeightPanel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -34,20 +35,20 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { platformBillingApi } from '@/api/endpoints/platformBilling';
-import { useBranches } from '@/hooks/useBranches';
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { platformBillingApi } from "@/api/endpoints/platformBilling";
+import { useBranches } from "@/hooks/useBranches";
 import {
   useCreatePlatformAdjustment,
   useGeneratePlatformInvoice,
@@ -55,37 +56,38 @@ import {
   usePlatformInvoice,
   usePlatformInvoices,
   usePlatformUsageEvents,
+  useRefreshPlatformInvoiceArtifacts,
   useRecordPlatformCollection,
   useVoidPlatformInvoice,
-} from '@/hooks/usePlatformBilling';
-import { usePermissions } from '@/hooks/usePermissions';
-import { useUIStore } from '@/store/uiStore';
-import { formatCurrency, formatDateTime } from '@/lib/utils';
+} from "@/hooks/usePlatformBilling";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useUIStore } from "@/store/uiStore";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 import {
   clinicDateTimeLocalNow,
   clinicDateTimeLocalToIso,
   getClinicCurrentMonthInput,
-} from '@/lib/time';
-import { PERMISSIONS } from '@/lib/constants';
+} from "@/lib/time";
+import { PERMISSIONS } from "@/lib/constants";
 
-const activeStatuses = new Set(['issued', 'partially_paid', 'paid']);
+const activeStatuses = new Set(["issued", "partially_paid", "paid"]);
 
 const lifecycleOrder = [
-  'not_ready',
-  'ready_to_preview',
-  'preview_generated',
-  'invoice_generated',
-  'partially_collected',
-  'paid',
-  'voided',
+  "not_ready",
+  "ready_to_preview",
+  "preview_generated",
+  "invoice_generated",
+  "partially_collected",
+  "paid",
+  "voided",
 ];
 
 const lifecycleStepKeys = [
-  'context',
-  'preview',
-  'invoice',
-  'collection',
-  'closed',
+  "context",
+  "preview",
+  "invoice",
+  "collection",
+  "closed",
 ];
 
 const lifecycleStepIndex = {
@@ -99,63 +101,63 @@ const lifecycleStepIndex = {
 };
 
 const lifecycleBadgeVariant = {
-  not_ready: 'outline',
-  ready_to_preview: 'secondary',
-  preview_generated: 'secondary',
-  invoice_generated: 'outline',
-  partially_collected: 'secondary',
-  paid: 'default',
-  voided: 'destructive',
+  not_ready: "outline",
+  ready_to_preview: "secondary",
+  preview_generated: "secondary",
+  invoice_generated: "outline",
+  partially_collected: "secondary",
+  paid: "default",
+  voided: "destructive",
 };
 
 const currentMonthInput = () => {
   return getClinicCurrentMonthInput();
 };
 
-const toBillingMonth = (value) => (value ? `${value}-01` : '');
+const toBillingMonth = (value) => (value ? `${value}-01` : "");
 
-const formatMonth = (value) => (value ? String(value).slice(0, 7) : '--');
+const formatMonth = (value) => (value ? String(value).slice(0, 7) : "--");
 
 const formatNumber = (value) =>
   value === null || value === undefined
-    ? '--'
+    ? "--"
     : Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const PROFILE_LABELS = {
   physiotherapy: {
-    key: 'platformBilling.profiles.physiotherapy',
-    defaultValue: 'Physiotherapy',
+    key: "platformBilling.profiles.physiotherapy",
+    defaultValue: "Physiotherapy",
   },
   medical_doctor: {
-    key: 'platformBilling.profiles.medicalDoctor',
-    defaultValue: 'Medical clinic',
+    key: "platformBilling.profiles.medicalDoctor",
+    defaultValue: "Medical clinic",
   },
   dentist: {
-    key: 'platformBilling.profiles.dentist',
-    defaultValue: 'Dentist',
+    key: "platformBilling.profiles.dentist",
+    defaultValue: "Dentist",
   },
   laser_dermatology: {
-    key: 'platformBilling.profiles.laserDermatology',
-    defaultValue: 'Laser and dermatology',
+    key: "platformBilling.profiles.laserDermatology",
+    defaultValue: "Laser and dermatology",
   },
 };
 
 const INVOICE_STATUS_LABELS = {
   issued: {
-    key: 'platformBilling.invoiceStatuses.issued',
-    defaultValue: 'Issued',
+    key: "platformBilling.invoiceStatuses.issued",
+    defaultValue: "Issued",
   },
   partially_paid: {
-    key: 'platformBilling.invoiceStatuses.partiallyPaid',
-    defaultValue: 'Partially paid',
+    key: "platformBilling.invoiceStatuses.partiallyPaid",
+    defaultValue: "Partially paid",
   },
   paid: {
-    key: 'platformBilling.invoiceStatuses.paid',
-    defaultValue: 'Paid',
+    key: "platformBilling.invoiceStatuses.paid",
+    defaultValue: "Paid",
   },
   voided: {
-    key: 'platformBilling.invoiceStatuses.voided',
-    defaultValue: 'Voided',
+    key: "platformBilling.invoiceStatuses.voided",
+    defaultValue: "Voided",
   },
 };
 
@@ -163,15 +165,17 @@ const getInvoiceFromPackage = (invoicePackage) =>
   invoicePackage?.invoice || invoicePackage || null;
 
 const statusBadgeVariant = (status) => {
-  if (status === 'paid') return 'default';
-  if (status === 'voided') return 'destructive';
-  if (status === 'partially_paid') return 'secondary';
-  return 'outline';
+  if (status === "paid") return "default";
+  if (status === "voided") return "destructive";
+  if (status === "partially_paid") return "secondary";
+  return "outline";
 };
 
 const getProfileLabel = (profile, t) => {
   const label = PROFILE_LABELS[profile];
-  return label ? t(label.key, { defaultValue: label.defaultValue }) : profile || '--';
+  return label
+    ? t(label.key, { defaultValue: label.defaultValue })
+    : profile || "--";
 };
 
 const getInvoiceStatusLabel = (status, t) => {
@@ -183,7 +187,7 @@ const getCompletedByName = (usageEvent) =>
   usageEvent?.completedBy?.fullName ||
   usageEvent?.completedByName ||
   usageEvent?.completedBy?.name ||
-  '--';
+  "--";
 
 const getTimestamp = (value) => {
   if (!value) return 0;
@@ -203,31 +207,36 @@ const getLifecycleState = ({
   activeInvoice,
   previewQuery,
 }) => {
-  if (needsClinicSelection || !selectedBranchId || !billingMonth || previewQuery.isError) {
-    return 'not_ready';
+  if (
+    needsClinicSelection ||
+    !selectedBranchId ||
+    !billingMonth ||
+    previewQuery.isError
+  ) {
+    return "not_ready";
   }
 
   if (!preview && !calculation) {
-    return 'ready_to_preview';
+    return "ready_to_preview";
   }
 
   if (!activeInvoice) {
-    return 'preview_generated';
+    return "preview_generated";
   }
 
-  if (activeInvoice.status === 'paid') {
-    return 'paid';
+  if (activeInvoice.status === "paid") {
+    return "paid";
   }
 
-  if (activeInvoice.status === 'partially_paid') {
-    return 'partially_collected';
+  if (activeInvoice.status === "partially_paid") {
+    return "partially_collected";
   }
 
-  if (activeInvoice.status === 'voided') {
-    return 'voided';
+  if (activeInvoice.status === "voided") {
+    return "voided";
   }
 
-  return 'invoice_generated';
+  return "invoice_generated";
 };
 
 const getArtifactByType = (artifacts = [], artifactType) =>
@@ -250,22 +259,25 @@ const getLatestInvoiceActivityTimestamp = (invoicePackage) => {
 };
 
 const getArtifactFreshness = (artifact, latestActivityTimestamp) => {
-  if (!artifact) return 'missing';
+  if (!artifact) return "missing";
 
   const artifactTimestamp = getTimestamp(artifact.generatedAt);
-  if (!artifactTimestamp) return 'unknown';
-  if (!latestActivityTimestamp || artifactTimestamp + 1000 >= latestActivityTimestamp) {
-    return 'current';
+  if (!artifactTimestamp) return "unknown";
+  if (
+    !latestActivityTimestamp ||
+    artifactTimestamp + 1000 >= latestActivityTimestamp
+  ) {
+    return "current";
   }
 
-  return 'stale';
+  return "stale";
 };
 
 function Metric({ label, value, emphasis = false }) {
   return (
     <div
       className={`rounded-md border px-3 py-2 ${
-        emphasis ? 'border-primary/30 bg-primary/5' : ''
+        emphasis ? "border-primary/30 bg-primary/5" : ""
       }`}
     >
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -276,15 +288,15 @@ function Metric({ label, value, emphasis = false }) {
 
 function LifecyclePanel({ state, t }) {
   const currentStep = lifecycleStepIndex[state] ?? 0;
-  const orderedState = lifecycleOrder.includes(state) ? state : 'not_ready';
+  const orderedState = lifecycleOrder.includes(state) ? state : "not_ready";
 
   return (
     <div className="rounded-md border bg-muted/20 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase text-muted-foreground">
-            {t('platformBilling.lifecycle.label', {
-              defaultValue: 'Billing lifecycle',
+            {t("platformBilling.lifecycle.label", {
+              defaultValue: "Billing lifecycle",
             })}
           </p>
           <p className="mt-1 text-base font-semibold">
@@ -294,14 +306,14 @@ function LifecyclePanel({ state, t }) {
             {t(`platformBilling.lifecycle.states.${orderedState}.description`)}
           </p>
         </div>
-        <Badge variant={lifecycleBadgeVariant[state] || 'outline'}>
+        <Badge variant={lifecycleBadgeVariant[state] || "outline"}>
           {t(`platformBilling.lifecycle.states.${orderedState}.label`)}
         </Badge>
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-5">
         {lifecycleStepKeys.map((stepKey, index) => {
-          const complete = state !== 'voided' && index < currentStep;
+          const complete = state !== "voided" && index < currentStep;
           const current = index === currentStep;
           const Icon = complete ? CheckCircle2 : current ? FileCheck2 : Circle;
 
@@ -309,13 +321,15 @@ function LifecyclePanel({ state, t }) {
             <div
               key={stepKey}
               className={`rounded-md border px-3 py-2 ${
-                current ? 'border-primary/40 bg-primary/5' : 'bg-background'
+                current ? "border-primary/40 bg-primary/5" : "bg-background"
               }`}
             >
               <div className="flex items-center gap-2">
                 <Icon
                   className={`h-4 w-4 ${
-                    complete || current ? 'text-primary' : 'text-muted-foreground'
+                    complete || current
+                      ? "text-primary"
+                      : "text-muted-foreground"
                   }`}
                 />
                 <p className="text-sm font-medium">
@@ -340,15 +354,16 @@ function ArtifactStatusRow({
   label,
   latestActivityTimestamp,
   onDownload,
+  onReview,
   t,
 }) {
   const freshness = getArtifactFreshness(artifact, latestActivityTimestamp);
   const badgeVariant =
-    freshness === 'current'
-      ? 'default'
-      : freshness === 'stale'
-        ? 'secondary'
-        : 'destructive';
+    freshness === "current"
+      ? "default"
+      : freshness === "stale"
+        ? "secondary"
+        : "destructive";
 
   return (
     <div className="flex flex-col gap-3 border-b px-3 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
@@ -365,26 +380,44 @@ function ArtifactStatusRow({
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {artifact?.generatedAt
-              ? t('platformBilling.artifacts.generatedAt', {
+              ? t("platformBilling.artifacts.generatedAt", {
                   date: formatDateTime(artifact.generatedAt),
-                  defaultValue: 'Generated {{date}}',
+                  defaultValue: "Generated {{date}}",
                 })
-              : t('platformBilling.artifacts.notGenerated', {
-                  defaultValue: 'Not generated yet',
+              : t("platformBilling.artifacts.notGenerated", {
+                  defaultValue: "Not generated yet",
                 })}
           </p>
         </div>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full sm:w-auto"
-        onClick={() => onDownload(artifactType)}
-        disabled={!artifact}
-      >
-        <Download className="h-4 w-4" />
-        {t('platformBilling.artifacts.download', { defaultValue: 'Download' })}
-      </Button>
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+        {artifactType === "pdf" && (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={() => onReview(artifactType)}
+            disabled={!artifact}
+          >
+            <Eye className="h-4 w-4" />
+            {t("platformBilling.artifacts.reviewPdf", {
+              defaultValue: "Review PDF",
+            })}
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full sm:w-auto"
+          onClick={() => onDownload(artifactType)}
+          disabled={!artifact}
+        >
+          <Download className="h-4 w-4" />
+          {t("platformBilling.artifacts.download", {
+            defaultValue: "Download",
+          })}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -393,8 +426,8 @@ function UsageAuditTable({ usageEvents, includedMonthlyVisits, t }) {
   if (!usageEvents?.length) {
     return (
       <p className="text-sm text-muted-foreground">
-        {t('platformBilling.noBillableVisits', {
-          defaultValue: 'No billable visits are logged for this branch-month.',
+        {t("platformBilling.noBillableVisits", {
+          defaultValue: "No billable visits are logged for this branch-month.",
         })}
       </p>
     );
@@ -406,24 +439,28 @@ function UsageAuditTable({ usageEvents, includedMonthlyVisits, t }) {
         <thead className="bg-muted/60 text-left">
           <tr>
             <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.patient', { defaultValue: 'Patient' })}
+              {t("platformBilling.table.patient", { defaultValue: "Patient" })}
             </th>
             <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.completed', { defaultValue: 'Completed' })}
-            </th>
-            <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.profile', { defaultValue: 'Profile' })}
-            </th>
-            <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.visitType', { defaultValue: 'Visit type' })}
-            </th>
-            <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.completedBy', {
-                defaultValue: 'Completed by',
+              {t("platformBilling.table.completed", {
+                defaultValue: "Completed",
               })}
             </th>
             <th className="px-3 py-2 font-medium">
-              {t('platformBilling.table.billing', { defaultValue: 'Billing' })}
+              {t("platformBilling.table.profile", { defaultValue: "Profile" })}
+            </th>
+            <th className="px-3 py-2 font-medium">
+              {t("platformBilling.table.visitType", {
+                defaultValue: "Visit type",
+              })}
+            </th>
+            <th className="px-3 py-2 font-medium">
+              {t("platformBilling.table.completedBy", {
+                defaultValue: "Completed by",
+              })}
+            </th>
+            <th className="px-3 py-2 font-medium">
+              {t("platformBilling.table.billing", { defaultValue: "Billing" })}
             </th>
           </tr>
         </thead>
@@ -433,20 +470,24 @@ function UsageAuditTable({ usageEvents, includedMonthlyVisits, t }) {
             return (
               <tr key={event.id} className="border-t">
                 <td className="px-3 py-2 font-medium">
-                  {event.patientName || event.patient?.fullName || '--'}
+                  {event.patientName || event.patient?.fullName || "--"}
                 </td>
-                <td className="px-3 py-2">{formatDateTime(event.completedAt)}</td>
-                <td className="px-3 py-2">{getProfileLabel(event.profile, t)}</td>
-                <td className="px-3 py-2">{event.visitType || '--'}</td>
+                <td className="px-3 py-2">
+                  {formatDateTime(event.completedAt)}
+                </td>
+                <td className="px-3 py-2">
+                  {getProfileLabel(event.profile, t)}
+                </td>
+                <td className="px-3 py-2">{event.visitType || "--"}</td>
                 <td className="px-3 py-2">{getCompletedByName(event)}</td>
                 <td className="px-3 py-2">
-                  <Badge variant={included ? 'secondary' : 'outline'}>
+                  <Badge variant={included ? "secondary" : "outline"}>
                     {included
-                      ? t('platformBilling.billingLabels.allowance', {
-                          defaultValue: 'Allowance',
+                      ? t("platformBilling.billingLabels.allowance", {
+                          defaultValue: "Allowance",
                         })
-                      : t('platformBilling.billingLabels.overage', {
-                          defaultValue: 'Overage',
+                      : t("platformBilling.billingLabels.overage", {
+                          defaultValue: "Overage",
                         })}
                   </Badge>
                 </td>
@@ -459,55 +500,50 @@ function UsageAuditTable({ usageEvents, includedMonthlyVisits, t }) {
   );
 }
 
-function AdjustmentDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isLoading,
-}) {
+function AdjustmentDialog({ open, onOpenChange, onSubmit, isLoading }) {
   const { t } = useTranslation();
-  const [amount, setAmount] = useState('');
-  const [reason, setReason] = useState('');
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (!open) {
-      setAmount('');
-      setReason('');
+      setAmount("");
+      setReason("");
     }
   }, [open]);
 
   const numericAmount = Number(amount);
-  const hasValidAmount = amount !== '' && Number.isFinite(numericAmount) && numericAmount !== 0;
-  const adjustmentTone = numericAmount < 0 ? 'commercial' : 'warning';
-  const adjustmentType = numericAmount < 0
-    ? t('platformBilling.adjustmentDialog.credit', {
-        defaultValue: 'Credit',
-      })
-    : t('platformBilling.adjustmentDialog.charge', {
-        defaultValue: 'Charge',
-      });
+  const hasValidAmount =
+    amount !== "" && Number.isFinite(numericAmount) && numericAmount !== 0;
+  const adjustmentTone = numericAmount < 0 ? "commercial" : "warning";
+  const adjustmentType =
+    numericAmount < 0
+      ? t("platformBilling.adjustmentDialog.credit", {
+          defaultValue: "Credit",
+        })
+      : t("platformBilling.adjustmentDialog.charge", {
+          defaultValue: "Charge",
+        });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t('platformBilling.adjustmentDialog.title', {
-              defaultValue: 'Record adjustment',
+            {t("platformBilling.adjustmentDialog.title", {
+              defaultValue: "Record adjustment",
             })}
           </DialogTitle>
           <DialogDescription>
-            {t('platformBilling.adjustmentDialog.description', {
+            {t("platformBilling.adjustmentDialog.description", {
               defaultValue:
-                'Use positive amounts for extra charges and negative amounts for credits.',
+                "Use positive amounts for extra charges and negative amounts for credits.",
             })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="adjustment-amount">
-              {t('common.amount')}
-            </Label>
+            <Label htmlFor="adjustment-amount">{t("common.amount")}</Label>
             <Input
               id="adjustment-amount"
               type="number"
@@ -518,7 +554,7 @@ function AdjustmentDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="adjustment-reason">
-              {t('platformBilling.reason', { defaultValue: 'Reason' })}
+              {t("platformBilling.reason", { defaultValue: "Reason" })}
             </Label>
             <Textarea
               id="adjustment-reason"
@@ -527,49 +563,52 @@ function AdjustmentDialog({
             />
           </div>
           <ActionWeightPanel
-            tone={hasValidAmount ? adjustmentTone : 'neutral'}
+            tone={hasValidAmount ? adjustmentTone : "neutral"}
             icon={ReceiptText}
-            title={t('platformBilling.adjustmentDialog.impactTitle', {
-              defaultValue: 'Adjustment impact',
+            title={t("platformBilling.adjustmentDialog.impactTitle", {
+              defaultValue: "Adjustment impact",
             })}
-            description={t('platformBilling.adjustmentDialog.impactDescription', {
-              defaultValue:
-                'Saved adjustments change the invoice total and balance. Generated artifacts may need regeneration before sharing.',
-            })}
+            description={t(
+              "platformBilling.adjustmentDialog.impactDescription",
+              {
+                defaultValue:
+                  "Saved adjustments change the invoice total and balance. Generated artifacts may need regeneration before sharing.",
+              },
+            )}
           >
             <div className="grid gap-2 sm:grid-cols-2">
               <ActionWeightItem
-                tone={hasValidAmount ? adjustmentTone : 'neutral'}
-                label={t('platformBilling.adjustmentDialog.amountPreview', {
-                  defaultValue: 'Amount preview',
+                tone={hasValidAmount ? adjustmentTone : "neutral"}
+                label={t("platformBilling.adjustmentDialog.amountPreview", {
+                  defaultValue: "Amount preview",
                 })}
                 value={
                   hasValidAmount
-                    ? t('platformBilling.adjustmentDialog.amountPreviewValue', {
+                    ? t("platformBilling.adjustmentDialog.amountPreviewValue", {
                         type: adjustmentType,
                         amount: formatCurrency(Math.abs(numericAmount)),
-                        defaultValue: '{{type}} {{amount}}',
+                        defaultValue: "{{type}} {{amount}}",
                       })
-                    : t('platformBilling.adjustmentDialog.enterNonZeroAmount', {
-                        defaultValue: 'Enter a non-zero amount',
+                    : t("platformBilling.adjustmentDialog.enterNonZeroAmount", {
+                        defaultValue: "Enter a non-zero amount",
                       })
                 }
-                helper={t('platformBilling.adjustmentDialog.amountHelper', {
+                helper={t("platformBilling.adjustmentDialog.amountHelper", {
                   defaultValue:
-                    'Positive amounts add charges; negative amounts add credits.',
+                    "Positive amounts add charges; negative amounts add credits.",
                 })}
               />
               <ActionWeightItem
-                tone={reason.trim().length >= 10 ? 'neutral' : 'warning'}
-                label={t('platformBilling.adjustmentDialog.auditLabel', {
-                  defaultValue: 'Audit requirement',
+                tone={reason.trim().length >= 10 ? "neutral" : "warning"}
+                label={t("platformBilling.adjustmentDialog.auditLabel", {
+                  defaultValue: "Audit requirement",
                 })}
-                value={t('platformBilling.adjustmentDialog.auditValue', {
-                  defaultValue: 'Reason required',
+                value={t("platformBilling.adjustmentDialog.auditValue", {
+                  defaultValue: "Reason required",
                 })}
-                helper={t('platformBilling.adjustmentDialog.auditHelper', {
+                helper={t("platformBilling.adjustmentDialog.auditHelper", {
                   defaultValue:
-                    'Add at least 10 characters so the billing audit trail explains the change.',
+                    "Add at least 10 characters so the billing audit trail explains the change.",
                 })}
               />
             </div>
@@ -577,15 +616,15 @@ function AdjustmentDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={() => onSubmit({ amount: Number(amount), reason })}
             disabled={isLoading || !hasValidAmount || reason.trim().length < 10}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('platformBilling.adjustmentDialog.submit', {
-              defaultValue: 'Save adjustment',
+            {t("platformBilling.adjustmentDialog.submit", {
+              defaultValue: "Save adjustment",
             })}
           </Button>
         </DialogFooter>
@@ -594,23 +633,29 @@ function AdjustmentDialog({
   );
 }
 
-function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }) {
+function CollectionDialog({
+  open,
+  onOpenChange,
+  onSubmit,
+  isLoading,
+  maxAmount,
+}) {
   const { t } = useTranslation();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [collectedAt, setCollectedAt] = useState(() =>
     clinicDateTimeLocalNow(),
   );
-  const [method, setMethod] = useState('cash');
-  const [reference, setReference] = useState('');
-  const [notes, setNotes] = useState('');
+  const [method, setMethod] = useState("cash");
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
 
   useEffect(() => {
     if (!open) {
-      setAmount('');
+      setAmount("");
       setCollectedAt(clinicDateTimeLocalNow());
-      setMethod('cash');
-      setReference('');
-      setNotes('');
+      setMethod("cash");
+      setReference("");
+      setNotes("");
     }
   }, [open]);
 
@@ -633,21 +678,20 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t('platformBilling.collectionDialog.title', {
-              defaultValue: 'Record collection',
+            {t("platformBilling.collectionDialog.title", {
+              defaultValue: "Record collection",
             })}
           </DialogTitle>
           <DialogDescription>
-            {t('platformBilling.collectionDialog.description', {
-              defaultValue: 'Track the offline payment after the money is collected.',
+            {t("platformBilling.collectionDialog.description", {
+              defaultValue:
+                "Track the offline payment after the money is collected.",
             })}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="collection-amount">
-              {t('common.amount')}
-            </Label>
+            <Label htmlFor="collection-amount">{t("common.amount")}</Label>
             <Input
               id="collection-amount"
               type="number"
@@ -659,25 +703,25 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
             />
             {Number(maxAmount) > 0 && (
               <p className="text-xs text-muted-foreground">
-                {t('platformBilling.collectionDialog.remainingBalance', {
+                {t("platformBilling.collectionDialog.remainingBalance", {
                   amount: formatCurrency(maxAmount),
-                  defaultValue: 'Remaining balance: {{amount}}',
+                  defaultValue: "Remaining balance: {{amount}}",
                 })}
               </p>
             )}
             {exceedsBalance && (
               <p className="text-xs text-destructive">
-                {t('platformBilling.collectionDialog.exceedsBalance', {
+                {t("platformBilling.collectionDialog.exceedsBalance", {
                   defaultValue:
-                    'Collection amount cannot exceed the remaining balance.',
+                    "Collection amount cannot exceed the remaining balance.",
                 })}
               </p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="collection-at">
-              {t('platformBilling.collectionDialog.collectedAt', {
-                defaultValue: 'Collected at',
+              {t("platformBilling.collectionDialog.collectedAt", {
+                defaultValue: "Collected at",
               })}
             </Label>
             <Input
@@ -689,8 +733,8 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
           </div>
           <div className="space-y-2">
             <Label htmlFor="collection-method">
-              {t('platformBilling.collectionDialog.method', {
-                defaultValue: 'Method',
+              {t("platformBilling.collectionDialog.method", {
+                defaultValue: "Method",
               })}
             </Label>
             <Input
@@ -701,8 +745,8 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
           </div>
           <div className="space-y-2">
             <Label htmlFor="collection-reference">
-              {t('platformBilling.collectionDialog.reference', {
-                defaultValue: 'Reference',
+              {t("platformBilling.collectionDialog.reference", {
+                defaultValue: "Reference",
               })}
             </Label>
             <Input
@@ -712,7 +756,7 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
             />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="collection-notes">{t('common.notes')}</Label>
+            <Label htmlFor="collection-notes">{t("common.notes")}</Label>
             <Textarea
               id="collection-notes"
               value={notes}
@@ -721,50 +765,61 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
           </div>
           <ActionWeightPanel
             className="sm:col-span-2"
-            tone={invalidAmount || exceedsBalance ? 'warning' : 'commercial'}
+            tone={invalidAmount || exceedsBalance ? "warning" : "commercial"}
             icon={WalletCards}
-            title={t('platformBilling.collectionDialog.impactTitle', {
-              defaultValue: 'Ledger impact',
+            title={t("platformBilling.collectionDialog.impactTitle", {
+              defaultValue: "Ledger impact",
             })}
-            description={t('platformBilling.collectionDialog.impactDescription', {
-              defaultValue:
-                'This records an offline collection in the platform ledger and reduces the invoice balance.',
-            })}
+            description={t(
+              "platformBilling.collectionDialog.impactDescription",
+              {
+                defaultValue:
+                  "This records an offline collection in the platform ledger and reduces the invoice balance.",
+              },
+            )}
           >
             <div className="grid gap-2 sm:grid-cols-3">
               <ActionWeightItem
-                label={t('platformBilling.collectionDialog.currentBalance', {
-                  defaultValue: 'Current balance',
+                label={t("platformBilling.collectionDialog.currentBalance", {
+                  defaultValue: "Current balance",
                 })}
                 value={formatCurrency(remainingBalance)}
               />
               <ActionWeightItem
-                tone={invalidAmount ? 'warning' : 'commercial'}
-                label={t('platformBilling.collectionDialog.enteredAmount', {
-                  defaultValue: 'Collection amount',
+                tone={invalidAmount ? "warning" : "commercial"}
+                label={t("platformBilling.collectionDialog.enteredAmount", {
+                  defaultValue: "Collection amount",
                 })}
                 value={
                   invalidAmount
-                    ? t('platformBilling.collectionDialog.enterAmount', {
-                        defaultValue: 'Enter an amount',
+                    ? t("platformBilling.collectionDialog.enterAmount", {
+                        defaultValue: "Enter an amount",
                       })
                     : formatCurrency(numericAmount)
                 }
               />
               <ActionWeightItem
-                tone={exceedsBalance ? 'danger' : 'commercial'}
-                label={t('platformBilling.collectionDialog.projectedBalance', {
-                  defaultValue: 'Projected balance',
+                tone={exceedsBalance ? "danger" : "commercial"}
+                label={t("platformBilling.collectionDialog.projectedBalance", {
+                  defaultValue: "Projected balance",
                 })}
                 value={formatCurrency(projectedBalance)}
                 helper={
                   exceedsBalance
-                    ? t('platformBilling.collectionDialog.projectedBalanceBlocked', {
-                        defaultValue: 'Amount must stay within the open balance.',
-                      })
-                    : t('platformBilling.collectionDialog.projectedBalanceHelper', {
-                        defaultValue: 'Balance after this collection is recorded.',
-                      })
+                    ? t(
+                        "platformBilling.collectionDialog.projectedBalanceBlocked",
+                        {
+                          defaultValue:
+                            "Amount must stay within the open balance.",
+                        },
+                      )
+                    : t(
+                        "platformBilling.collectionDialog.projectedBalanceHelper",
+                        {
+                          defaultValue:
+                            "Balance after this collection is recorded.",
+                        },
+                      )
                 }
               />
             </div>
@@ -772,7 +827,7 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={() =>
@@ -793,8 +848,8 @@ function CollectionDialog({ open, onOpenChange, onSubmit, isLoading, maxAmount }
             }
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('platformBilling.collectionDialog.submit', {
-              defaultValue: 'Record collection',
+            {t("platformBilling.collectionDialog.submit", {
+              defaultValue: "Record collection",
             })}
           </Button>
         </DialogFooter>
@@ -811,10 +866,10 @@ function VoidDialog({
   hasCollections = false,
 }) {
   const { t } = useTranslation();
-  const [reason, setReason] = useState('');
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
-    if (!open) setReason('');
+    if (!open) setReason("");
   }, [open]);
 
   return (
@@ -822,14 +877,14 @@ function VoidDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t('platformBilling.voidDialog.title', {
-              defaultValue: 'Void invoice',
+            {t("platformBilling.voidDialog.title", {
+              defaultValue: "Void invoice",
             })}
           </DialogTitle>
           <DialogDescription>
-            {t('platformBilling.voidDialog.description', {
+            {t("platformBilling.voidDialog.description", {
               defaultValue:
-                'Voiding releases the branch-month lock only when no collections exist.',
+                "Voiding releases the branch-month lock only when no collections exist.",
             })}
           </DialogDescription>
         </DialogHeader>
@@ -837,65 +892,65 @@ function VoidDialog({
           <ActionWeightPanel
             tone="danger"
             icon={AlertTriangle}
-            title={t('platformBilling.voidDialog.impactTitle', {
-              defaultValue: 'Void impact',
+            title={t("platformBilling.voidDialog.impactTitle", {
+              defaultValue: "Void impact",
             })}
-            description={t('platformBilling.voidDialog.impactDescription', {
+            description={t("platformBilling.voidDialog.impactDescription", {
               defaultValue:
-                'Voiding cancels this invoice package and keeps the action in the audit trail.',
+                "Voiding cancels this invoice package and keeps the action in the audit trail.",
             })}
           >
             <div className="grid gap-2 sm:grid-cols-3">
               <ActionWeightItem
                 tone="danger"
-                label={t('platformBilling.voidDialog.packageLabel', {
-                  defaultValue: 'Invoice package',
+                label={t("platformBilling.voidDialog.packageLabel", {
+                  defaultValue: "Invoice package",
                 })}
-                value={t('platformBilling.voidDialog.packageValue', {
-                  defaultValue: 'Cancelled',
+                value={t("platformBilling.voidDialog.packageValue", {
+                  defaultValue: "Cancelled",
                 })}
-                helper={t('platformBilling.voidDialog.packageHelper', {
+                helper={t("platformBilling.voidDialog.packageHelper", {
                   defaultValue:
-                    'The PDF and workbook should no longer be treated as active billing artifacts.',
+                    "The PDF and workbook should no longer be treated as active billing artifacts.",
                 })}
               />
               <ActionWeightItem
-                tone={hasCollections ? 'warning' : 'commercial'}
-                label={t('platformBilling.voidDialog.lockLabel', {
-                  defaultValue: 'Branch-month lock',
+                tone={hasCollections ? "warning" : "commercial"}
+                label={t("platformBilling.voidDialog.lockLabel", {
+                  defaultValue: "Branch-month lock",
                 })}
                 value={
                   hasCollections
-                    ? t('platformBilling.voidDialog.lockHeld', {
-                        defaultValue: 'Stays locked',
+                    ? t("platformBilling.voidDialog.lockHeld", {
+                        defaultValue: "Stays locked",
                       })
-                    : t('platformBilling.voidDialog.lockReleased', {
-                        defaultValue: 'Released',
+                    : t("platformBilling.voidDialog.lockReleased", {
+                        defaultValue: "Released",
                       })
                 }
-                helper={t('platformBilling.voidDialog.lockHelper', {
+                helper={t("platformBilling.voidDialog.lockHelper", {
                   defaultValue:
-                    'The lock is released only when no collection records exist.',
+                    "The lock is released only when no collection records exist.",
                 })}
               />
               <ActionWeightItem
-                tone={reason.trim().length >= 10 ? 'neutral' : 'warning'}
-                label={t('platformBilling.voidDialog.auditLabel', {
-                  defaultValue: 'Audit reason',
+                tone={reason.trim().length >= 10 ? "neutral" : "warning"}
+                label={t("platformBilling.voidDialog.auditLabel", {
+                  defaultValue: "Audit reason",
                 })}
-                value={t('platformBilling.voidDialog.auditValue', {
-                  defaultValue: 'Required',
+                value={t("platformBilling.voidDialog.auditValue", {
+                  defaultValue: "Required",
                 })}
-                helper={t('platformBilling.voidDialog.auditHelper', {
+                helper={t("platformBilling.voidDialog.auditHelper", {
                   defaultValue:
-                    'Add at least 10 characters so the cancellation is explainable later.',
+                    "Add at least 10 characters so the cancellation is explainable later.",
                 })}
               />
             </div>
           </ActionWeightPanel>
           <div className="space-y-2">
             <Label htmlFor="void-reason">
-              {t('platformBilling.reason', { defaultValue: 'Reason' })}
+              {t("platformBilling.reason", { defaultValue: "Reason" })}
             </Label>
             <Textarea
               id="void-reason"
@@ -906,7 +961,7 @@ function VoidDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('common.cancel')}
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -914,8 +969,8 @@ function VoidDialog({
             disabled={isLoading || reason.trim().length < 10}
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {t('platformBilling.voidDialog.submit', {
-              defaultValue: 'Void invoice',
+            {t("platformBilling.voidDialog.submit", {
+              defaultValue: "Void invoice",
             })}
           </Button>
         </DialogFooter>
@@ -929,31 +984,30 @@ export default function PlatformBillingPage() {
   const { platformAdminClinicId } = useUIStore();
   const { can } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const canView = can(PERMISSIONS['platformBilling:view']);
-  const canManage = can(PERMISSIONS['platformBilling:manage']);
-  const canViewBranches = can(PERMISSIONS['branches:view']);
+  const canView = can(PERMISSIONS["platformBilling:view"]);
+  const canManage = can(PERMISSIONS["platformBilling:manage"]);
+  const canViewBranches = can(PERMISSIONS["branches:view"]);
   const needsClinicSelection = !platformAdminClinicId;
   const platformScopeOptions = platformAdminClinicId
     ? { platformClinicId: platformAdminClinicId }
     : {};
-  const linkedBranchId = searchParams.get('branchId') || '';
-  const linkedMonth = searchParams.get('month') || '';
-  const [selectedBranchId, setSelectedBranchId] = useState('');
+  const linkedBranchId = searchParams.get("branchId") || "";
+  const linkedMonth = searchParams.get("month") || "";
+  const [selectedBranchId, setSelectedBranchId] = useState("");
   const [month, setMonth] = useState(linkedMonth || currentMonthInput);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
   const [adjustmentOpen, setAdjustmentOpen] = useState(false);
   const [collectionOpen, setCollectionOpen] = useState(false);
   const [collectionTargetInvoice, setCollectionTargetInvoice] = useState(null);
   const [voidOpen, setVoidOpen] = useState(false);
+  const invoiceDetailRef = useRef(null);
   const billingMonth = toBillingMonth(month);
 
-  const { data: branchesData, isLoading: branchesLoading } = useBranches(
-    {
-      enabled: Boolean(canView && canViewBranches && !needsClinicSelection),
-      suppressPermissionToast: true,
-      ...platformScopeOptions,
-    },
-  );
+  const { data: branchesData, isLoading: branchesLoading } = useBranches({
+    enabled: Boolean(canView && canViewBranches && !needsClinicSelection),
+    suppressPermissionToast: true,
+    ...platformScopeOptions,
+  });
   const branches = useMemo(() => {
     if (needsClinicSelection) return [];
     if (Array.isArray(branchesData)) return branchesData;
@@ -963,7 +1017,7 @@ export default function PlatformBillingPage() {
 
   useEffect(() => {
     if (needsClinicSelection || !branches.length) {
-      setSelectedBranchId('');
+      setSelectedBranchId("");
       return;
     }
 
@@ -981,7 +1035,8 @@ export default function PlatformBillingPage() {
       (branch) => String(branch.id) === String(selectedBranchId),
     );
     if (!stillExists) {
-      const defaultBranch = branches.find((branch) => branch.isDefault) || branches[0];
+      const defaultBranch =
+        branches.find((branch) => branch.isDefault) || branches[0];
       setSelectedBranchId(String(defaultBranch.id));
     }
   }, [branches, linkedBranchId, needsClinicSelection, selectedBranchId]);
@@ -990,9 +1045,9 @@ export default function PlatformBillingPage() {
     setSelectedBranchId(branchId);
     const nextSearchParams = new URLSearchParams(searchParams);
     if (branchId) {
-      nextSearchParams.set('branchId', branchId);
+      nextSearchParams.set("branchId", branchId);
     } else {
-      nextSearchParams.delete('branchId');
+      nextSearchParams.delete("branchId");
     }
     setSearchParams(nextSearchParams, { replace: true });
   };
@@ -1007,9 +1062,9 @@ export default function PlatformBillingPage() {
     setMonth(value);
     const nextSearchParams = new URLSearchParams(searchParams);
     if (value) {
-      nextSearchParams.set('month', value);
+      nextSearchParams.set("month", value);
     } else {
-      nextSearchParams.delete('month');
+      nextSearchParams.delete("month");
     }
     setSearchParams(nextSearchParams, { replace: true });
   };
@@ -1019,10 +1074,7 @@ export default function PlatformBillingPage() {
     billingMonth,
     {
       enabled: Boolean(
-        canView &&
-          selectedBranchId &&
-          billingMonth &&
-          !needsClinicSelection,
+        canView && selectedBranchId && billingMonth && !needsClinicSelection,
       ),
       ...platformScopeOptions,
     },
@@ -1031,10 +1083,7 @@ export default function PlatformBillingPage() {
     { branchId: selectedBranchId || undefined, billingMonth },
     {
       enabled: Boolean(
-        canView &&
-          selectedBranchId &&
-          billingMonth &&
-          !needsClinicSelection,
+        canView && selectedBranchId && billingMonth && !needsClinicSelection,
       ),
       ...platformScopeOptions,
     },
@@ -1043,10 +1092,7 @@ export default function PlatformBillingPage() {
     { branchId: selectedBranchId || undefined, billingMonth },
     {
       enabled: Boolean(
-        canView &&
-          selectedBranchId &&
-          billingMonth &&
-          !needsClinicSelection,
+        canView && selectedBranchId && billingMonth && !needsClinicSelection,
       ),
       ...platformScopeOptions,
     },
@@ -1056,8 +1102,7 @@ export default function PlatformBillingPage() {
     [invoicesQuery.data],
   );
   const usageEvents = useMemo(
-    () =>
-      Array.isArray(usageEventsQuery.data) ? usageEventsQuery.data : [],
+    () => (Array.isArray(usageEventsQuery.data) ? usageEventsQuery.data : []),
     [usageEventsQuery.data],
   );
   const selectedInvoiceQuery = usePlatformInvoice(selectedInvoiceId, {
@@ -1092,26 +1137,27 @@ export default function PlatformBillingPage() {
     selectedInvoice?.voidReason ||
     selectedInvoice?.voidedReason ||
     selectedInvoice?.void_reason ||
-    '';
+    "";
   const selectedInvoiceVoidedBy =
     selectedInvoice?.voidedBy?.fullName ||
     selectedInvoice?.voidedBy?.name ||
     selectedInvoice?.voidedByName ||
-    '';
-  const latestInvoiceActivityTimestamp =
-    getLatestInvoiceActivityTimestamp(selectedInvoicePackage);
-  const pdfArtifact = getArtifactByType(selectedArtifacts, 'pdf');
-  const excelArtifact = getArtifactByType(selectedArtifacts, 'excel');
+    "";
+  const latestInvoiceActivityTimestamp = getLatestInvoiceActivityTimestamp(
+    selectedInvoicePackage,
+  );
+  const pdfArtifact = getArtifactByType(selectedArtifacts, "pdf");
+  const excelArtifact = getArtifactByType(selectedArtifacts, "excel");
   const artifactFreshnessStates = [pdfArtifact, excelArtifact].map((artifact) =>
     getArtifactFreshness(artifact, latestInvoiceActivityTimestamp),
   );
   const artifactPanelTone =
     selectedInvoice &&
     artifactFreshnessStates.some((freshness) =>
-      ['missing', 'stale'].includes(freshness),
+      ["missing", "stale"].includes(freshness),
     )
-      ? 'warning'
-      : 'neutral';
+      ? "warning"
+      : "neutral";
   const resolvedCollectionInvoice =
     selectedInvoice?.id === collectionTargetInvoice?.id
       ? selectedInvoice
@@ -1123,17 +1169,17 @@ export default function PlatformBillingPage() {
   const canCollectSelectedInvoice =
     canManage &&
     selectedInvoice &&
-    selectedInvoice.status !== 'voided' &&
+    selectedInvoice.status !== "voided" &&
     selectedInvoiceBalance > 0;
   const canVoidSelectedInvoice =
     canManage &&
     selectedInvoice &&
-    selectedInvoice.status !== 'voided' &&
+    selectedInvoice.status !== "voided" &&
     !selectedInvoiceHasCollections;
   const activeInvoiceCanCollect =
     canManage &&
     activeInvoice &&
-    activeInvoice.status !== 'voided' &&
+    activeInvoice.status !== "voided" &&
     Number(activeInvoice.balanceAmount || 0) > 0;
 
   useEffect(() => {
@@ -1157,6 +1203,7 @@ export default function PlatformBillingPage() {
   }, [collectionOpen]);
 
   const generateInvoice = useGeneratePlatformInvoice();
+  const refreshArtifacts = useRefreshPlatformInvoiceArtifacts();
   const createAdjustment = useCreatePlatformAdjustment();
   const recordCollection = useRecordPlatformCollection();
   const voidInvoice = useVoidPlatformInvoice();
@@ -1180,11 +1227,61 @@ export default function PlatformBillingPage() {
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||
-          t('platformBilling.downloadFailed', {
-            defaultValue: 'Failed to download artifact',
+          t("platformBilling.downloadFailed", {
+            defaultValue: "Failed to download artifact",
           }),
       );
     }
+  };
+
+  const handleReviewArtifact = async (artifactType) => {
+    if (!selectedInvoice?.id || artifactType !== "pdf") return;
+
+    try {
+      await platformBillingApi.openArtifact(
+        selectedInvoice.id,
+        artifactType,
+        platformScopeOptions,
+      );
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          t("platformBilling.reviewFailed", {
+            defaultValue: "Failed to open artifact for review",
+          }),
+      );
+    }
+  };
+
+  const handleRefreshArtifacts = () => {
+    if (!selectedInvoice?.id || !canManage) return;
+
+    refreshArtifacts.mutate(
+      {
+        invoiceId: selectedInvoice.id,
+        options: platformScopeOptions,
+      },
+      {
+        onSuccess: (data) => {
+          const invoice = getInvoiceFromPackage(data);
+          if (invoice?.id) {
+            setSelectedInvoiceId(invoice.id);
+          }
+        },
+      },
+    );
+  };
+
+  const openInvoiceDetail = (invoice) => {
+    if (!invoice?.id) return;
+
+    setSelectedInvoiceId(invoice.id);
+    window.requestAnimationFrame(() => {
+      invoiceDetailRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const handleGenerate = () => {
@@ -1269,10 +1366,10 @@ export default function PlatformBillingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('platformBilling.title', { defaultValue: 'Platform billing' })}
-        description={t('platformBilling.description', {
+        title={t("platformBilling.title", { defaultValue: "Platform billing" })}
+        description={t("platformBilling.description", {
           defaultValue:
-            'Generate branch invoice packages, review usage, and record offline collections.',
+            "Generate branch invoice packages, review usage, and record offline collections.",
         })}
         actions={
           <Button
@@ -1285,8 +1382,8 @@ export default function PlatformBillingPage() {
               invoicesQuery.isFetching ||
               selectedInvoiceQuery.isFetching
             }
-            aria-label={t('platformBilling.refreshAria', {
-              defaultValue: 'Refresh platform billing data',
+            aria-label={t("platformBilling.refreshAria", {
+              defaultValue: "Refresh platform billing data",
             })}
           >
             <RefreshCcw
@@ -1295,8 +1392,8 @@ export default function PlatformBillingPage() {
                 usageEventsQuery.isFetching ||
                 invoicesQuery.isFetching ||
                 selectedInvoiceQuery.isFetching
-                  ? 'animate-spin'
-                  : ''
+                  ? "animate-spin"
+                  : ""
               }`}
             />
           </Button>
@@ -1306,9 +1403,9 @@ export default function PlatformBillingPage() {
       {needsClinicSelection && (
         <Card className="border-amber-200 bg-amber-50/70 dark:border-amber-900 dark:bg-amber-950/30">
           <CardContent className="p-4 text-sm text-amber-900 dark:text-amber-100">
-            {t('platformBilling.selectClinicNotice', {
+            {t("platformBilling.selectClinicNotice", {
               defaultValue:
-                'Select a clinic in the top bar to manage platform billing.',
+                "Select a clinic in the top bar to manage platform billing.",
             })}
           </CardContent>
         </Card>
@@ -1318,14 +1415,16 @@ export default function PlatformBillingPage() {
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarClock className="h-4 w-4" />
-            {t('platformBilling.billingContext', {
-              defaultValue: 'Branch billing context',
+            {t("platformBilling.billingContext", {
+              defaultValue: "Branch billing context",
             })}
           </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-[minmax(220px,360px)_180px_auto] md:items-end">
           <div className="space-y-2">
-            <Label>{t('platformBilling.branch', { defaultValue: 'Branch' })}</Label>
+            <Label>
+              {t("platformBilling.branch", { defaultValue: "Branch" })}
+            </Label>
             <Select
               value={selectedBranchId}
               onValueChange={handleBranchSelectionChange}
@@ -1333,8 +1432,8 @@ export default function PlatformBillingPage() {
             >
               <SelectTrigger>
                 <SelectValue
-                  placeholder={t('platformBilling.selectBranch', {
-                    defaultValue: 'Select branch',
+                  placeholder={t("platformBilling.selectBranch", {
+                    defaultValue: "Select branch",
                   })}
                 />
               </SelectTrigger>
@@ -1349,7 +1448,7 @@ export default function PlatformBillingPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="billing-month">
-              {t('platformBilling.month', { defaultValue: 'Month' })}
+              {t("platformBilling.month", { defaultValue: "Month" })}
             </Label>
             <Input
               id="billing-month"
@@ -1376,11 +1475,11 @@ export default function PlatformBillingPage() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
             {calculation
-              ? t('platformBilling.refreshPreview', {
-                  defaultValue: 'Refresh preview',
+              ? t("platformBilling.refreshPreview", {
+                  defaultValue: "Refresh preview",
                 })
-              : t('platformBilling.previewInvoice', {
-                  defaultValue: 'Preview invoice',
+              : t("platformBilling.previewInvoice", {
+                  defaultValue: "Preview invoice",
                 })}
           </Button>
         </CardContent>
@@ -1394,12 +1493,16 @@ export default function PlatformBillingPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <FileText className="h-4 w-4" />
-                    {t('platformBilling.invoicePackage', {
-                      defaultValue: 'Invoice package',
+                    {t("platformBilling.invoicePackage", {
+                      defaultValue: "Invoice package",
                     })}
                   </CardTitle>
-                  <Badge variant={lifecycleBadgeVariant[lifecycleState] || 'outline'}>
-                    {t(`platformBilling.lifecycle.states.${lifecycleState}.label`)}
+                  <Badge
+                    variant={lifecycleBadgeVariant[lifecycleState] || "outline"}
+                  >
+                    {t(
+                      `platformBilling.lifecycle.states.${lifecycleState}.label`,
+                    )}
                   </Badge>
                 </div>
               </CardHeader>
@@ -1409,8 +1512,8 @@ export default function PlatformBillingPage() {
                 {previewQuery.isLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('platformBilling.loadingPreview', {
-                      defaultValue: 'Loading preview...',
+                    {t("platformBilling.loadingPreview", {
+                      defaultValue: "Loading preview...",
                     })}
                   </div>
                 ) : previewQuery.isError ? (
@@ -1418,92 +1521,93 @@ export default function PlatformBillingPage() {
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <span>
                       {previewQuery.error?.response?.data?.message ||
-                        t('platformBilling.previewFailed', {
+                        t("platformBilling.previewFailed", {
                           defaultValue:
-                            'Billing preview could not be generated for this branch-month.',
+                            "Billing preview could not be generated for this branch-month.",
                         })}
                     </span>
                   </div>
                 ) : !calculation ? (
                   <p className="text-sm text-muted-foreground">
-                    {t('platformBilling.selectBranchMonthPreview', {
-                      defaultValue: 'Select a branch and month to preview billing.',
+                    {t("platformBilling.selectBranchMonthPreview", {
+                      defaultValue:
+                        "Select a branch and month to preview billing.",
                     })}
                   </p>
                 ) : (
                   <>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <Metric
-                        label={t('platformBilling.metrics.fixedFee', {
-                          defaultValue: 'Fixed fee',
+                        label={t("platformBilling.metrics.fixedFee", {
+                          defaultValue: "Fixed fee",
                         })}
                         value={formatCurrency(calculation.fixedFeeAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.includedVisits', {
-                          defaultValue: 'Included visits',
+                        label={t("platformBilling.metrics.includedVisits", {
+                          defaultValue: "Included visits",
                         })}
                         value={formatNumber(calculation.includedMonthlyVisits)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.billableVisits', {
-                          defaultValue: 'Billable visits',
+                        label={t("platformBilling.metrics.billableVisits", {
+                          defaultValue: "Billable visits",
                         })}
                         value={formatNumber(calculation.billableVisitCount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.overageAmount', {
-                          defaultValue: 'Overage amount',
+                        label={t("platformBilling.metrics.overageAmount", {
+                          defaultValue: "Overage amount",
                         })}
                         value={formatCurrency(calculation.overageAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.adjustments', {
-                          defaultValue: 'Adjustments',
+                        label={t("platformBilling.metrics.adjustments", {
+                          defaultValue: "Adjustments",
                         })}
                         value={formatCurrency(calculation.adjustmentAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.total', {
-                          defaultValue: 'Total',
+                        label={t("platformBilling.metrics.total", {
+                          defaultValue: "Total",
                         })}
                         value={formatCurrency(calculation.totalAmount)}
                         emphasis
                       />
                       <Metric
-                        label={t('platformBilling.metrics.profiles', {
-                          defaultValue: 'Profiles',
+                        label={t("platformBilling.metrics.profiles", {
+                          defaultValue: "Profiles",
                         })}
                         value={`${calculation.enabledProfileCount} x ${calculation.fixedFeeMultiplier}`}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.overageBlocks', {
-                          defaultValue: 'Overage blocks',
+                        label={t("platformBilling.metrics.overageBlocks", {
+                          defaultValue: "Overage blocks",
                         })}
                         value={formatNumber(calculation.overageBlockCount)}
                       />
                     </div>
                     <ImpactPanel
-                      tone={activeInvoice ? 'commercial' : 'warning'}
+                      tone={activeInvoice ? "commercial" : "warning"}
                       icon={activeInvoice ? CheckCircle2 : FileText}
                       title={
                         activeInvoice
-                          ? t('platformBilling.activePackageImpactTitle', {
-                              defaultValue: 'Issued invoice package',
+                          ? t("platformBilling.activePackageImpactTitle", {
+                              defaultValue: "Issued invoice package",
                             })
-                          : t('platformBilling.issuePackageImpactTitle', {
-                              defaultValue: 'Issue invoice package',
+                          : t("platformBilling.issuePackageImpactTitle", {
+                              defaultValue: "Issue invoice package",
                             })
                       }
                       description={
                         activeInvoice
-                          ? t('platformBilling.activeInvoiceNotice', {
+                          ? t("platformBilling.activeInvoiceNotice", {
                               defaultValue:
-                                'This branch-month already has an active invoice package. Use invoice detail to download artifacts or record collections.',
+                                "This branch-month already has an active invoice package. Use invoice detail to download artifacts or record collections.",
                             })
-                          : t('platformBilling.generationNotice', {
+                          : t("platformBilling.generationNotice", {
                               defaultValue:
-                                'Generation locks this branch-month and creates the invoice PDF plus the Excel data sheet.',
+                                "Generation locks this branch-month and creates the invoice PDF plus the Excel data sheet.",
                             })
                       }
                     >
@@ -1511,45 +1615,58 @@ export default function PlatformBillingPage() {
                         {activeInvoice ? (
                           <>
                             <ImpactMetric
-                              label={t('platformBilling.table.invoice', {
-                                defaultValue: 'Invoice',
+                              label={t("platformBilling.table.invoice", {
+                                defaultValue: "Invoice",
                               })}
                               value={activeInvoice.invoiceNumber}
                             />
                             <ImpactMetric
-                              label={t('platformBilling.table.status', {
-                                defaultValue: 'Status',
+                              label={t("platformBilling.table.status", {
+                                defaultValue: "Status",
                               })}
-                              value={getInvoiceStatusLabel(activeInvoice.status, t)}
+                              value={getInvoiceStatusLabel(
+                                activeInvoice.status,
+                                t,
+                              )}
                             />
                             <ImpactMetric
-                              label={t('platformBilling.table.balance', {
-                                defaultValue: 'Balance',
+                              label={t("platformBilling.table.balance", {
+                                defaultValue: "Balance",
                               })}
-                              value={formatCurrency(activeInvoice.balanceAmount)}
+                              value={formatCurrency(
+                                activeInvoice.balanceAmount,
+                              )}
                             />
                           </>
                         ) : (
                           <>
                             <ImpactMetric
-                              label={t('platformBilling.metrics.total', {
-                                defaultValue: 'Total',
+                              label={t("platformBilling.metrics.total", {
+                                defaultValue: "Total",
                               })}
                               value={formatCurrency(calculation.totalAmount)}
                             />
                             <ImpactMetric
-                              label={t('platformBilling.metrics.billableVisits', {
-                                defaultValue: 'Billable visits',
-                              })}
-                              value={formatNumber(calculation.billableVisitCount)}
+                              label={t(
+                                "platformBilling.metrics.billableVisits",
+                                {
+                                  defaultValue: "Billable visits",
+                                },
+                              )}
+                              value={formatNumber(
+                                calculation.billableVisitCount,
+                              )}
                             />
                             <ImpactMetric
-                              label={t('platformBilling.artifacts.title', {
-                                defaultValue: 'Current artifacts',
+                              label={t("platformBilling.artifacts.title", {
+                                defaultValue: "Current artifacts",
                               })}
-                              value={t('platformBilling.artifacts.packageValue', {
-                                defaultValue: 'PDF + data sheet',
-                              })}
+                              value={t(
+                                "platformBilling.artifacts.packageValue",
+                                {
+                                  defaultValue: "PDF + data sheet",
+                                },
+                              )}
                             />
                           </>
                         )}
@@ -1564,19 +1681,24 @@ export default function PlatformBillingPage() {
                                   type="button"
                                   size="sm"
                                   className="w-full sm:w-auto"
-                                  onClick={() => openCollectionDialog(activeInvoice)}
+                                  onClick={() =>
+                                    openCollectionDialog(activeInvoice)
+                                  }
                                 >
                                   <WalletCards className="h-4 w-4" />
-                                  {t('platformBilling.recordCollection', {
-                                    defaultValue: 'Record collection',
+                                  {t("platformBilling.recordCollection", {
+                                    defaultValue: "Record collection",
                                   })}
                                 </Button>
                               )}
-                              {activeInvoice.status === 'paid' && (
-                                <Badge variant="default" className="justify-center">
+                              {activeInvoice.status === "paid" && (
+                                <Badge
+                                  variant="default"
+                                  className="justify-center"
+                                >
                                   <ReceiptText className="mr-1 h-3 w-3" />
-                                  {t('platformBilling.fullyCollected', {
-                                    defaultValue: 'Fully collected',
+                                  {t("platformBilling.fullyCollected", {
+                                    defaultValue: "Fully collected",
                                   })}
                                 </Badge>
                               )}
@@ -1585,11 +1707,13 @@ export default function PlatformBillingPage() {
                                 variant="outline"
                                 size="sm"
                                 className="w-full sm:w-auto"
-                                onClick={() => setSelectedInvoiceId(activeInvoice.id)}
+                                onClick={() =>
+                                  setSelectedInvoiceId(activeInvoice.id)
+                                }
                               >
                                 <FileCheck2 className="h-4 w-4" />
-                                {t('platformBilling.invoiceDetail', {
-                                  defaultValue: 'Invoice detail',
+                                {t("platformBilling.invoiceDetail", {
+                                  defaultValue: "Invoice detail",
                                 })}
                               </Button>
                               {canManage && (
@@ -1601,8 +1725,8 @@ export default function PlatformBillingPage() {
                                   onClick={() => setAdjustmentOpen(true)}
                                 >
                                   <Plus className="h-4 w-4" />
-                                  {t('platformBilling.adjustmentDialog.title', {
-                                    defaultValue: 'Record adjustment',
+                                  {t("platformBilling.adjustmentDialog.title", {
+                                    defaultValue: "Record adjustment",
                                   })}
                                 </Button>
                               )}
@@ -1613,15 +1737,17 @@ export default function PlatformBillingPage() {
                                 <Button
                                   onClick={handleGenerate}
                                   className="w-full sm:w-auto"
-                                  disabled={generateInvoice.isPending || !calculation}
+                                  disabled={
+                                    generateInvoice.isPending || !calculation
+                                  }
                                 >
                                   {generateInvoice.isPending ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                   ) : (
                                     <FileText className="h-4 w-4" />
                                   )}
-                                  {t('platformBilling.generatePackage', {
-                                    defaultValue: 'Generate PDF + data sheet',
+                                  {t("platformBilling.generatePackage", {
+                                    defaultValue: "Generate PDF + data sheet",
                                   })}
                                 </Button>
                                 <Button
@@ -1631,8 +1757,8 @@ export default function PlatformBillingPage() {
                                   onClick={() => setAdjustmentOpen(true)}
                                 >
                                   <Plus className="h-4 w-4" />
-                                  {t('platformBilling.adjustmentDialog.title', {
-                                    defaultValue: 'Record adjustment',
+                                  {t("platformBilling.adjustmentDialog.title", {
+                                    defaultValue: "Record adjustment",
                                   })}
                                 </Button>
                               </>
@@ -1651,14 +1777,14 @@ export default function PlatformBillingPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <CardTitle className="flex items-center gap-2 text-base">
                     <ClipboardList className="h-4 w-4" />
-                    {t('platformBilling.usageAudit', {
-                      defaultValue: 'Billable usage audit',
+                    {t("platformBilling.usageAudit", {
+                      defaultValue: "Billable usage audit",
                     })}
                   </CardTitle>
                   <Badge variant="outline">
-                    {t('platformBilling.visitsCount', {
+                    {t("platformBilling.visitsCount", {
                       count: formatNumber(usageEvents.length),
-                      defaultValue: '{{count}} visits',
+                      defaultValue: "{{count}} visits",
                     })}
                   </Badge>
                 </div>
@@ -1667,8 +1793,8 @@ export default function PlatformBillingPage() {
                 {usageEventsQuery.isLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('platformBilling.loadingUsage', {
-                      defaultValue: 'Loading usage...',
+                    {t("platformBilling.loadingUsage", {
+                      defaultValue: "Loading usage...",
                     })}
                   </div>
                 ) : (
@@ -1684,8 +1810,8 @@ export default function PlatformBillingPage() {
             <Card>
               <CardHeader className="pb-4">
                 <CardTitle className="text-base">
-                  {t('platformBilling.invoiceLedger', {
-                    defaultValue: 'Invoice ledger',
+                  {t("platformBilling.invoiceLedger", {
+                    defaultValue: "Invoice ledger",
                   })}
                 </CardTitle>
               </CardHeader>
@@ -1693,14 +1819,15 @@ export default function PlatformBillingPage() {
                 {invoicesQuery.isLoading ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t('platformBilling.loadingInvoices', {
-                      defaultValue: 'Loading invoices...',
+                    {t("platformBilling.loadingInvoices", {
+                      defaultValue: "Loading invoices...",
                     })}
                   </div>
                 ) : invoices.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    {t('platformBilling.noInvoices', {
-                      defaultValue: 'No platform invoices for this branch-month.',
+                    {t("platformBilling.noInvoices", {
+                      defaultValue:
+                        "No platform invoices for this branch-month.",
                     })}
                   </p>
                 ) : (
@@ -1709,32 +1836,32 @@ export default function PlatformBillingPage() {
                       <thead className="bg-muted/60 text-left">
                         <tr>
                           <th className="px-3 py-2 font-medium">
-                            {t('platformBilling.table.invoice', {
-                              defaultValue: 'Invoice',
+                            {t("platformBilling.table.invoice", {
+                              defaultValue: "Invoice",
                             })}
                           </th>
                           <th className="px-3 py-2 font-medium">
-                            {t('platformBilling.table.month', {
-                              defaultValue: 'Month',
+                            {t("platformBilling.table.month", {
+                              defaultValue: "Month",
                             })}
                           </th>
                           <th className="px-3 py-2 font-medium">
-                            {t('platformBilling.table.status', {
-                              defaultValue: 'Status',
+                            {t("platformBilling.table.status", {
+                              defaultValue: "Status",
                             })}
                           </th>
                           <th className="px-3 py-2 text-right font-medium">
-                            {t('platformBilling.table.total', {
-                              defaultValue: 'Total',
+                            {t("platformBilling.table.total", {
+                              defaultValue: "Total",
                             })}
                           </th>
                           <th className="px-3 py-2 text-right font-medium">
-                            {t('platformBilling.table.balance', {
-                              defaultValue: 'Balance',
+                            {t("platformBilling.table.balance", {
+                              defaultValue: "Balance",
                             })}
                           </th>
                           <th className="px-3 py-2 text-right font-medium">
-                            {t('common.actions', { defaultValue: 'Actions' })}
+                            {t("common.actions", { defaultValue: "Actions" })}
                           </th>
                         </tr>
                       </thead>
@@ -1747,9 +1874,9 @@ export default function PlatformBillingPage() {
                             <tr
                               key={invoice.id}
                               className={`cursor-pointer border-t hover:bg-muted/40 ${
-                                selected ? 'bg-muted/50' : ''
+                                selected ? "bg-muted/50" : ""
                               }`}
-                              onClick={() => setSelectedInvoiceId(invoice.id)}
+                              onClick={() => openInvoiceDetail(invoice)}
                             >
                               <td className="px-3 py-2 font-medium">
                                 {invoice.invoiceNumber}
@@ -1758,7 +1885,9 @@ export default function PlatformBillingPage() {
                                 {formatMonth(invoice.billingMonth)}
                               </td>
                               <td className="px-3 py-2">
-                                <Badge variant={statusBadgeVariant(invoice.status)}>
+                                <Badge
+                                  variant={statusBadgeVariant(invoice.status)}
+                                >
                                   {getInvoiceStatusLabel(invoice.status, t)}
                                 </Badge>
                               </td>
@@ -1771,19 +1900,19 @@ export default function PlatformBillingPage() {
                               <td className="px-3 py-2 text-right">
                                 <Button
                                   type="button"
-                                  variant={selected ? 'secondary' : 'outline'}
+                                  variant={selected ? "secondary" : "outline"}
                                   size="sm"
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    setSelectedInvoiceId(invoice.id);
+                                    openInvoiceDetail(invoice);
                                   }}
                                 >
                                   {selected
-                                    ? t('platformBilling.selectedInvoice', {
-                                        defaultValue: 'Selected',
+                                    ? t("platformBilling.viewInvoiceDetail", {
+                                        defaultValue: "View detail",
                                       })
-                                    : t('platformBilling.openInvoiceDetail', {
-                                        defaultValue: 'Open',
+                                    : t("platformBilling.openInvoiceDetail", {
+                                        defaultValue: "Open",
                                       })}
                                 </Button>
                               </td>
@@ -1798,11 +1927,11 @@ export default function PlatformBillingPage() {
             </Card>
           </div>
 
-          <Card>
+          <Card ref={invoiceDetailRef}>
             <CardHeader className="pb-4">
               <CardTitle className="text-base">
-                {t('platformBilling.invoiceDetail', {
-                  defaultValue: 'Invoice detail',
+                {t("platformBilling.invoiceDetail", {
+                  defaultValue: "Invoice detail",
                 })}
               </CardTitle>
             </CardHeader>
@@ -1810,14 +1939,14 @@ export default function PlatformBillingPage() {
               {selectedInvoiceQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('platformBilling.loadingInvoice', {
-                    defaultValue: 'Loading invoice...',
+                  {t("platformBilling.loadingInvoice", {
+                    defaultValue: "Loading invoice...",
                   })}
                 </div>
               ) : !selectedInvoice ? (
                 <p className="text-sm text-muted-foreground">
-                  {t('platformBilling.selectInvoice', {
-                    defaultValue: 'Select an invoice to view details.',
+                  {t("platformBilling.selectInvoice", {
+                    defaultValue: "Select an invoice to view details.",
                   })}
                 </p>
               ) : (
@@ -1825,41 +1954,45 @@ export default function PlatformBillingPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-semibold">{selectedInvoice.invoiceNumber}</p>
+                        <p className="font-semibold">
+                          {selectedInvoice.invoiceNumber}
+                        </p>
                         <p className="text-sm text-muted-foreground">
                           {selectedInvoicePackage?.branchName ||
                             selectedInvoice.branch?.name ||
-                            t('platformBilling.branchFallback', {
-                              defaultValue: 'Branch',
+                            t("platformBilling.branchFallback", {
+                              defaultValue: "Branch",
                             })}
                         </p>
                       </div>
-                      <Badge variant={statusBadgeVariant(selectedInvoice.status)}>
+                      <Badge
+                        variant={statusBadgeVariant(selectedInvoice.status)}
+                      >
                         {getInvoiceStatusLabel(selectedInvoice.status, t)}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <Metric
-                        label={t('platformBilling.metrics.total', {
-                          defaultValue: 'Total',
+                        label={t("platformBilling.metrics.total", {
+                          defaultValue: "Total",
                         })}
                         value={formatCurrency(selectedInvoice.totalAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.table.balance', {
-                          defaultValue: 'Balance',
+                        label={t("platformBilling.table.balance", {
+                          defaultValue: "Balance",
                         })}
                         value={formatCurrency(selectedInvoice.balanceAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.collected', {
-                          defaultValue: 'Collected',
+                        label={t("platformBilling.metrics.collected", {
+                          defaultValue: "Collected",
                         })}
                         value={formatCurrency(selectedInvoice.collectedAmount)}
                       />
                       <Metric
-                        label={t('platformBilling.metrics.visits', {
-                          defaultValue: 'Visits',
+                        label={t("platformBilling.metrics.visits", {
+                          defaultValue: "Visits",
                         })}
                         value={formatNumber(selectedInvoice.billableVisitCount)}
                       />
@@ -1869,114 +2002,145 @@ export default function PlatformBillingPage() {
                   <ImpactPanel
                     tone={artifactPanelTone}
                     icon={Download}
-                    title={t('platformBilling.artifacts.title', {
-                      defaultValue: 'Current artifacts',
+                    title={t("platformBilling.artifacts.title", {
+                      defaultValue: "Current artifacts",
                     })}
                     description={
-                      artifactPanelTone === 'warning'
-                        ? t('platformBilling.artifacts.reviewDescription', {
+                      artifactPanelTone === "warning"
+                        ? t("platformBilling.artifacts.reviewDescription", {
                             defaultValue:
-                              'Review artifact freshness before sending files to the branch.',
+                              "Review artifact freshness before sending files to the branch.",
                           })
-                        : t('platformBilling.artifacts.downloadDescription', {
+                        : t("platformBilling.artifacts.downloadDescription", {
                             defaultValue:
-                              'Download the generated PDF or data sheet for this invoice.',
+                              "Download the generated PDF or data sheet for this invoice.",
                           })
                     }
                   >
-                    <div className="mb-3 flex justify-start">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                       <Badge variant="outline">
-                        {t('platformBilling.artifacts.currentVersion', {
-                          defaultValue: 'Latest generated version',
+                        {t("platformBilling.artifacts.currentVersion", {
+                          defaultValue: "Latest generated version",
                         })}
                       </Badge>
+                      {canManage && selectedInvoice.status !== "voided" && (
+                        <Button
+                          type="button"
+                          variant={
+                            artifactPanelTone === "warning"
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={handleRefreshArtifacts}
+                          disabled={refreshArtifacts.isPending}
+                        >
+                          {refreshArtifacts.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCcw className="h-4 w-4" />
+                          )}
+                          {t("platformBilling.artifacts.refresh", {
+                            defaultValue: "Refresh files",
+                          })}
+                        </Button>
+                      )}
                     </div>
                     <div className="rounded-md border bg-background/80">
                       <ArtifactStatusRow
                         artifact={pdfArtifact}
                         artifactType="pdf"
                         icon={FileText}
-                        label={t('platformBilling.artifacts.pdf', {
-                          defaultValue: 'PDF',
+                        label={t("platformBilling.artifacts.pdf", {
+                          defaultValue: "PDF",
                         })}
                         latestActivityTimestamp={latestInvoiceActivityTimestamp}
                         onDownload={handleDownload}
+                        onReview={handleReviewArtifact}
                         t={t}
                       />
                       <ArtifactStatusRow
                         artifact={excelArtifact}
                         artifactType="excel"
                         icon={FileSpreadsheet}
-                        label={t('platformBilling.artifacts.excel', {
-                          defaultValue: 'data sheet',
+                        label={t("platformBilling.artifacts.excel", {
+                          defaultValue: "data sheet",
                         })}
                         latestActivityTimestamp={latestInvoiceActivityTimestamp}
                         onDownload={handleDownload}
+                        onReview={handleReviewArtifact}
                         t={t}
                       />
                     </div>
                   </ImpactPanel>
 
-                  {selectedInvoice.status !== 'voided' ? (
+                  {selectedInvoice.status !== "voided" ? (
                     <ImpactPanel
                       tone="commercial"
                       icon={
-                        selectedInvoice.status === 'paid'
+                        selectedInvoice.status === "paid"
                           ? ReceiptText
                           : WalletCards
                       }
                       title={
-                        selectedInvoice.status === 'paid'
-                          ? t('platformBilling.fullyCollected', {
-                              defaultValue: 'Fully collected',
+                        selectedInvoice.status === "paid"
+                          ? t("platformBilling.fullyCollected", {
+                              defaultValue: "Fully collected",
                             })
-                          : t('platformBilling.collectionImpactTitle', {
-                              defaultValue: 'Collection status',
+                          : t("platformBilling.collectionImpactTitle", {
+                              defaultValue: "Collection status",
                             })
                       }
                       description={
-                        selectedInvoice.status === 'paid'
-                          ? t('platformBilling.collectionPaidDescription', {
+                        selectedInvoice.status === "paid"
+                          ? t("platformBilling.collectionPaidDescription", {
                               defaultValue:
-                                'The invoice balance is closed and collection history remains in the ledger.',
+                                "The invoice balance is closed and collection history remains in the ledger.",
                             })
-                          : t('platformBilling.collectionImpactDescription', {
+                          : t("platformBilling.collectionImpactDescription", {
                               defaultValue:
-                                'Recording a collection reduces the invoice balance and preserves the payment trail.',
+                                "Recording a collection reduces the invoice balance and preserves the payment trail.",
                             })
                       }
                     >
                       <div className="grid gap-3 sm:grid-cols-3">
                         <ImpactMetric
-                          label={t('platformBilling.table.balance', {
-                            defaultValue: 'Balance',
+                          label={t("platformBilling.table.balance", {
+                            defaultValue: "Balance",
                           })}
                           value={formatCurrency(selectedInvoice.balanceAmount)}
                         />
                         <ImpactMetric
-                          label={t('platformBilling.metrics.collected', {
-                            defaultValue: 'Collected',
+                          label={t("platformBilling.metrics.collected", {
+                            defaultValue: "Collected",
                           })}
-                          value={formatCurrency(selectedInvoice.collectedAmount)}
+                          value={formatCurrency(
+                            selectedInvoice.collectedAmount,
+                          )}
                         />
                         <ImpactMetric
-                          label={t('platformBilling.table.status', {
-                            defaultValue: 'Status',
+                          label={t("platformBilling.table.status", {
+                            defaultValue: "Status",
                           })}
-                          value={getInvoiceStatusLabel(selectedInvoice.status, t)}
+                          value={getInvoiceStatusLabel(
+                            selectedInvoice.status,
+                            t,
+                          )}
                         />
                       </div>
-                      {canManage && selectedInvoice.status !== 'paid' && (
+                      {canManage && selectedInvoice.status !== "paid" && (
                         <div className="mt-3 flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap">
                           <Button
                             size="sm"
                             className="w-full sm:w-auto"
                             disabled={!canCollectSelectedInvoice}
-                            onClick={() => openCollectionDialog(selectedInvoice)}
+                            onClick={() =>
+                              openCollectionDialog(selectedInvoice)
+                            }
                           >
                             <WalletCards className="h-4 w-4" />
-                            {t('platformBilling.recordCollection', {
-                              defaultValue: 'Record collection',
+                            {t("platformBilling.recordCollection", {
+                              defaultValue: "Record collection",
                             })}
                           </Button>
                         </div>
@@ -1986,30 +2150,36 @@ export default function PlatformBillingPage() {
                     <ImpactPanel
                       tone="danger"
                       icon={AlertTriangle}
-                      title={t('platformBilling.voidedInvoice', {
-                        defaultValue: 'Voided invoice',
+                      title={t("platformBilling.voidedInvoice", {
+                        defaultValue: "Voided invoice",
                       })}
-                      description={t('platformBilling.voidedImpactDescription', {
-                        defaultValue:
-                          'This invoice package is cancelled and retained for billing history.',
-                      })}
+                      description={t(
+                        "platformBilling.voidedImpactDescription",
+                        {
+                          defaultValue:
+                            "This invoice package is cancelled and retained for billing history.",
+                        },
+                      )}
                     >
                       <div className="grid gap-3 sm:grid-cols-3">
                         <ImpactMetric
-                          label={t('platformBilling.table.status', {
-                            defaultValue: 'Status',
+                          label={t("platformBilling.table.status", {
+                            defaultValue: "Status",
                           })}
-                          value={getInvoiceStatusLabel(selectedInvoice.status, t)}
+                          value={getInvoiceStatusLabel(
+                            selectedInvoice.status,
+                            t,
+                          )}
                         />
                         <ImpactMetric
-                          label={t('platformBilling.metrics.total', {
-                            defaultValue: 'Total',
+                          label={t("platformBilling.metrics.total", {
+                            defaultValue: "Total",
                           })}
                           value={formatCurrency(selectedInvoice.totalAmount)}
                         />
                         <ImpactMetric
-                          label={t('platformBilling.table.balance', {
-                            defaultValue: 'Balance',
+                          label={t("platformBilling.table.balance", {
+                            defaultValue: "Balance",
                           })}
                           value={formatCurrency(selectedInvoice.balanceAmount)}
                         />
@@ -2020,25 +2190,34 @@ export default function PlatformBillingPage() {
                         <div className="mt-3 grid gap-3 border-t pt-3 sm:grid-cols-3">
                           {selectedInvoice.voidedAt && (
                             <ImpactMetric
-                              label={t('platformBilling.voidedMetadata.voidedAt', {
-                                defaultValue: 'Voided at',
-                              })}
+                              label={t(
+                                "platformBilling.voidedMetadata.voidedAt",
+                                {
+                                  defaultValue: "Voided at",
+                                },
+                              )}
                               value={formatDateTime(selectedInvoice.voidedAt)}
                             />
                           )}
                           {selectedInvoiceVoidedBy && (
                             <ImpactMetric
-                              label={t('platformBilling.voidedMetadata.voidedBy', {
-                                defaultValue: 'Voided by',
-                              })}
+                              label={t(
+                                "platformBilling.voidedMetadata.voidedBy",
+                                {
+                                  defaultValue: "Voided by",
+                                },
+                              )}
                               value={selectedInvoiceVoidedBy}
                             />
                           )}
                           {selectedInvoiceVoidReason && (
                             <ImpactMetric
-                              label={t('platformBilling.voidedMetadata.reason', {
-                                defaultValue: 'Void reason',
-                              })}
+                              label={t(
+                                "platformBilling.voidedMetadata.reason",
+                                {
+                                  defaultValue: "Void reason",
+                                },
+                              )}
                               value={selectedInvoiceVoidReason}
                             />
                           )}
@@ -2047,35 +2226,39 @@ export default function PlatformBillingPage() {
                     </ImpactPanel>
                   )}
 
-                  {canManage && selectedInvoice.status !== 'voided' && (
+                  {canManage && selectedInvoice.status !== "voided" && (
                     <ImpactPanel
-                      tone={canVoidSelectedInvoice ? 'danger' : 'neutral'}
-                      icon={canVoidSelectedInvoice ? AlertTriangle : LockKeyhole}
-                      title={t('platformBilling.voidImpactTitle', {
-                        defaultValue: 'Void invoice package',
+                      tone={canVoidSelectedInvoice ? "danger" : "neutral"}
+                      icon={
+                        canVoidSelectedInvoice ? AlertTriangle : LockKeyhole
+                      }
+                      title={t("platformBilling.voidImpactTitle", {
+                        defaultValue: "Void invoice package",
                       })}
                       description={
                         canVoidSelectedInvoice
-                          ? t('platformBilling.voidDialog.description', {
+                          ? t("platformBilling.voidDialog.description", {
                               defaultValue:
-                                'Voiding releases the branch-month lock only when no collections exist.',
+                                "Voiding releases the branch-month lock only when no collections exist.",
                             })
-                          : t('platformBilling.voidLockedNotice', {
+                          : t("platformBilling.voidLockedNotice", {
                               defaultValue:
-                                'Void is locked after collection records exist.',
+                                "Void is locked after collection records exist.",
                             })
                       }
                     >
                       <div className="grid gap-3 sm:grid-cols-2">
                         <ImpactMetric
-                          label={t('platformBilling.metrics.collected', {
-                            defaultValue: 'Collected',
+                          label={t("platformBilling.metrics.collected", {
+                            defaultValue: "Collected",
                           })}
-                          value={formatCurrency(selectedInvoice.collectedAmount)}
+                          value={formatCurrency(
+                            selectedInvoice.collectedAmount,
+                          )}
                         />
                         <ImpactMetric
-                          label={t('platformBilling.table.balance', {
-                            defaultValue: 'Balance',
+                          label={t("platformBilling.table.balance", {
+                            defaultValue: "Balance",
                           })}
                           value={formatCurrency(selectedInvoice.balanceAmount)}
                         />
@@ -2089,14 +2272,14 @@ export default function PlatformBillingPage() {
                           disabled={!canVoidSelectedInvoice}
                         >
                           <AlertTriangle className="h-4 w-4" />
-                          {t('platformBilling.void', { defaultValue: 'Void' })}
+                          {t("platformBilling.void", { defaultValue: "Void" })}
                         </Button>
                         {!canVoidSelectedInvoice && (
                           <p className="flex items-center gap-2 text-xs text-muted-foreground">
                             <LockKeyhole className="h-3.5 w-3.5" />
-                            {t('platformBilling.voidLockedNotice', {
+                            {t("platformBilling.voidLockedNotice", {
                               defaultValue:
-                                'Void is locked after collection records exist.',
+                                "Void is locked after collection records exist.",
                             })}
                           </p>
                         )}
@@ -2106,14 +2289,15 @@ export default function PlatformBillingPage() {
 
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">
-                      {t('platformBilling.usageLines', {
-                        defaultValue: 'Usage lines',
+                      {t("platformBilling.usageLines", {
+                        defaultValue: "Usage lines",
                       })}
                     </p>
                     {(selectedInvoicePackage?.usageLines || []).length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        {t('platformBilling.noUsageLines', {
-                          defaultValue: 'No usage lines were captured on this invoice.',
+                        {t("platformBilling.noUsageLines", {
+                          defaultValue:
+                            "No usage lines were captured on this invoice.",
                         })}
                       </p>
                     ) : (
@@ -2122,58 +2306,66 @@ export default function PlatformBillingPage() {
                           <thead className="bg-muted/60 text-left">
                             <tr>
                               <th className="px-3 py-2 font-medium">
-                                {t('platformBilling.table.patient', {
-                                  defaultValue: 'Patient',
+                                {t("platformBilling.table.patient", {
+                                  defaultValue: "Patient",
                                 })}
                               </th>
                               <th className="px-3 py-2 font-medium">
-                                {t('platformBilling.table.profile', {
-                                  defaultValue: 'Profile',
+                                {t("platformBilling.table.profile", {
+                                  defaultValue: "Profile",
                                 })}
                               </th>
                               <th className="px-3 py-2 font-medium">
-                                {t('platformBilling.table.visitType', {
-                                  defaultValue: 'Visit type',
+                                {t("platformBilling.table.visitType", {
+                                  defaultValue: "Visit type",
                                 })}
                               </th>
                               <th className="px-3 py-2 font-medium">
-                                {t('platformBilling.table.billing', {
-                                  defaultValue: 'Billing',
+                                {t("platformBilling.table.billing", {
+                                  defaultValue: "Billing",
                                 })}
                               </th>
                             </tr>
                           </thead>
                           <tbody>
-                            {(selectedInvoicePackage?.usageLines || []).map((line) => (
-                              <tr key={line.id} className="border-t">
-                                <td className="px-3 py-2 font-medium">
-                                  {line.patientName}
-                                </td>
-                                <td className="px-3 py-2">
-                                  {getProfileLabel(line.profile, t)}
-                                </td>
-                                <td className="px-3 py-2">
-                                  {line.visitType || '--'}
-                                </td>
-                                <td className="px-3 py-2">
-                                  <Badge
-                                    variant={
-                                      line.includedInAllowance
-                                        ? 'secondary'
-                                        : 'outline'
-                                    }
-                                  >
-                                    {line.includedInAllowance
-                                      ? t('platformBilling.billingLabels.allowance', {
-                                          defaultValue: 'Allowance',
-                                        })
-                                      : t('platformBilling.billingLabels.overage', {
-                                          defaultValue: 'Overage',
-                                        })}
-                                  </Badge>
-                                </td>
-                              </tr>
-                            ))}
+                            {(selectedInvoicePackage?.usageLines || []).map(
+                              (line) => (
+                                <tr key={line.id} className="border-t">
+                                  <td className="px-3 py-2 font-medium">
+                                    {line.patientName}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {getProfileLabel(line.profile, t)}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {line.visitType || "--"}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <Badge
+                                      variant={
+                                        line.includedInAllowance
+                                          ? "secondary"
+                                          : "outline"
+                                      }
+                                    >
+                                      {line.includedInAllowance
+                                        ? t(
+                                            "platformBilling.billingLabels.allowance",
+                                            {
+                                              defaultValue: "Allowance",
+                                            },
+                                          )
+                                        : t(
+                                            "platformBilling.billingLabels.overage",
+                                            {
+                                              defaultValue: "Overage",
+                                            },
+                                          )}
+                                    </Badge>
+                                  </td>
+                                </tr>
+                              ),
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -2182,35 +2374,40 @@ export default function PlatformBillingPage() {
 
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">
-                      {t('platformBilling.collections', {
-                        defaultValue: 'Collections',
+                      {t("platformBilling.collections", {
+                        defaultValue: "Collections",
                       })}
                     </p>
-                    {(selectedInvoicePackage?.collections || []).length === 0 ? (
+                    {(selectedInvoicePackage?.collections || []).length ===
+                    0 ? (
                       <p className="text-sm text-muted-foreground">
-                        {t('platformBilling.noCollections', {
-                          defaultValue: 'No collection records yet.',
+                        {t("platformBilling.noCollections", {
+                          defaultValue: "No collection records yet.",
                         })}
                       </p>
                     ) : (
                       <div className="rounded-md border">
-                        {(selectedInvoicePackage.collections || []).map((collection) => (
-                          <div
-                            key={collection.id}
-                            className="border-b px-3 py-2 text-sm last:border-b-0"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <span>{formatCurrency(collection.amount)}</span>
-                              <span className="text-muted-foreground">
-                                {formatDateTime(collection.collectedAt)}
-                              </span>
+                        {(selectedInvoicePackage.collections || []).map(
+                          (collection) => (
+                            <div
+                              key={collection.id}
+                              className="border-b px-3 py-2 text-sm last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span>{formatCurrency(collection.amount)}</span>
+                                <span className="text-muted-foreground">
+                                  {formatDateTime(collection.collectedAt)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {collection.method}
+                                {collection.reference
+                                  ? ` / ${collection.reference}`
+                                  : ""}
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              {collection.method}
-                              {collection.reference ? ` / ${collection.reference}` : ''}
-                            </p>
-                          </div>
-                        ))}
+                          ),
+                        )}
                       </div>
                     )}
                   </div>

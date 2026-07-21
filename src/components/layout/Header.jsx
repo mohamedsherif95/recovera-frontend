@@ -7,6 +7,7 @@ import { useBranches } from '@/hooks/useBranches';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { ThemeSwitcher } from '@/components/common/ThemeSwitcher';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -25,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, Settings, ShieldCheck } from 'lucide-react';
+import { Menu, User, LogOut, Settings, ShieldCheck, Building2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PERMISSIONS } from '@/lib/constants';
 import {
@@ -103,7 +104,7 @@ export function Header() {
   }, [branchOverrideId, branches, clearBranchOverride, queryClient]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/80 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="flex h-16 items-center px-4 w-full">
         <div className="flex items-center gap-2">
           {/* Mobile Menu Toggle */}
@@ -129,11 +130,11 @@ export function Header() {
           </Button>
 
           <Link to="/daily-operations" className="flex items-center gap-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary text-lg font-black text-primary-foreground shadow-sm shadow-sky-200">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-lg font-black text-primary-foreground shadow-sm shadow-teal-200/60 dark:shadow-none">
               R
             </span>
             <div className="hidden sm:block leading-tight">
-              <h1 className="text-xl font-black tracking-tight text-primary">{t('app.name')}</h1>
+              <h1 className="text-xl font-black tracking-tight text-foreground">{t('app.name')}</h1>
               <p className="text-[11px] font-semibold text-muted-foreground">
                 {t('app.workspaceSubtitle', { defaultValue: 'Clinic service' })}
               </p>
@@ -195,9 +196,10 @@ export function Header() {
             </Select>
           )}
           {!canOverrideBranch && fixedBranchName && (
-            <div className="hidden rounded-full border border-border/70 bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground lg:block">
+            <Badge variant="neutral" className="hidden gap-1.5 lg:inline-flex">
+              <Building2 className="h-3.5 w-3.5" />
               {t('users.branch', { defaultValue: 'Branch' })}: {fixedBranchName}
-            </div>
+            </Badge>
           )}
           {isPlatformAdmin && (
             <Button
@@ -234,12 +236,13 @@ export function Header() {
                   {user?.roles && (
                     <div className="flex gap-1 flex-wrap mt-1">
                       {user.roles.map((role) => (
-                        <span
+                        <Badge
                           key={role.id}
-                          className="text-xs px-2 py-0.5 rounded bg-primary/10 text-primary"
+                          variant="info"
+                          className="px-2 py-0 text-[11px]"
                         >
                           {t(`users.${role.name}`, { defaultValue: role.name })}
-                        </span>
+                        </Badge>
                       ))}
                     </div>
                   )}

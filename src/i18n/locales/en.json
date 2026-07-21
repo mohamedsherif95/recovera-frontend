@@ -2332,6 +2332,7 @@
     "noBranchProfiles": "This branch does not have enabled profiles yet.",
     "profiles": "Profiles",
     "profile": "Profile",
+    "selected": "Selected",
     "defaultDuration": "Default duration",
     "profileActive": "Profile active in branch operations",
     "profileActiveDescription": "Turns this profile on or off for branch day-to-day work.",

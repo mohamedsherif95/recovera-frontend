@@ -17,6 +17,10 @@ import {
   getClinicProfileLabel,
 } from '@/lib/clinicProfiles';
 import {
+  getClinicProfileBadgeVariant,
+  getSessionStatusBadgeVariant,
+} from '@/lib/visualTokens';
+import {
   Users,
   Calendar,
   UserCheck,
@@ -100,6 +104,7 @@ export default function Dashboard() {
           title={t('dashboard.totalPatients')}
           value={totalPatients}
           icon={Users}
+          tone="patients"
           description={t('dashboard.totalPatientsDescription')}
           onClick={() => navigate('/patients')}
         />
@@ -108,6 +113,7 @@ export default function Dashboard() {
           title={isDoctor ? t('dashboard.mySessionsToday') : t('dashboard.sessionsToday')}
           value={sessionsToday}
           icon={Calendar}
+          tone="visits"
           description={t('dashboard.completedCount', { count: completedToday })}
           onClick={() => navigate('/sessions')}
         />
@@ -116,12 +122,13 @@ export default function Dashboard() {
           title={t('dashboard.doctorsInSession')}
           value={`${doctorsInSessions} / ${totalDoctors || 0}`}
           icon={UserCheck}
+          tone="staff"
           description={t('dashboard.currentlyInSession')}
           onClick={() => navigate('/doctors')}
         />
       </div>
 
-            <Card className="border-none bg-gradient-to-br from-background via-muted to-background shadow-sm">
+      <Card className="border-border/80 bg-card/95 shadow-sm">
         <CardHeader className="flex items-center justify-between space-y-0">
           <CardTitle className="mb-2">{t('dashboard.sessionsToday')}</CardTitle>
           {today.date && (
@@ -189,9 +196,9 @@ export default function Dashboard() {
                               session.sessionsUntilReassessment === 0 &&
                               !session.isAssessment &&
                               !session.isReassessment && (
-                                <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+                                <span className="inline-flex items-center justify-center rounded-full border border-amber-300 bg-amber-100 p-1 text-amber-800 shadow-sm dark:border-amber-700 dark:bg-amber-900/70 dark:text-amber-50">
                                   <BellRing
-                                    className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
+                                    className="h-4 w-4 flex-shrink-0"
                                     aria-hidden="true"
                                     title={t('patients.reassessmentDue', { defaultValue: 'Reassessment due' })}
                                   />
@@ -201,15 +208,22 @@ export default function Dashboard() {
                           {session.patientCode && (
                             <span className="text-xs text-muted-foreground">#{session.patientCode}</span>
                           )}
-                          <span className="text-xs text-muted-foreground">
+                          <Badge
+                            variant={getClinicProfileBadgeVariant(session.profile || CLINIC_PROFILES.PHYSIOTHERAPY)}
+                            className="mt-1 w-fit"
+                          >
                             {getClinicProfileLabel(session.profile || CLINIC_PROFILES.PHYSIOTHERAPY, t)}
-                          </span>
+                          </Badge>
                         </div>
                       </td>
                       <td className="px-3 py-2">{session.doctorName}</td>
-                      <td className="px-3 py-2 text-xs uppercase text-muted-foreground">
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
-                          <span>{session.status || '--'}</span>
+                          <Badge variant={getSessionStatusBadgeVariant(session.status)}>
+                            {session.status
+                              ? t(`status.${session.status}`, { defaultValue: session.status })
+                              : '--'}
+                          </Badge>
                           {clinicProfileSupportsWorkflow(
                             session.profile || CLINIC_PROFILES.PHYSIOTHERAPY,
                             CLINIC_PROFILE_WORKFLOWS.ASSESSMENT_TRACKING,
@@ -238,7 +252,7 @@ export default function Dashboard() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="col-span-1 border bg-muted/30">
+        <Card className="col-span-1 border bg-card/95">
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Timer className="h-4 w-4" />
@@ -269,7 +283,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-2xl font-bold">{averages.avgDurationMinutes ?? 0}m</p>
               </div>
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="neutral" className="text-xs">
                 {t('dashboard.last30Days')}
               </Badge>
             </div>
@@ -287,9 +301,10 @@ export default function Dashboard() {
           <CardContent className="space-y-3">
             {['scheduled', 'in_progress', 'completed', 'cancelled'].map((key) => (
               <div key={key} className="flex items-center justify-between text-sm">
-                <span className="capitalize text-muted-foreground">
+                <Badge variant={getSessionStatusBadgeVariant(key)} className="gap-1.5">
+                  <span className="status-dot" />
                   {t(`status.${key}`, { defaultValue: key.replace('_', ' ') })}
-                </span>
+                </Badge>
                 <span className="font-semibold">{sessionsByStatus[key] ?? 0}</span>
               </div>
             ))}
@@ -361,12 +376,18 @@ export default function Dashboard() {
                     key={session.id}
                     className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium">{session.patientName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {getClinicProfileLabel(sessionProfile, t)}
-                        {session.doctorName ? ` - ${session.doctorName}` : ''}
-                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        <Badge variant={getClinicProfileBadgeVariant(sessionProfile)}>
+                          {getClinicProfileLabel(sessionProfile, t)}
+                        </Badge>
+                        {session.doctorName && (
+                          <span className="text-xs text-muted-foreground">
+                            {session.doctorName}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold" dir="ltr">
@@ -386,7 +407,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border bg-muted/20">
+        <Card className="border bg-card/95">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>{t('dashboard.alertsTitle')}</CardTitle>

@@ -26,6 +26,7 @@ import { PERMISSIONS, USER_ROLES } from '@/lib/constants';
 const navigationSections = [
   {
     key: 'operations',
+    tone: 'operations',
     labelKey: 'nav.sections.operations',
     items: [
       {
@@ -49,6 +50,7 @@ const navigationSections = [
   },
   {
     key: 'clinical',
+    tone: 'clinical',
     labelKey: 'nav.sections.clinical',
     items: [
       {
@@ -85,6 +87,7 @@ const navigationSections = [
   },
   {
     key: 'financial',
+    tone: 'financial',
     labelKey: 'nav.sections.financial',
     items: [
       {
@@ -126,6 +129,7 @@ const navigationSections = [
   },
   {
     key: 'management',
+    tone: 'management',
     labelKey: 'nav.sections.management',
     items: [
       {
@@ -146,6 +150,7 @@ const navigationSections = [
   },
   {
     key: 'insights',
+    tone: 'insights',
     labelKey: 'nav.sections.insights',
     items: [
       {
@@ -157,6 +162,34 @@ const navigationSections = [
     ],
   },
 ];
+
+const sectionToneClasses = {
+  operations: {
+    active: 'bg-teal-600 text-white shadow-sm shadow-teal-900/10',
+    hover: 'hover:bg-teal-50 hover:text-teal-800 dark:hover:bg-teal-950/30 dark:hover:text-teal-200',
+    label: 'text-teal-700 dark:text-teal-300',
+  },
+  clinical: {
+    active: 'bg-blue-600 text-white shadow-sm shadow-blue-900/10',
+    hover: 'hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-950/30 dark:hover:text-blue-200',
+    label: 'text-blue-700 dark:text-blue-300',
+  },
+  financial: {
+    active: 'bg-emerald-600 text-white shadow-sm shadow-emerald-900/10',
+    hover: 'hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/30 dark:hover:text-emerald-200',
+    label: 'text-emerald-700 dark:text-emerald-300',
+  },
+  management: {
+    active: 'bg-violet-600 text-white shadow-sm shadow-violet-900/10',
+    hover: 'hover:bg-violet-50 hover:text-violet-800 dark:hover:bg-violet-950/30 dark:hover:text-violet-200',
+    label: 'text-violet-700 dark:text-violet-300',
+  },
+  insights: {
+    active: 'bg-amber-500 text-amber-950 shadow-sm shadow-amber-900/10',
+    hover: 'hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/30 dark:hover:text-amber-200',
+    label: 'text-amber-700 dark:text-amber-300',
+  },
+};
 
 const filterNavigationItem = ({ item, can, canAny, hasAnyRole, isDoctorOnly }) => {
   if (item.hideForDoctorOnly && isDoctorOnly) {
@@ -205,10 +238,11 @@ export function Sidebar() {
     location.pathname.startsWith(`${href}/`);
   const isRtl = i18n.language === 'ar';
 
-  const renderDesktopLink = (item) => {
+  const renderDesktopLink = (section, item) => {
     const Icon = item.icon;
     const active = isActive(item.href);
     const label = t(item.name, { defaultValue: item.label || item.name });
+    const tone = sectionToneClasses[section.tone] || sectionToneClasses.operations;
 
     return (
       <Link
@@ -219,9 +253,7 @@ export function Sidebar() {
           'flex h-11 items-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           sidebarOpen ? 'justify-start gap-3 px-3' : 'justify-center gap-0 px-0',
           isRtl && sidebarOpen && 'flex-row-reverse',
-          active
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          active ? tone.active : cn('text-muted-foreground', tone.hover),
         )}
         title={!sidebarOpen ? label : undefined}
       >
@@ -245,10 +277,11 @@ export function Sidebar() {
     );
   };
 
-  const renderMobileLink = (item) => {
+  const renderMobileLink = (section, item) => {
     const Icon = item.icon;
     const active = isActive(item.href);
     const label = t(item.name, { defaultValue: item.label || item.name });
+    const tone = sectionToneClasses[section.tone] || sectionToneClasses.operations;
 
     return (
       <Link
@@ -258,9 +291,7 @@ export function Sidebar() {
         onClick={() => setMobileMenuOpen(false)}
         className={cn(
           'flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          active
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          active ? tone.active : cn('text-muted-foreground', tone.hover),
         )}
       >
         <Icon className="h-5 w-5 shrink-0" />
@@ -274,7 +305,7 @@ export function Sidebar() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-col fixed top-16 bottom-0 bg-card transition-all duration-300 z-40',
+          'hidden md:flex flex-col fixed top-16 bottom-0 bg-card/95 backdrop-blur transition-all duration-300 z-40',
           isRtl ? 'right-0 border-l' : 'left-0 border-r',
           sidebarOpen ? 'w-64' : 'w-16'
         )}
@@ -286,12 +317,17 @@ export function Sidebar() {
               className={cn(index > 0 && 'border-t pt-2')}
             >
               {sidebarOpen && (
-                <div className="px-3 pb-1 text-[11px] font-semibold uppercase text-muted-foreground">
+                <div
+                  className={cn(
+                    'px-3 pb-1 text-[11px] font-semibold uppercase',
+                    sectionToneClasses[section.tone]?.label,
+                  )}
+                >
                   {t(section.labelKey)}
                 </div>
               )}
               <div className="space-y-1">
-                {section.items.map(renderDesktopLink)}
+                {section.items.map((item) => renderDesktopLink(section, item))}
               </div>
             </div>
           ))}
@@ -336,7 +372,7 @@ export function Sidebar() {
                     {t(section.labelKey)}
                   </div>
                   <div className="space-y-1">
-                    {section.items.map(renderMobileLink)}
+                    {section.items.map((item) => renderMobileLink(section, item))}
                   </div>
                 </div>
               ))}
@@ -360,6 +396,10 @@ export function Sidebar() {
               const Icon = item.icon;
               const active = isActive(item.href);
               const label = t(item.name, { defaultValue: item.label || item.name });
+              const section = filteredSections.find((candidate) =>
+                candidate.items.some((sectionItem) => sectionItem.href === item.href),
+              );
+              const tone = sectionToneClasses[section?.tone] || sectionToneClasses.operations;
 
               return (
                 <Link
@@ -368,9 +408,7 @@ export function Sidebar() {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                    active ? tone.active : cn('text-muted-foreground', tone.hover),
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" />

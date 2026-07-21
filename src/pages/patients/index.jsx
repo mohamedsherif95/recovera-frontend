@@ -15,7 +15,11 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { PERMISSIONS } from '@/lib/constants';
 import { useActiveBranchProfiles } from '@/hooks/useActiveBranchProfiles';
-import { CLINIC_PROFILE_WORKFLOWS } from '@/lib/clinicProfiles';
+import {
+  CLINIC_PROFILE_WORKFLOWS,
+  getClinicProfileLabel,
+} from '@/lib/clinicProfiles';
+import { getClinicProfileBadgeVariant } from '@/lib/visualTokens';
 import { PatientForm } from './PatientForm';
 import { ExistingPatientIntake } from './ExistingPatientIntake';
 import {
@@ -141,28 +145,30 @@ export default function PatientsPage() {
           <span className="flex items-center gap-1">
             {row.fullName}
             {supportsAssessmentTracking && row.sessionsUntilReassessment === 0 && (
-              <span
-            className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50"
+              <Badge
+                variant="warning"
+                className="inline-flex h-6 w-6 items-center justify-center p-0"
+                title={t('patients.reassessmentDue', { defaultValue: 'Reassessment due' })}
               >
                 <BellRing
-              className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
+                  className="h-3 w-3"
                   aria-hidden="true"
-                  title={t('patients.reassessmentDue', { defaultValue: 'Reassessment due' })}
                 />
-              </span>
+              </Badge>
             )}
             {supportsTreatmentPackages && row.isBalanceExhaustedAfterUse && (
-              <span
-                className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50"
+              <Badge
+                variant="danger"
+                className="inline-flex h-6 w-6 items-center justify-center p-0"
+                title={t('patients.balanceExhaustedAfterUse', {
+                  defaultValue: 'Previously had balance, now exhausted',
+                })}
               >
                 <CircleOff
-                  className="h-4 w-4 text-sky-600 dark:text-sky-300"
+                  className="h-3 w-3"
                   aria-hidden="true"
-                  title={t('patients.balanceExhaustedAfterUse', {
-                    defaultValue: 'Previously had balance, now exhausted',
-                  })}
                 />
-              </span>
+              </Badge>
             )}
           </span>
         ),
@@ -322,19 +328,28 @@ export default function PatientsPage() {
         title={t('patients.intakeDeskTitle')}
         description={t('patients.intakeDeskDescription')}
       >
-        <div className="grid gap-2 sm:grid-cols-3">
-          <ImpactMetric
-            label={t('patients.directoryMetricTotal')}
-            value={totalPatients}
-          />
-          <ImpactMetric
-            label={t('patients.directoryMetricBranchLinked')}
-            value={`${branchLinkedRows}/${patients.length || 0}`}
-          />
-          <ImpactMetric
-            label={t('patients.directoryMetricProfiles')}
-            value={enabledProfileCount || '--'}
-          />
+        <div className="space-y-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <ImpactMetric
+              label={t('patients.directoryMetricTotal')}
+              value={totalPatients}
+            />
+            <ImpactMetric
+              label={t('patients.directoryMetricBranchLinked')}
+              value={`${branchLinkedRows}/${patients.length || 0}`}
+            />
+            <ImpactMetric
+              label={t('patients.directoryMetricProfiles')}
+              value={enabledProfileCount || '--'}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {enabledProfiles.map((profile) => (
+              <Badge key={profile} variant={getClinicProfileBadgeVariant(profile)}>
+                {getClinicProfileLabel(profile, t)}
+              </Badge>
+            ))}
+          </div>
         </div>
       </ImpactPanel>
 
@@ -404,14 +419,14 @@ export default function PatientsPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="outline">{row.patientCode || '--'}</Badge>
+                          <Badge variant="neutral">{row.patientCode || '--'}</Badge>
                           {supportsAssessmentTracking && row.sessionsUntilReassessment === 0 && (
-                            <Badge variant="secondary">
+                            <Badge variant="warning">
                               {t('patients.reassessmentDue')}
                             </Badge>
                           )}
                           {supportsTreatmentPackages && row.isBalanceExhaustedAfterUse && (
-                            <Badge variant="secondary">
+                            <Badge variant="danger">
                               {t('patients.balanceExhaustedAfterUse')}
                             </Badge>
                           )}

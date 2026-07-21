@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { STAT_TONE_CLASSES } from '@/lib/visualTokens';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
 export function StatCard({
@@ -11,9 +12,11 @@ export function StatCard({
   description,
   className,
   onClick,
+  tone = 'neutral',
 }) {
   const isPositiveTrend = trend === 'up';
   const isClickable = typeof onClick === 'function';
+  const toneClasses = STAT_TONE_CLASSES[tone] || STAT_TONE_CLASSES.neutral;
 
   const handleKeyDown = (event) => {
     if (!isClickable) return;
@@ -26,7 +29,8 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        'transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary',
+        'relative overflow-hidden transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary',
+        toneClasses.card,
         isClickable && 'cursor-pointer',
         className
       )}
@@ -35,9 +39,14 @@ export function StatCard({
       tabIndex={isClickable ? 0 : undefined}
       onKeyDown={handleKeyDown}
     >
+      <span className={cn('absolute inset-x-0 top-0 h-1', toneClasses.rail)} />
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+        {Icon && (
+          <span className={cn('flex h-8 w-8 items-center justify-center rounded-md', toneClasses.icon)}>
+            <Icon className="h-4 w-4" />
+          </span>
+        )}
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>

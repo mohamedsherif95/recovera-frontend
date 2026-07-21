@@ -6,67 +6,67 @@
 
 @layer base {
   :root {
-    /* Light mode - Recovera sky identity */
-    --background: 204 100% 97%;
-    --foreground: 222 47% 11%;
+    /* Light mode - clean dimmed off-white workspace */
+    --background: 180 8% 96%;
+    --foreground: 221 28% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 221 28% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 221 28% 14%;
 
-    --primary: 199 94% 60%;
-    --primary-foreground: 201 96% 16%;
+    --primary: 175 78% 26%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 100% 95%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 210 16% 92%;
+    --secondary-foreground: 221 28% 14%;
 
-    --muted: 204 94% 94%;
-    --muted-foreground: 215 20% 42%;
+    --muted: 210 14% 91%;
+    --muted-foreground: 215 14% 42%;
 
-    --accent: 200 100% 94%;
-    --accent-foreground: 201 85% 26%;
+    --accent: 176 28% 90%;
+    --accent-foreground: 175 70% 22%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 200 77% 84%;
-    --input: 200 77% 84%;
-    --ring: 199 86% 55%;
+    --border: 203 13% 82%;
+    --input: 203 13% 82%;
+    --ring: 175 78% 28%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark mode - Greyish tones (not pure black) */
-    --background: 222 20% 14%; /* Dark grey, not black */
-    --foreground: 210 20% 98%; /* Off-white text */
+    /* Dark mode - GitHub dark canvas */
+    --background: 216 28% 7%;
+    --foreground: 210 67% 96%;
 
-    --card: 222 18% 18%; /* Slightly lighter grey for cards */
-    --card-foreground: 210 20% 98%;
+    --card: 213 21% 11%;
+    --card-foreground: 210 67% 96%;
 
-    --popover: 222 18% 18%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 213 21% 11%;
+    --popover-foreground: 210 67% 96%;
 
-    --primary: 199 88% 64%;
-    --primary-foreground: 201 96% 12%;
+    --primary: 174 72% 56%;
+    --primary-foreground: 180 84% 10%;
 
-    --secondary: 222 15% 22%; /* Medium grey */
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 213 16% 15%;
+    --secondary-foreground: 210 67% 96%;
 
-    --muted: 222 15% 22%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 213 16% 15%;
+    --muted-foreground: 212 9% 58%;
 
-    --accent: 222 15% 22%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 213 21% 18%;
+    --accent-foreground: 174 66% 80%;
 
     --destructive: 0 63% 60%;
     --destructive-foreground: 210 20% 98%;
 
-    --border: 222 15% 25%;
-    --input: 222 15% 25%;
-    --ring: 199 78% 60%;
+    --border: 212 12% 21%;
+    --input: 212 12% 21%;
+    --ring: 174 72% 56%;
   }
 
 }
@@ -79,6 +79,24 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+@layer components {
+  .recovera-shell {
+    background: hsl(var(--background));
+  }
+
+  .dark .recovera-shell {
+    background: hsl(var(--background));
+  }
+
+  .surface-panel {
+    @apply rounded-md border border-border/80 bg-card/95 shadow-sm;
+  }
+
+  .status-dot {
+    @apply inline-block h-2 w-2 shrink-0 rounded-full bg-current;
   }
 }
 

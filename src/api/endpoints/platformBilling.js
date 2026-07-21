@@ -1,12 +1,26 @@
-import apiClient from '../client';
-import { buildScopedRequestConfig } from '../scopeConfig';
+import apiClient from "../client";
+import { buildScopedRequestConfig } from "../scopeConfig";
 
 const downloadBlob = async (url, options = {}) => {
-  const response = await apiClient.get(url, {
-    ...buildScopedRequestConfig(options),
-    responseType: 'blob',
-  });
-  const disposition = response.headers?.['content-disposition'] || '';
+  const { openInNewTab = false, ...scopeOptions } = options;
+  const reviewWindow = openInNewTab
+    ? window.open("about:blank", "_blank")
+    : null;
+  if (reviewWindow) {
+    reviewWindow.opener = null;
+    reviewWindow.document.title = "Loading invoice...";
+  }
+  let response;
+  try {
+    response = await apiClient.get(url, {
+      ...buildScopedRequestConfig(scopeOptions),
+      responseType: "blob",
+    });
+  } catch (error) {
+    reviewWindow?.close();
+    throw error;
+  }
+  const disposition = response.headers?.["content-disposition"] || "";
   const encodedFileNameMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i);
   const quotedFileNameMatch = disposition.match(/filename="([^"]+)"/i);
   const plainFileNameMatch = disposition.match(/filename=([^;]+)/i);
@@ -14,9 +28,19 @@ const downloadBlob = async (url, options = {}) => {
     ? decodeURIComponent(encodedFileNameMatch[1])
     : quotedFileNameMatch?.[1] ||
       plainFileNameMatch?.[1]?.trim() ||
-      'platform-billing-artifact';
+      "platform-billing-artifact";
   const blobUrl = window.URL.createObjectURL(response.data);
-  const anchor = document.createElement('a');
+  if (openInNewTab) {
+    if (reviewWindow) {
+      reviewWindow.location.href = blobUrl;
+    } else {
+      window.open(blobUrl, "_blank");
+    }
+    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60 * 1000);
+    return;
+  }
+
+  const anchor = document.createElement("a");
   anchor.href = blobUrl;
   anchor.download = fileName;
   document.body.appendChild(anchor);
@@ -27,7 +51,7 @@ const downloadBlob = async (url, options = {}) => {
 
 export const platformBillingApi = {
   preview: async ({ branchId, billingMonth }, options = {}) => {
-    const response = await apiClient.get('/platform/billing/preview', {
+    const response = await apiClient.get("/platform/billing/preview", {
       ...buildScopedRequestConfig(options),
       params: { branchId, billingMonth },
     });
@@ -36,7 +60,7 @@ export const platformBillingApi = {
 
   generateInvoice: async (payload, options = {}) => {
     const response = await apiClient.post(
-      '/platform/billing/invoices',
+      "/platform/billing/invoices",
       payload,
       buildScopedRequestConfig(options),
     );
@@ -44,7 +68,7 @@ export const platformBillingApi = {
   },
 
   listInvoices: async (params = {}, options = {}) => {
-    const response = await apiClient.get('/platform/billing/invoices', {
+    const response = await apiClient.get("/platform/billing/invoices", {
       ...buildScopedRequestConfig(options),
       params,
     });
@@ -52,7 +76,7 @@ export const platformBillingApi = {
   },
 
   listUsageEvents: async (params = {}, options = {}) => {
-    const response = await apiClient.get('/platform/billing/usage-events', {
+    const response = await apiClient.get("/platform/billing/usage-events", {
       ...buildScopedRequestConfig(options),
       params,
     });
@@ -73,9 +97,24 @@ export const platformBillingApi = {
       options,
     ),
 
+  openArtifact: async (id, artifactType, options = {}) =>
+    downloadBlob(`/platform/billing/invoices/${id}/artifacts/${artifactType}`, {
+      ...options,
+      openInNewTab: true,
+    }),
+
+  refreshArtifacts: async (id, options = {}) => {
+    const response = await apiClient.post(
+      `/platform/billing/invoices/${id}/artifacts/refresh`,
+      {},
+      buildScopedRequestConfig(options),
+    );
+    return response.data;
+  },
+
   createAdjustment: async (payload, options = {}) => {
     const response = await apiClient.post(
-      '/platform/billing/adjustments',
+      "/platform/billing/adjustments",
       payload,
       buildScopedRequestConfig(options),
     );

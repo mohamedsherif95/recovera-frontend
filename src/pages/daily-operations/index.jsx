@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/common/PageHeader";
 import { LocalizedDatePicker } from "@/components/common/LocalizedDatePicker";
 import { useDailyOperations } from "@/hooks/useDashboard";
-import { useUpdateSessionStatus } from "@/hooks/useSessions";
+import { useCreateSession, useUpdateSessionStatus } from "@/hooks/useSessions";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useBranchAccessState } from "@/hooks/useBranchAccessState";
 import {
@@ -53,7 +53,13 @@ import {
   clinicProfileSupportsWorkflow,
   getClinicProfileLabel,
 } from "@/lib/clinicProfiles";
+import {
+  getClinicProfileBadgeVariant,
+  getSessionStatusBadgeVariant,
+  getSessionStatusSurfaceClass,
+} from "@/lib/visualTokens";
 import { getClinicTodayDateOnly } from "@/lib/time";
+import { SessionFormDrawer } from "@/pages/sessions/SessionFormDrawer";
 
 // Static time slots; API returns a flat sessions array with `slot` matching these labels (24h).
 // Rows are fixed from 10:00 to 24:00.
@@ -75,29 +81,6 @@ const HOURS = [
   "24:00",
 ];
 
-const STATUS_STYLES = {
-  // Borders + soft background are colored by status in a theme-friendly way
-  // Light mode: slightly stronger tint; Dark mode: darker, subtle tint
-  scheduled: "border-amber-400 bg-amber-100 dark:bg-amber-900/30",
-  arrived: "border-purple-400 bg-purple-100 dark:bg-purple-900/30",
-  in_progress: "border-blue-400 bg-blue-100 dark:bg-blue-900/30",
-  completed: "border-emerald-400 bg-emerald-100 dark:bg-emerald-900/30",
-  cancelled: "border-red-400 bg-red-100 dark:bg-red-900/30",
-};
-
-const STATUS_BADGE_STYLES = {
-  scheduled:
-    "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100",
-  arrived:
-    "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/30 dark:text-purple-100",
-  in_progress:
-    "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-100",
-  completed:
-    "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-100",
-  cancelled:
-    "border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100",
-};
-
 const STATUS_ORDER = [
   "scheduled",
   "arrived",
@@ -105,9 +88,6 @@ const STATUS_ORDER = [
   "completed",
   "cancelled",
 ];
-
-const getStatusBadgeClass = (status) =>
-  STATUS_BADGE_STYLES[status] || "border-border bg-muted/30";
 
 const formatHourLabel = (hour) => {
   const [hStr] = hour.split(":");
@@ -189,27 +169,28 @@ export default function DailyOperationsPage() {
   const isRtl = i18n.language === "ar";
 
   const { hasPermission } = usePermissions();
+  const canCreateSession = hasPermission(PERMISSIONS["sessions:create"]);
   const canUpdateStatus =
     hasPermission(PERMISSIONS["sessions:updateStatus"]) ||
     hasPermission(PERMISSIONS["sessions:updateStatusOwn"]);
 
+  const createSession = useCreateSession();
   const updateStatus = useUpdateSessionStatus();
-  const {
-    isReadOnlyBranch,
-    readOnlyTitle,
-    readOnlyTitleKey,
-  } = useBranchAccessState();
+  const { isReadOnlyBranch, readOnlyTitle, readOnlyTitleKey } =
+    useBranchAccessState();
   const readOnlyTooltip = t(readOnlyTitleKey, { defaultValue: readOnlyTitle });
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [pendingCancelSessionId, setPendingCancelSessionId] = useState(null);
   const [pendingCancelSession, setPendingCancelSession] = useState(null);
+  const [createSessionDraft, setCreateSessionDraft] = useState(null);
 
   useEffect(() => {
     if (isReadOnlyBranch) {
       setCancelConfirmOpen(false);
       setPendingCancelSessionId(null);
       setPendingCancelSession(null);
+      setCreateSessionDraft(null);
     }
   }, [isReadOnlyBranch]);
 
@@ -333,6 +314,45 @@ export default function DailyOperationsPage() {
     return acc;
   }, [sessions]);
 
+  const createSessionInitialValues = useMemo(
+    () => ({
+      doctorId: createSessionDraft?.doctorId ?? undefined,
+      patientId: undefined,
+      sessionDate: createSessionDraft?.date ?? selectedDate,
+      sessionTime: createSessionDraft?.slot ?? "",
+      cost: undefined,
+      doctorName: createSessionDraft?.doctorName ?? undefined,
+      profile:
+        effectiveProfileFilter !== "all" ? effectiveProfileFilter : undefined,
+      isAssessment: false,
+    }),
+    [createSessionDraft, effectiveProfileFilter, selectedDate],
+  );
+
+  const openCreateSessionDrawer = (doctor, slot) => {
+    if (isReadOnlyBranch || !canCreateSession) return;
+    setCreateSessionDraft({
+      doctorId: doctor.id,
+      doctorName: doctor.name,
+      date: selectedDate,
+      slot,
+    });
+  };
+
+  const closeCreateSessionDrawer = () => {
+    setCreateSessionDraft(null);
+  };
+
+  const handleCreateSession = (values) => {
+    if (isReadOnlyBranch || !canCreateSession) return;
+    createSession.mutate(values, {
+      onSuccess: () => {
+        closeCreateSessionDrawer();
+        refetch();
+      },
+    });
+  };
+
   const handleChangeStatus = (session, newStatus) => {
     if (isReadOnlyBranch || !canUpdateStatus || !newStatus || !session) return;
     if (newStatus === SESSION_STATUS.CANCELLED) {
@@ -356,7 +376,8 @@ export default function DailyOperationsPage() {
   };
 
   const confirmCancel = () => {
-    if (isReadOnlyBranch || !pendingCancelSessionId || !pendingCancelSession) return;
+    if (isReadOnlyBranch || !pendingCancelSessionId || !pendingCancelSession)
+      return;
     const payload = buildStatusUpdatePayload(
       pendingCancelSession,
       SESSION_STATUS.CANCELLED,
@@ -522,16 +543,24 @@ export default function DailyOperationsPage() {
         <CardContent className="p-0">
           <div className="space-y-3 border-b border-border px-4 py-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="gap-1.5">
+              <Badge
+                variant={
+                  effectiveProfileFilter === "all"
+                    ? "secondary"
+                    : getClinicProfileBadgeVariant(effectiveProfileFilter)
+                }
+                className="gap-1.5"
+              >
                 <ListChecks className="h-3.5 w-3.5" />
                 {filteredProfileLabel}
               </Badge>
               {STATUS_ORDER.map((statusKey) => (
                 <Badge
                   key={statusKey}
-                  variant="outline"
-                  className={getStatusBadgeClass(statusKey)}
+                  variant={getSessionStatusBadgeVariant(statusKey)}
+                  className="gap-1.5"
                 >
+                  <span className="status-dot" />
                   {t(`status.${statusKey}`)}: {statusCounts[statusKey] || 0}
                 </Badge>
               ))}
@@ -586,9 +615,7 @@ export default function DailyOperationsPage() {
                     {
                       isAdmin,
                     },
-                  ).find(
-                    (statusKey) => statusKey !== SESSION_STATUS.CANCELLED,
-                  );
+                  ).find((statusKey) => statusKey !== SESSION_STATUS.CANCELLED);
 
                   return (
                     <div key={session.id} className="space-y-3 p-4">
@@ -596,13 +623,23 @@ export default function DailyOperationsPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge
-                              variant="outline"
-                              className={getStatusBadgeClass(session.status)}
+                              variant={getSessionStatusBadgeVariant(
+                                session.status,
+                              )}
                             >
                               {t(`status.${session.status}`)}
                             </Badge>
+                            <Badge
+                              variant={getClinicProfileBadgeVariant(
+                                sessionProfile,
+                              )}
+                            >
+                              {profileLabel}
+                            </Badge>
                             <span className="font-mono text-xs text-muted-foreground">
-                              {formatHourLabel(session.slot || session.sessionTime)}
+                              {formatHourLabel(
+                                session.slot || session.sessionTime,
+                              )}
                             </span>
                           </div>
                           <div className="mt-2 break-words text-base font-semibold">
@@ -610,7 +647,7 @@ export default function DailyOperationsPage() {
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
                             {session.patientCode || "--"} |{" "}
-                            {provider?.name || "--"} | {profileLabel}
+                            {provider?.name || "--"}
                           </div>
                         </div>
                         <Users className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -635,8 +672,12 @@ export default function DailyOperationsPage() {
                             onClick={() =>
                               handleChangeStatus(session, nextRoutineStatus)
                             }
-                            disabled={isReadOnlyBranch || updateStatus.isPending}
-                            title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                            disabled={
+                              isReadOnlyBranch || updateStatus.isPending
+                            }
+                            title={
+                              isReadOnlyBranch ? readOnlyTooltip : undefined
+                            }
                             className="w-full sm:w-auto"
                           >
                             {getStatusActionLabel(nextRoutineStatus, t)}
@@ -656,8 +697,12 @@ export default function DailyOperationsPage() {
                                   SESSION_STATUS.CANCELLED,
                                 )
                               }
-                              disabled={isReadOnlyBranch || updateStatus.isPending}
-                              title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                              disabled={
+                                isReadOnlyBranch || updateStatus.isPending
+                              }
+                              title={
+                                isReadOnlyBranch ? readOnlyTooltip : undefined
+                              }
                               className="w-full text-destructive hover:text-destructive sm:w-auto"
                             >
                               {t("status.cancelled")}
@@ -717,33 +762,32 @@ export default function DailyOperationsPage() {
                                 time: formatHourLabel(hour),
                               })}
                               onClick={() =>
-                                !isReadOnlyBranch &&
-                                navigate(
-                                  `/sessions?returnDate=${selectedDate}${shiftFilter ? `&returnShift=${shiftFilter}` : ""}`,
-                                  {
-                                    state: {
-                                      initialDoctorId: doctor.id,
-                                      initialDoctorName: doctor.name,
-                                      initialDate: selectedDate,
-                                      initialSlot: hour,
-                                    },
-                                  },
-                                )
+                                openCreateSessionDrawer(doctor, hour)
                               }
-                              disabled={isReadOnlyBranch}
-                              title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                              disabled={isReadOnlyBranch || !canCreateSession}
+                              title={
+                                isReadOnlyBranch
+                                  ? readOnlyTooltip
+                                  : !canCreateSession
+                                    ? t("common.permissionDeniedTitle", {
+                                        defaultValue: "Permission denied",
+                                      })
+                                    : undefined
+                              }
                               className="group flex min-h-[52px] flex-1 cursor-pointer items-center justify-center rounded-md border border-dashed border-border bg-card px-3 py-3 text-xs text-muted-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-card"
                             >
                               <span className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-                                {t("dailyOps.freeSlot", { defaultValue: "Free" })}
+                                {t("dailyOps.freeSlot", {
+                                  defaultValue: "Free",
+                                })}
                               </span>
                             </button>
                           );
                         }
 
-                        const statusClass =
-                          STATUS_STYLES[session.status] ||
-                          STATUS_STYLES.scheduled;
+                        const statusClass = getSessionStatusSurfaceClass(
+                          session.status,
+                        );
                         const sessionProfile =
                           session.profile || CLINIC_PROFILES.PHYSIOTHERAPY;
                         const supportsAssessmentTracking =
@@ -817,9 +861,9 @@ export default function DailyOperationsPage() {
                                   session.sessionsUntilReassessment === 0 &&
                                   !session.isAssessment &&
                                   !session.isReassessment && (
-                                    <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+                                    <span className="inline-flex items-center justify-center rounded-full border border-amber-300 bg-amber-100 p-1 text-amber-800 shadow-sm dark:border-amber-700 dark:bg-amber-900/70 dark:text-amber-50">
                                       <BellRing
-                                        className="h-4 w-4 text-sky-500 dark:text-sky-400 flex-shrink-0"
+                                        className="h-4 w-4 flex-shrink-0"
                                         aria-hidden="true"
                                         title={t("patients.reassessmentDue", {
                                           defaultValue: "Reassessment due",
@@ -828,9 +872,9 @@ export default function DailyOperationsPage() {
                                     </span>
                                   )}
                                 {session.isBalanceExhaustedAfterUse && (
-                                  <span className="inline-flex items-center justify-center rounded-full border border-sky-300 bg-sky-100 p-1 text-sky-800 shadow-sm dark:border-sky-700 dark:bg-sky-900/70 dark:text-sky-50">
+                                  <span className="inline-flex items-center justify-center rounded-full border border-rose-300 bg-rose-100 p-1 text-rose-800 shadow-sm dark:border-rose-700 dark:bg-rose-900/70 dark:text-rose-50">
                                     <CircleOff
-                                      className="h-4 w-4 text-sky-600 dark:text-sky-300"
+                                      className="h-4 w-4"
                                       aria-hidden="true"
                                       title={t(
                                         "patients.balanceExhaustedAfterUse",
@@ -846,14 +890,31 @@ export default function DailyOperationsPage() {
                               <div className="mt-1 max-w-full truncate text-xs font-mono text-foreground">
                                 {session.patientCode}
                               </div>
-                              <div className="mt-1 max-w-full truncate text-[11px] text-muted-foreground">
-                                {t(`status.${session.status}`)} | {profileLabel}
+                              <div className="mt-1 flex max-w-full flex-wrap items-center justify-center gap-1">
+                                <Badge
+                                  variant={getSessionStatusBadgeVariant(
+                                    session.status,
+                                  )}
+                                  className="max-w-full px-1.5 py-0 text-[10px]"
+                                >
+                                  {t(`status.${session.status}`)}
+                                </Badge>
+                                <Badge
+                                  variant={getClinicProfileBadgeVariant(
+                                    sessionProfile,
+                                  )}
+                                  className="max-w-full px-1.5 py-0 text-[10px]"
+                                >
+                                  {profileLabel}
+                                </Badge>
                               </div>
-                              {canUpdateStatus && !isReadOnlyBranch && nextRoutineStatus && (
-                                <div className="mt-1 max-w-full truncate text-[11px] font-medium text-foreground">
-                                  {getStatusActionLabel(nextRoutineStatus, t)}
-                                </div>
-                              )}
+                              {canUpdateStatus &&
+                                !isReadOnlyBranch &&
+                                nextRoutineStatus && (
+                                  <div className="mt-1 max-w-full truncate text-[11px] font-medium text-foreground">
+                                    {getStatusActionLabel(nextRoutineStatus, t)}
+                                  </div>
+                                )}
                             </button>
                             {packageBadgeValue && (
                               <span
@@ -876,7 +937,11 @@ export default function DailyOperationsPage() {
                                     type="button"
                                     onClick={(e) => e.stopPropagation()}
                                     disabled={isReadOnlyBranch}
-                                    title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+                                    title={
+                                      isReadOnlyBranch
+                                        ? readOnlyTooltip
+                                        : undefined
+                                    }
                                     className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-muted-foreground shadow hover:bg-background hover:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 disabled:cursor-not-allowed disabled:opacity-60"
                                   >
                                     <MoreHorizontal className="h-3 w-3" />
@@ -891,7 +956,10 @@ export default function DailyOperationsPage() {
                                   }).map((statusKey) => (
                                     <DropdownMenuItem
                                       key={statusKey}
-                                      disabled={isReadOnlyBranch || updateStatus.isPending}
+                                      disabled={
+                                        isReadOnlyBranch ||
+                                        updateStatus.isPending
+                                      }
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleChangeStatus(session, statusKey);
@@ -926,6 +994,21 @@ export default function DailyOperationsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {!isReadOnlyBranch && canCreateSession && (
+        <SessionFormDrawer
+          open={Boolean(createSessionDraft)}
+          onOpenChange={(open) => {
+            if (!open) closeCreateSessionDrawer();
+          }}
+          initialValues={createSessionInitialValues}
+          lockDoctor={Boolean(createSessionDraft?.doctorId)}
+          onSubmit={handleCreateSession}
+          onCancel={closeCreateSessionDrawer}
+          isSubmitting={createSession.isPending}
+        />
+      )}
+
       <ConfirmDialog
         open={cancelConfirmOpen}
         onOpenChange={setCancelConfirmOpen}

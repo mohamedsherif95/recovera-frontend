@@ -26,8 +26,8 @@ export function PageHeader({ title, description, actions, className, onBack }) {
             <BackIcon className="h-5 w-5" />
           </Button>
         )}
-        <div className="min-w-0">
-          <h1 className="break-words text-xl font-bold tracking-tight text-primary sm:text-2xl">
+        <div className="min-w-0 border-s-4 border-primary/70 ps-3">
+          <h1 className="break-words text-xl font-bold tracking-tight text-foreground sm:text-2xl">
             {title}
           </h1>
           {description && (

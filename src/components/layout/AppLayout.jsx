@@ -7,6 +7,7 @@ import { AppFooter } from './AppFooter';
 import { useUIStore } from '@/store/uiStore';
 import { useBranchAccessState } from '@/hooks/useBranchAccessState';
 import { cn } from '@/lib/utils';
+import { AlertTriangle } from 'lucide-react';
 
 export function AppLayout() {
   const {
@@ -92,7 +93,7 @@ export function AppLayout() {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="recovera-shell min-h-screen bg-background flex flex-col">
       <Header />
       <Sidebar />
 
@@ -105,12 +106,17 @@ export function AppLayout() {
         )}
       >
         {isReadOnlyBranch && (
-          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-            <div className="font-semibold">
-              {t(readOnlyTitleKey, { defaultValue: readOnlyTitle })}
-            </div>
-            <div className="mt-1 font-normal">
-              {t(readOnlyDescriptionKey, { defaultValue: readOnlyDescription })}
+          <div className="mb-4 flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+              <AlertTriangle className="h-4 w-4" />
+            </span>
+            <div>
+              <div className="font-semibold">
+                {t(readOnlyTitleKey, { defaultValue: readOnlyTitle })}
+              </div>
+              <div className="mt-1 font-normal">
+                {t(readOnlyDescriptionKey, { defaultValue: readOnlyDescription })}
+              </div>
             </div>
           </div>
         )}

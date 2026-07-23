@@ -34,6 +34,14 @@ export const paymentsApi = {
   },
 
   /**
+   * Update editable payment metadata
+   */
+  update: async (paymentId, payload) => {
+    const response = await apiClient.put(`/payments/${paymentId}`, payload);
+    return response.data;
+  },
+
+  /**
    * Delete payment
    */
   remove: async (paymentId) => {

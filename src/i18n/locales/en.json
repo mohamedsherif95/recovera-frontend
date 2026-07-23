@@ -1104,7 +1104,7 @@
     },
     "invoiceStatuses": {
       "issued": "Issued",
-      "partiallyPaid": "Partially paid",
+      "partiallyPaid": "Partial",
       "paid": "Paid",
       "voided": "Voided"
     },

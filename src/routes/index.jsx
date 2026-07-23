@@ -403,6 +403,16 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'profile-services',
+        element: (
+          <ProtectedRoute
+            requiredPermission={PERMISSIONS['profileServices:view']}
+          >
+            <ProfileServicesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'branch-subscriptions',
         element: <Navigate to="/platform-admin/branch-subscriptions" replace />,
       },

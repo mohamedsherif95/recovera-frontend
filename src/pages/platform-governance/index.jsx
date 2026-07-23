@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { accessApi } from '@/api/endpoints/access';
 import { useSetUserRoles, useUsers } from '@/hooks/useUsers';
+import { useDebounce } from '@/hooks/useDebounce';
 import { useAuthStore } from '@/store/authStore';
 import { USER_ROLES } from '@/lib/constants';
 
@@ -207,7 +208,8 @@ function UserIdentity({ user }) {
         {user.fullName || user.username || `#${user.id}`}
       </p>
       <p className="truncate text-xs text-muted-foreground">
-        {user.email || user.username || '--'}
+        {user.username ? `@${user.username}` : '--'}
+        {user.email ? ` · ${user.email}` : ''}
       </p>
     </div>
   );
@@ -366,6 +368,7 @@ export default function PlatformGovernancePage() {
   const { t } = useTranslation();
   const { user: currentUser } = useAuthStore();
   const [candidateSearch, setCandidateSearch] = useState('');
+  const debouncedCandidateSearch = useDebounce(candidateSearch, 300);
   const [selectedRoleName, setSelectedRoleName] = useState(USER_ROLES.ADMIN);
   const [pendingChange, setPendingChange] = useState(null);
   const [roleChangeReason, setRoleChangeReason] = useState('');
@@ -385,7 +388,7 @@ export default function PlatformGovernancePage() {
   const candidatesQuery = useUsers({
     page: 1,
     limit: 100,
-    search: candidateSearch.trim() || undefined,
+    search: debouncedCandidateSearch.trim() || undefined,
   });
 
   const roles = useMemo(() => {
@@ -408,8 +411,13 @@ export default function PlatformGovernancePage() {
     [usersQuery.data],
   );
   const candidateUsers = useMemo(() => {
-    const normalizedSearch = candidateSearch.trim().toLowerCase();
-    return getUsers(candidatesQuery.data)
+    const normalizedSearch = debouncedCandidateSearch.trim().toLowerCase();
+    const candidatePool = new Map();
+    [...getUsers(usersQuery.data), ...getUsers(candidatesQuery.data)].forEach(
+      (user) => candidatePool.set(user.id, user),
+    );
+
+    return Array.from(candidatePool.values())
       .filter((user) => !hasRole(user, USER_ROLES.ADMIN))
       .filter((user) => {
         if (!normalizedSearch) return true;
@@ -418,7 +426,7 @@ export default function PlatformGovernancePage() {
           .some((value) => String(value).toLowerCase().includes(normalizedSearch));
       })
       .slice(0, 8);
-  }, [candidateSearch, candidatesQuery.data]);
+  }, [candidatesQuery.data, debouncedCandidateSearch, usersQuery.data]);
   const selectedRole =
     roles.find((role) => role.name === selectedRoleName) || roles[0] || null;
   const selectedRoleGroups = useMemo(() => {
@@ -796,9 +804,12 @@ export default function PlatformGovernancePage() {
                   })}
                 </div>
               ) : candidateUsers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
+                <p
+                  className="rounded-md border border-dashed p-4 text-center text-sm text-muted-foreground"
+                  role="status"
+                >
                   {t('platformGovernance.grant.empty', {
-                    defaultValue: 'No non-admin users match this filter.',
+                    defaultValue: 'No eligible users match this search.',
                   })}
                 </p>
               ) : (

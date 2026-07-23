@@ -751,7 +751,7 @@
       "badge": "Global access",
       "searchPlaceholder": "Filter by name, email, username, or clinic",
       "loading": "Loading candidate users...",
-      "empty": "No non-admin users match this filter.",
+      "empty": "No eligible users match this search.",
       "impactTitle": "Grant with deliberate custody",
       "impactDescription": "Only grant this role to accounts that should perform platform administration outside clinic workspaces."
     },

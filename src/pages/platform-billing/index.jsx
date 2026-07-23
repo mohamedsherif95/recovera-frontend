@@ -1053,10 +1053,10 @@ export default function PlatformBillingPage() {
   };
 
   useEffect(() => {
-    if (linkedMonth && linkedMonth !== month) {
+    if (linkedMonth) {
       setMonth(linkedMonth);
     }
-  }, [linkedMonth, month]);
+  }, [linkedMonth]);
 
   const handleMonthChange = (value) => {
     setMonth(value);

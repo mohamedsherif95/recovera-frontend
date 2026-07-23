@@ -13,7 +13,6 @@ import {
   Clock3,
   HeartPulse,
   Layers3,
-  MessageCircle,
   ReceiptText,
   Smile,
   Sparkles,
@@ -21,12 +20,14 @@ import {
   Users,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { WhatsAppLogo } from "@/components/common/WhatsAppLogo";
 import { LandingBanner } from "@/components/marketing/LandingBanner";
 import { PublicTopBar } from "@/components/layout/PublicTopBar";
 import { Button } from "@/components/ui/button";
 import { usePublicLandingBanner } from "@/hooks/usePublicContent";
 import { trackContactClick } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { WHATSAPP_HREF } from "@/lib/whatsapp";
 import "@/styles/landing.css";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
@@ -74,9 +75,6 @@ const partnerIcons = {
   frontDesk: CalendarCheck,
   groups: Users,
 };
-
-const WHATSAPP_HREF =
-  "https://wa.me/201508976776?text=Hello%20Recovera%2C%20I%20would%20like%20to%20know%20more%20about%20the%20clinic%20management%20system.";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
@@ -1074,28 +1072,12 @@ function WhatsAppFloatingCta({ t }) {
       onClick={handleClick}
     >
       <span className="landing-whatsapp-icon" aria-hidden="true">
-        <WhatsAppGlyph />
+        <WhatsAppLogo className="h-6 w-6" />
       </span>
       <span className="hidden text-sm font-black sm:inline">
         {t("marketing.whatsapp.label")}
       </span>
-      <MessageCircle className="h-4 w-4 sm:hidden" aria-hidden="true" />
     </a>
-  );
-}
-
-function WhatsAppGlyph() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M16 4.5A11.3 11.3 0 0 0 6.2 21.45L5 27l5.7-1.28A11.3 11.3 0 1 0 16 4.5Z"
-        fill="currentColor"
-      />
-      <path
-        d="M12.35 10.25c-.25-.6-.52-.62-.77-.63h-.65c-.23 0-.6.08-.92.43-.32.35-1.2 1.17-1.2 2.85s1.23 3.3 1.4 3.53c.17.23 2.37 3.8 5.88 5.17 2.92 1.15 3.52.92 4.16.86.64-.06 2.07-.84 2.36-1.66.29-.82.29-1.52.2-1.67-.08-.15-.31-.23-.66-.4-.35-.17-2.07-1.02-2.39-1.14-.32-.12-.55-.17-.78.17-.23.35-.9 1.14-1.1 1.37-.2.23-.4.26-.75.09-.35-.18-1.47-.54-2.8-1.72-1.04-.92-1.73-2.06-1.93-2.41-.2-.35-.02-.54.15-.71.15-.15.35-.4.52-.6.17-.2.23-.35.35-.58.12-.23.06-.43-.03-.6-.09-.17-.77-1.86-1.06-2.54Z"
-        fill="white"
-      />
-    </svg>
   );
 }
 

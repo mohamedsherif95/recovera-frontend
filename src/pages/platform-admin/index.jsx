@@ -16,6 +16,7 @@ import {
   Receipt,
   RefreshCcw,
   ShieldCheck,
+  UserPlus,
   Users,
   Workflow,
 } from 'lucide-react';
@@ -25,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ImpactMetric, ImpactPanel } from '@/components/common/ImpactPanel';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePlatformJoinRequestSummary } from '@/hooks/useJoinRequests';
 import { usePlatformAdminOverview } from '@/hooks/usePlatformAdmin';
 import { useUIStore } from '@/store/uiStore';
 import { PERMISSIONS } from '@/lib/constants';
@@ -103,6 +105,16 @@ const modules = [
     permission: PERMISSIONS['platformContent:manage'],
   },
   {
+    titleKey: 'platformAdmin.modules.joinRequests.title',
+    titleDefault: 'Join requests',
+    descriptionKey: 'platformAdmin.modules.joinRequests.description',
+    descriptionDefault: 'Review public join-us requests and follow up with prospects.',
+    href: '/platform-admin/join-requests',
+    icon: UserPlus,
+    permission: PERMISSIONS['platformContent:manage'],
+    notification: 'joinRequests',
+  },
+  {
     titleKey: 'platformAdmin.modules.branchSubscriptions.title',
     titleDefault: 'Branch subscriptions',
     descriptionKey: 'platformAdmin.modules.branchSubscriptions.description',
@@ -127,6 +139,11 @@ const modules = [
 export default function PlatformAdminPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
+  const canViewJoinRequests = can(PERMISSIONS['platformContent:manage']);
+  const { data: joinRequestSummary } = usePlatformJoinRequestSummary({
+    enabled: canViewJoinRequests,
+  });
+  const newJoinRequestCount = Number(joinRequestSummary?.newCount || 0);
   const { platformAdminClinicId, setPlatformAdminClinicId } = useUIStore();
   const {
     data: overview,
@@ -687,13 +704,25 @@ export default function PlatformAdminPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {visibleModules.map((module) => {
           const Icon = module.icon;
+          const showJoinRequestBadge =
+            module.notification === 'joinRequests' && newJoinRequestCount > 0;
           return (
             <Link key={module.href} to={module.href} className="block">
               <Card className="h-full transition-colors hover:border-primary/50 hover:bg-accent/40">
                 <CardHeader className="space-y-3 pb-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </span>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    {showJoinRequestBadge && (
+                      <Badge variant="warning">
+                        {t('platformAdmin.joinRequests.newCount', {
+                          count: newJoinRequestCount,
+                          defaultValue: '{{count}} new',
+                        })}
+                      </Badge>
+                    )}
+                  </div>
                   <CardTitle className="text-base">
                     {t(module.titleKey, { defaultValue: module.titleDefault })}
                   </CardTitle>

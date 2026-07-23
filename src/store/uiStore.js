@@ -5,7 +5,7 @@ export const useUIStore = create(
   persist(
     (set) => ({
       // Theme state
-      theme: 'light',
+      theme: 'dark',
       setTheme: (theme) => {
         set({ theme });
         // Apply theme to document
@@ -80,8 +80,12 @@ if (storedTheme) {
     const { state } = JSON.parse(storedTheme);
     if (state.theme === 'dark') {
       document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   } catch (e) {
     console.error('Failed to parse stored theme:', e);
   }
+} else {
+  document.documentElement.classList.add('dark');
 }

@@ -14,6 +14,7 @@ import FirstLogin from '@/pages/auth/FirstLogin';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import LandingPage from '@/pages/LandingPage';
+import JoinUsPage from '@/pages/JoinUs';
 
 // Dashboard & feature pages
 import Dashboard from '@/pages/Dashboard';
@@ -40,6 +41,7 @@ import PlatformOnboardingPage from '@/pages/platform-onboarding';
 import PlatformAdminPage from '@/pages/platform-admin';
 import PlatformAdminAuditPage from '@/pages/platform-admin-audit';
 import PlatformAdminLandingBannerPage from '@/pages/platform-admin-landing-banner';
+import PlatformAdminJoinRequestsPage from '@/pages/platform-admin-join-requests';
 import InvoicesPage from '@/pages/invoices';
 import BranchExpensesPage from '@/pages/branch-expenses';
 import PayrollPage from '@/pages/payroll';
@@ -119,6 +121,10 @@ export const router = createBrowserRouter([
         <ResetPassword />
       </AuthGuard>
     ),
+  },
+  {
+    path: '/join-us',
+    element: <JoinUsPage />,
   },
   {
     path: '/unauthorized',
@@ -226,6 +232,16 @@ export const router = createBrowserRouter([
             requiredPermission={PERMISSIONS['platformContent:manage']}
           >
             <PlatformAdminLandingBannerPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'join-requests',
+        element: (
+          <ProtectedRoute
+            requiredPermission={PERMISSIONS['platformContent:manage']}
+          >
+            <PlatformAdminJoinRequestsPage />
           </ProtectedRoute>
         ),
       },

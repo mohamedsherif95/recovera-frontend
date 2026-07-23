@@ -676,7 +676,7 @@ export default function BranchExpensesPage() {
       {
         key: 'amount',
         header: t('branchExpenses.amount', { defaultValue: 'Amount' }),
-        cellClassName: 'text-right font-medium',
+        cellClassName: ' font-medium',
         cell: (row) => formatCurrency(row.amount || 0),
       },
       {

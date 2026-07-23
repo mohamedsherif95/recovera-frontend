@@ -149,7 +149,7 @@ const INVOICE_STATUS_LABELS = {
   },
   partially_paid: {
     key: "platformBilling.invoiceStatuses.partiallyPaid",
-    defaultValue: "Partially paid",
+    defaultValue: "Partial",
   },
   paid: {
     key: "platformBilling.invoiceStatuses.paid",
@@ -400,9 +400,6 @@ function ArtifactStatusRow({
             disabled={!artifact}
           >
             <Eye className="h-4 w-4" />
-            {t("platformBilling.artifacts.reviewPdf", {
-              defaultValue: "Review PDF",
-            })}
           </Button>
         )}
         <Button
@@ -413,9 +410,6 @@ function ArtifactStatusRow({
           disabled={!artifact}
         >
           <Download className="h-4 w-4" />
-          {t("platformBilling.artifacts.download", {
-            defaultValue: "Download",
-          })}
         </Button>
       </div>
     </div>
@@ -1999,54 +1993,51 @@ export default function PlatformBillingPage() {
                     </div>
                   </div>
 
-                  <ImpactPanel
-                    tone={artifactPanelTone}
-                    icon={Download}
-                    title={t("platformBilling.artifacts.title", {
-                      defaultValue: "Current artifacts",
-                    })}
-                    description={
-                      artifactPanelTone === "warning"
-                        ? t("platformBilling.artifacts.reviewDescription", {
-                            defaultValue:
-                              "Review artifact freshness before sending files to the branch.",
-                          })
-                        : t("platformBilling.artifacts.downloadDescription", {
-                            defaultValue:
-                              "Download the generated PDF or data sheet for this invoice.",
-                          })
-                    }
-                  >
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <Badge variant="outline">
-                        {t("platformBilling.artifacts.currentVersion", {
-                          defaultValue: "Latest generated version",
-                        })}
-                      </Badge>
-                      {canManage && selectedInvoice.status !== "voided" && (
-                        <Button
-                          type="button"
-                          variant={
-                            artifactPanelTone === "warning"
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={handleRefreshArtifacts}
-                          disabled={refreshArtifacts.isPending}
-                        >
-                          {refreshArtifacts.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCcw className="h-4 w-4" />
-                          )}
-                          {t("platformBilling.artifacts.refresh", {
-                            defaultValue: "Refresh files",
-                          })}
-                        </Button>
-                      )}
-                    </div>
-                    <div className="rounded-md border bg-background/80">
+                  <div className="border rounded-md p-2" >
+                    <ImpactPanel
+                      tone={artifactPanelTone}
+                      icon={Download}
+                      title={t("platformBilling.artifacts.title", {
+                        defaultValue: "Current artifacts",
+                      })}
+                      description={
+                        artifactPanelTone === "warning"
+                          ? t("platformBilling.artifacts.reviewDescription", {
+                              defaultValue:
+                                "Review artifact freshness before sending files to the branch.",
+                            })
+                          : t("platformBilling.artifacts.downloadDescription", {
+                              defaultValue:
+                                "Download the generated PDF or data sheet for this invoice.",
+                            })
+                      }
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        {canManage && selectedInvoice.status !== "voided" && (
+                          <Button
+                            type="button"
+                            variant={
+                              artifactPanelTone === "warning"
+                                ? "default"
+                                : "outline"
+                            }
+                            size="sm"
+                            onClick={handleRefreshArtifacts}
+                            disabled={refreshArtifacts.isPending}
+                          >
+                            {refreshArtifacts.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCcw className="h-4 w-4" />
+                            )}
+                            {t("platformBilling.artifacts.refresh", {
+                              defaultValue: "Refresh files",
+                            })}
+                          </Button>
+                        )}
+                      </div>
+                    </ImpactPanel>
+                    <div className="bg-background/80 rounded-md border">
                       <ArtifactStatusRow
                         artifact={pdfArtifact}
                         artifactType="pdf"
@@ -2072,7 +2063,7 @@ export default function PlatformBillingPage() {
                         t={t}
                       />
                     </div>
-                  </ImpactPanel>
+                  </div>
 
                   {selectedInvoice.status !== "voided" ? (
                     <ImpactPanel

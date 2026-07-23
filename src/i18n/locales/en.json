@@ -2,7 +2,7 @@
   "app": {
     "name": "Recovera",
     "title": "Clinic Management Platform",
-    "workspaceSubtitle": "Clinic service",
+    "workspaceSubtitle": "by DevNest",
     "readOnlyTitle": "Read-only branch",
     "readOnlyDescription": "This branch is currently in read-only mode. You can view existing records, but changes are disabled. Please contact your administrator."
   },
@@ -128,7 +128,44 @@
     "passwordResetSuccess": "Password reset successfully!",
     "passwordResetComplete": "Password reset complete",
     "passwordResetCompleteDesc": "Your password has been reset successfully. You can now login with your new password.",
-    "goToLogin": "Go to login"
+    "goToLogin": "Go to login",
+    "access": {
+      "needAccess": "Need access?",
+      "submitPrompt": "Submit a",
+      "joinRequest": "Join request",
+      "touchSoon": "and we will be in touch very shortly.",
+      "or": "OR",
+      "chatDirectly": "Chat with us directly"
+    }
+  },
+  "joinUs": {
+    "eyebrow": "New clinic access",
+    "title": "Tell us about your clinic and we will help you join Recovera.",
+    "description": "Share the best contact details for your team. Recovera will use this request to follow up about setup, clinic type, and access.",
+    "backHome": "Back to home",
+    "formTitle": "Join us",
+    "formDescription": "A few details are enough to start the conversation.",
+    "successTitle": "Request received",
+    "successDescription": "Success. We'll be in touch soon.",
+    "submit": "Submit request",
+    "submitError": "Could not submit your request. Please try again or chat with us directly.",
+    "or": "OR",
+    "chatDirectly": "Chat with us directly",
+    "fields": {
+      "name": "Name",
+      "phone": "Phone",
+      "whatsapp": "WhatsApp number",
+      "email": "Email (optional)",
+      "clinicType": "Clinic type",
+      "clinicPlaceholder": "Select clinic type"
+    },
+    "validation": {
+      "name": "Name must be at least 2 characters",
+      "phone": "Phone number must be at least 5 digits",
+      "whatsapp": "WhatsApp number must be at least 5 digits",
+      "email": "Invalid email address",
+      "clinicType": "Clinic type is required"
+    }
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -458,6 +495,40 @@
         "lastSaved": "Last saved"
       }
     },
+    "joinRequests": {
+      "nav": "Join requests",
+      "title": "Join requests",
+      "description": "Review public clinic access requests submitted from the join-us page.",
+      "inbox": "Request inbox",
+      "newCount": "{{count}} new",
+      "markReviewed": "Mark reviewed",
+      "markAllReviewed": "Mark all reviewed",
+      "reviewedToast": "Join request marked as reviewed.",
+      "reviewedAllToast": "{{count}} join requests marked as reviewed.",
+      "loadError": "Could not load join requests.",
+      "empty": "No join requests match this filter.",
+      "metrics": {
+        "new": "New requests",
+        "total": "Total requests",
+        "reviewed": "Reviewed"
+      },
+      "filters": {
+        "new": "New",
+        "all": "All",
+        "reviewed": "Reviewed"
+      },
+      "table": {
+        "name": "Name",
+        "clinicType": "Clinic type",
+        "contacts": "Contacts",
+        "status": "Status",
+        "createdAt": "Created"
+      },
+      "status": {
+        "new": "New",
+        "reviewed": "Reviewed"
+      }
+    },
     "modules": {
       "onboarding": {
         "title": "Branch onboarding",
@@ -494,6 +565,10 @@
       "landingBanner": {
         "title": "Landing banner",
         "description": "Configure the public home page moving announcement."
+      },
+      "joinRequests": {
+        "title": "Join requests",
+        "description": "Review public join-us requests and follow up with prospects."
       }
     },
     "branchAdministration": {

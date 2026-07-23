@@ -37,6 +37,19 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const joinUsSchema = z.object({
+  name: z.string().min(2, "joinUs.validation.name").max(160),
+  phone: z.string().min(5, "joinUs.validation.phone").max(40),
+  whatsappNumber: z
+    .string()
+    .min(5, "joinUs.validation.whatsapp")
+    .max(40),
+  email: optionalStringField(z.string().email("joinUs.validation.email").max(255)),
+  clinicType: z.enum(CLINIC_PROFILE_CODES, {
+    errorMap: () => ({ message: "joinUs.validation.clinicType" }),
+  }),
+});
+
 export const firstLoginSchema = z
   .object({
     password: z

@@ -80,6 +80,7 @@ export const QUERY_KEYS = {
   PLATFORM_BILLING: "platformBilling",
   PLATFORM_ADMIN: "platformAdmin",
   PUBLIC_CONTENT: "publicContent",
+  JOIN_REQUESTS: "joinRequests",
   INVOICES: "invoices",
   BRANCH_EXPENSES: "branchExpenses",
   PROFILE_SERVICES: "profileServices",

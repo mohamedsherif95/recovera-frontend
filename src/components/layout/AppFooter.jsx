@@ -51,18 +51,18 @@ export function AppFooter() {
     >
       <div className="flex flex-col items-center gap-1">
         <span>
-          © {new Date().getFullYear()} All rights reserved.
+          Recovera by DevNest © {new Date().getFullYear()}. All rights reserved.
         </span>
         <div ref={containerRef} className="flex items-center gap-1 relative">
-          <span>Developed by DevFlow</span>
+          {/* <span>Developed by DevFlow</span>
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}
             className="inline-flex items-center justify-center rounded-full border bg-card text-foreground h-5 w-5"
           >
             <Info className="h-3 w-3" />
-          </button>
-          {open && (
+          </button> */}
+          {/* {open && (
             <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 rounded-md bg-black/80 text-white text-[11px] px-3 py-2 shadow-lg z-50 w-64 space-y-2 animate-in fade-in-0 zoom-in-95 duration-200 ease-out">
                 <span>
                     For Inquiries:
@@ -92,7 +92,7 @@ export function AppFooter() {
                 </Button>
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </footer>

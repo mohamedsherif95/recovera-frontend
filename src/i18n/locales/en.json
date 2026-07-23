@@ -1751,6 +1751,7 @@
     "manageCategories": "Categories",
     "categoriesDescription": "Keep category setup separate from expense entry so the ledger stays focused.",
     "addCategory": "Add category",
+    "editCategory": "Edit category",
     "categoryName": "Category name",
     "categoryCode": "Code",
     "sortOrder": "Sort order",

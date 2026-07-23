@@ -754,6 +754,7 @@
     "manageCategories": "التصنيفات",
     "categoriesDescription": "إعداد التصنيفات منفصل عن تسجيل المصروفات حتى يظل السجل مركزا.",
     "addCategory": "إضافة تصنيف",
+    "editCategory": "تعديل التصنيف",
     "categoryName": "اسم التصنيف",
     "categoryCode": "الكود",
     "sortOrder": "ترتيب العرض",

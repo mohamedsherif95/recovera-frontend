@@ -307,6 +307,7 @@ export default function BranchExpensesPage() {
     occurredOn: getClinicTodayDateOnly(),
   }));
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
   const [voidExpense, setVoidExpense] = useState(null);
   const [voidReason, setVoidReason] = useState('');
@@ -496,6 +497,8 @@ export default function BranchExpensesPage() {
           defaultValue: 'Category updated.',
         }),
       );
+      setEditingCategory(null);
+      setCategoryForm(emptyCategoryForm);
       invalidateExpenses();
     },
   });
@@ -607,11 +610,35 @@ export default function BranchExpensesPage() {
       return;
     }
 
-    createCategoryMutation.mutate({
+    const payload = {
       name: categoryForm.name.trim(),
       code: categoryForm.code.trim() || null,
       sortOrder: categoryForm.sortOrder ? Number(categoryForm.sortOrder) : 100,
+    };
+
+    if (editingCategory) {
+      updateCategoryMutation.mutate({
+        id: editingCategory.id,
+        payload,
+      });
+      return;
+    }
+
+    createCategoryMutation.mutate(payload);
+  };
+
+  const startEditingCategory = (category) => {
+    setEditingCategory(category);
+    setCategoryForm({
+      name: category.name || '',
+      code: category.code || '',
+      sortOrder: String(category.sortOrder ?? 100),
     });
+  };
+
+  const cancelEditingCategory = () => {
+    setEditingCategory(null);
+    setCategoryForm(emptyCategoryForm);
   };
 
   const refreshAll = () => {
@@ -1121,7 +1148,13 @@ export default function BranchExpensesPage() {
         </SheetContent>
       </Sheet>
 
-      <Sheet open={categoryDrawerOpen} onOpenChange={setCategoryDrawerOpen}>
+      <Sheet
+        open={categoryDrawerOpen}
+        onOpenChange={(open) => {
+          setCategoryDrawerOpen(open);
+          if (!open) cancelEditingCategory();
+        }}
+      >
         <SheetContent className="w-full sm:max-w-lg">
           <SheetHeader className="border-b px-6 py-5 pe-12">
             <SheetTitle>
@@ -1138,6 +1171,24 @@ export default function BranchExpensesPage() {
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <form className="space-y-3 rounded-md border p-3" onSubmit={handleCategorySubmit}>
+              {editingCategory && (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold">
+                    {t('branchExpenses.editCategory', {
+                      defaultValue: 'Edit category',
+                    })}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditingCategory}
+                    disabled={updateCategoryMutation.isPending}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="category-name">
                   {t('branchExpenses.categoryName', {
@@ -1196,14 +1247,20 @@ export default function BranchExpensesPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={createCategoryMutation.isPending}
+                disabled={
+                  createCategoryMutation.isPending ||
+                  updateCategoryMutation.isPending
+                }
               >
-                {createCategoryMutation.isPending && (
+                {(createCategoryMutation.isPending ||
+                  updateCategoryMutation.isPending) && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                {t('branchExpenses.addCategory', {
-                  defaultValue: 'Add category',
-                })}
+                {editingCategory
+                  ? t('common.save')
+                  : t('branchExpenses.addCategory', {
+                      defaultValue: 'Add category',
+                    })}
               </Button>
             </form>
 
@@ -1211,7 +1268,7 @@ export default function BranchExpensesPage() {
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between gap-3 rounded-md border p-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{category.name}</div>
@@ -1219,25 +1276,35 @@ export default function BranchExpensesPage() {
                       {category.code || t('branchExpenses.noCode', { defaultValue: 'No code' })}
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={updateCategoryMutation.isPending}
-                    onClick={() =>
-                      updateCategoryMutation.mutate({
-                        id: category.id,
-                        payload: { isActive: !category.isActive },
-                      })
-                    }
-                  >
-                    {category.isActive
-                      ? t('branchExpenses.deactivate', {
-                          defaultValue: 'Deactivate',
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={updateCategoryMutation.isPending}
+                      onClick={() => startEditingCategory(category)}
+                    >
+                      {t('common.edit')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={updateCategoryMutation.isPending}
+                      onClick={() =>
+                        updateCategoryMutation.mutate({
+                          id: category.id,
+                          payload: { isActive: !category.isActive },
                         })
-                      : t('branchExpenses.activate', {
-                          defaultValue: 'Activate',
-                        })}
-                  </Button>
+                      }
+                    >
+                      {category.isActive
+                        ? t('branchExpenses.deactivate', {
+                            defaultValue: 'Deactivate',
+                          })
+                        : t('branchExpenses.activate', {
+                            defaultValue: 'Activate',
+                          })}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

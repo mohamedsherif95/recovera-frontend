@@ -4,12 +4,15 @@ import { loginSchema } from '@/lib/validators';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { WhatsAppLogo } from '@/components/common/WhatsAppLogo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { PublicAuthLayout } from '@/components/layout/PublicAuthLayout';
 import { Loader2 } from 'lucide-react';
+import { trackContactClick } from '@/lib/analytics';
+import { WHATSAPP_HREF } from '@/lib/whatsapp';
 
 export default function Login() {
   const { t } = useTranslation();
@@ -25,6 +28,15 @@ export default function Login() {
 
   const onSubmit = (data) => {
     login(data);
+  };
+
+  const handleWhatsAppClick = () => {
+    trackContactClick({
+      contact_method: 'whatsapp',
+      cta_location: 'login_direct_chat',
+      cta_label: t('auth.access.chatDirectly'),
+      destination_url: WHATSAPP_HREF,
+    });
   };
 
   return (
@@ -83,9 +95,35 @@ export default function Login() {
               {t('auth.login')}
             </Button>
 
-            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-center text-sm text-muted-foreground">
-              <span className="font-medium text-primary">{t('auth.dontHaveAccount')}</span>{' '}
-              {t('auth.adminProvisionOnly')}
+            <div className="w-full rounded-lg border border-primary/20 bg-primary/5 p-3 text-center text-sm text-muted-foreground">
+              <p className="leading-6">
+                <span className="font-medium ">
+                  {t('auth.access.needAccess')}
+                </span>{' '}
+                {t('auth.access.submitPrompt')}{' '}
+                <span className="font-medium text-primary hover:underline">
+                  <Link to="/join-us">{t('auth.access.joinRequest')}</Link>{' '}
+                </span>{' '}
+                {t('auth.access.touchSoon')}
+              </p>
+
+              <div className="my-3 flex items-center gap-3 text-xs font-black uppercase text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                {t('auth.access.or')}
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              <Button asChild variant="outline" className="h-11 w-full">
+                <a
+                  href={WHATSAPP_HREF}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={handleWhatsAppClick}
+                >
+                  <WhatsAppLogo className="h-5 w-5 rounded-sm object-cover" />
+                  {t('auth.access.chatDirectly')}
+                </a>
+              </Button>
             </div>
           </CardFooter>
         </form>

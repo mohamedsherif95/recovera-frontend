@@ -19,11 +19,13 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   User,
+  UserPlus,
   Users,
   X,
 } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/common/LanguageSwitcher';
 import { ThemeSwitcher } from '@/components/common/ThemeSwitcher';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,6 +45,7 @@ import {
 import { AppFooter } from './AppFooter';
 import { useAuth } from '@/hooks/useAuth';
 import { useClinics } from '@/hooks/useClinics';
+import { usePlatformJoinRequestSummary } from '@/hooks/useJoinRequests';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -127,6 +130,14 @@ const platformNavigation = [
     permission: PERMISSIONS['platformContent:manage'],
   },
   {
+    name: 'platformAdmin.joinRequests.nav',
+    label: 'Join requests',
+    href: '/platform-admin/join-requests',
+    icon: UserPlus,
+    permission: PERMISSIONS['platformContent:manage'],
+    notification: 'joinRequests',
+  },
+  {
     name: 'nav.branchSubscriptions',
     label: 'Branch subscriptions',
     href: '/platform-admin/branch-subscriptions',
@@ -158,6 +169,11 @@ export function PlatformAdminLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const isRtl = i18n.language === 'ar';
   const canSelectClinic = can(PERMISSIONS['clinics:viewAll']);
+  const canViewJoinRequests = can(PERMISSIONS['platformContent:manage']);
+  const { data: joinRequestSummary } = usePlatformJoinRequestSummary({
+    enabled: canViewJoinRequests,
+  });
+  const newJoinRequestCount = Number(joinRequestSummary?.newCount || 0);
   const { data: clinicsData } = useClinics(Boolean(canSelectClinic));
   const clinics = Array.isArray(clinicsData)
     ? clinicsData
@@ -203,6 +219,8 @@ export function PlatformAdminLayout() {
       {visibleNavigation.map((item) => {
         const Icon = item.icon;
         const label = t(item.name, { defaultValue: item.label });
+        const showJoinRequestBadge =
+          item.notification === 'joinRequests' && newJoinRequestCount > 0;
         return (
           <NavLink
             key={item.href}
@@ -211,7 +229,7 @@ export function PlatformAdminLayout() {
             title={collapsed ? label : undefined}
             className={({ isActive }) =>
               cn(
-                'platform-admin-nav-link flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                'platform-admin-nav-link relative flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
                 collapsed && 'justify-center px-2',
                 isActive && 'platform-admin-nav-link-active shadow-sm',
                 isRtl && 'flex-row-reverse',
@@ -220,6 +238,17 @@ export function PlatformAdminLayout() {
           >
             <Icon className="h-4 w-4 shrink-0" />
             <span className={cn(collapsed && 'sr-only')}>{label}</span>
+            {showJoinRequestBadge && (
+              <Badge
+                variant="warning"
+                className={cn(
+                  'ms-auto h-5 min-w-5 justify-center px-1.5 text-[11px]',
+                  collapsed && 'absolute -right-1 -top-1 ms-0',
+                )}
+              >
+                {newJoinRequestCount > 99 ? '99+' : newJoinRequestCount}
+              </Badge>
+            )}
           </NavLink>
         );
       })}

@@ -297,6 +297,7 @@
       "areas": {
         "all": "All areas",
         "billing": "Billing",
+        "clinic_finance": "Clinic finance",
         "subscriptions": "Subscriptions",
         "tenant_setup": "Tenant setup",
         "governance": "Governance"
@@ -309,6 +310,7 @@
       "actionLabels": {
         "collectionRecorded": "Collection recorded",
         "invoiceVoided": "Invoice voided",
+        "expenseVoided": "Expense voided",
         "billingAdjustmentRecorded": "Billing adjustment recorded",
         "invoiceGenerated": "Invoice generated",
         "branchAccessChanged": "Branch access changed",

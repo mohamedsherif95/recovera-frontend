@@ -1583,6 +1583,7 @@
       "areas": {
         "all": "كل المجالات",
         "billing": "الفوترة",
+        "clinic_finance": "العمليات المالية للعيادة",
         "subscriptions": "الاشتراكات",
         "tenant_setup": "تهيئة العملاء",
         "governance": "الحوكمة"
@@ -1595,6 +1596,7 @@
       "actionLabels": {
         "collectionRecorded": "تم تسجيل تحصيل",
         "invoiceVoided": "تم إلغاء الفاتورة",
+        "expenseVoided": "تم إلغاء المصروف",
         "billingAdjustmentRecorded": "تم تسجيل تسوية فوترة",
         "invoiceGenerated": "تم إنشاء فاتورة",
         "branchAccessChanged": "تم تغيير وصول الفرع",

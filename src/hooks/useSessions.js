@@ -70,16 +70,9 @@ export function useUpdateSession() {
   const { t } = useTranslation();
   return useMutation({
     mutationFn: ({ sessionId, data }) => sessionsApi.update(sessionId, data),
-    onSuccess: (_data, variables) => {
-      const { sessionId } = variables || {};
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast.success("Session updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["sessions"] });
-      if (sessionId) {
-        queryClient.invalidateQueries({ queryKey: ["sessions", sessionId] });
-        queryClient.invalidateQueries({
-          queryKey: ["sessions", sessionId, "profile-details"],
-        });
-      }
     },
     onError: (error) => {
       const backendMessage = error.response?.data?.message;
@@ -99,15 +92,9 @@ export function useUpdateSessionProfileDetails() {
   return useMutation({
     mutationFn: ({ sessionId, data }) =>
       sessionsApi.updateProfileDetails(sessionId, data),
-    onSuccess: (_data, variables) => {
-      const { sessionId } = variables || {};
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
       toast.success("Clinical details updated successfully");
-      if (sessionId) {
-        queryClient.invalidateQueries({
-          queryKey: ["sessions", sessionId, "profile-details"],
-        });
-        queryClient.invalidateQueries({ queryKey: ["sessions", sessionId] });
-      }
     },
     onError: (error) => {
       const message =

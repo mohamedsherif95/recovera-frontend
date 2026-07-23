@@ -11,7 +11,10 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { DataTable } from '@/components/common/DataTable';
 import { reportsApi } from '@/api/endpoints/reports';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import { usePatientLookupOptions } from '@/hooks/useLookupOptions';
+import {
+  useDoctorLookupOptions,
+  usePatientLookupOptions,
+} from '@/hooks/useLookupOptions';
 
 export default function PatientPaymentsReportPage() {
   const { t, i18n } = useTranslation();
@@ -20,6 +23,10 @@ export default function PatientPaymentsReportPage() {
 
   const [selectedPatientId, setSelectedPatientIdState] = useState(() => {
     return searchParams.get('patientId') || '';
+  });
+
+  const [selectedDoctorId, setSelectedDoctorIdState] = useState(() => {
+    return searchParams.get('doctorId') || '';
   });
 
   const [fromDate, setFromDateState] = useState(() => {
@@ -37,9 +44,16 @@ export default function PatientPaymentsReportPage() {
   });
   const pageSize = 10;
 
-  const updateFiltersInUrl = (nextPatientId, nextFromDate, nextToDate, nextPage) => {
+  const updateFiltersInUrl = (
+    nextPatientId,
+    nextDoctorId,
+    nextFromDate,
+    nextToDate,
+    nextPage,
+  ) => {
     const params = {};
     if (nextPatientId) params.patientId = nextPatientId;
+    if (nextDoctorId) params.doctorId = nextDoctorId;
     if (nextFromDate) params.from = nextFromDate;
     if (nextToDate) params.to = nextToDate;
     if (nextPage && nextPage !== 1) params.page = String(nextPage);
@@ -47,6 +61,7 @@ export default function PatientPaymentsReportPage() {
   };
 
   const patientLookup = usePatientLookupOptions();
+  const doctorLookup = useDoctorLookupOptions();
 
   const patientOptions = useMemo(() => {
     const raw = patientLookup.records;
@@ -68,6 +83,18 @@ export default function PatientPaymentsReportPage() {
     };
   }, [patientOptions, selectedPatientId]);
 
+  const selectedDoctorOption = useMemo(() => {
+    if (!selectedDoctorId) return undefined;
+    const selected = doctorLookup.options.find(
+      (option) => option.value === selectedDoctorId,
+    );
+    if (selected) return selected;
+    return {
+      value: selectedDoctorId,
+      label: `#${selectedDoctorId}`,
+    };
+  }, [doctorLookup.options, selectedDoctorId]);
+
   const canFetch = Boolean(selectedPatientId);
 
   const {
@@ -79,11 +106,19 @@ export default function PatientPaymentsReportPage() {
   } = useQuery({
     queryKey: [
       'patient-payments-report',
-      { patientId: selectedPatientId, fromDate, toDate, page, limit: pageSize },
+      {
+        patientId: selectedPatientId,
+        doctorId: selectedDoctorId,
+        fromDate,
+        toDate,
+        page,
+        limit: pageSize,
+      },
     ],
     queryFn: () =>
       reportsApi.getPatientPayments({
         patientId: selectedPatientId || undefined,
+        doctorId: selectedDoctorId || undefined,
         from: fromDate || undefined,
         to: toDate || undefined,
         page,
@@ -157,6 +192,11 @@ export default function PatientPaymentsReportPage() {
             : '--',
       },
       {
+        key: 'doctor',
+        header: t('sessions.doctor', { defaultValue: 'Doctor' }),
+        cell: (row) => row.doctorName || row.doctor?.fullName || '--',
+      },
+      {
         key: 'recordedBy',
         header: t('payments.recordedBy', { defaultValue: 'Recorded by' }),
         cell: (row) => row.recordedBy?.fullName || row.recordedByName || '--',
@@ -181,7 +221,7 @@ export default function PatientPaymentsReportPage() {
       <Card>
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end">
+            <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end">
               <div className="w-full md:w-72 space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">
                   {t('payments.patientLabel', { defaultValue: 'Patient' })}
@@ -193,7 +233,13 @@ export default function PatientPaymentsReportPage() {
                     const nextPatientId = val || '';
                     setSelectedPatientIdState(nextPatientId);
                     setPageState(1);
-                    updateFiltersInUrl(nextPatientId, fromDate, toDate, 1);
+                    updateFiltersInUrl(
+                      nextPatientId,
+                      selectedDoctorId,
+                      fromDate,
+                      toDate,
+                      1,
+                    );
                   }}
                   placeholder={t('payments.patientPlaceholder', {
                     defaultValue: 'Select a patient',
@@ -217,6 +263,47 @@ export default function PatientPaymentsReportPage() {
                 />
               </div>
 
+              <div className="w-full md:w-64 space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {t('sessions.doctor', { defaultValue: 'Doctor' })}
+                </label>
+                <AsyncSearchableSelect
+                  options={doctorLookup.options}
+                  value={selectedDoctorId}
+                  onChange={(value) => {
+                    const nextDoctorId = value || '';
+                    setSelectedDoctorIdState(nextDoctorId);
+                    setPageState(1);
+                    updateFiltersInUrl(
+                      selectedPatientId,
+                      nextDoctorId,
+                      fromDate,
+                      toDate,
+                      1,
+                    );
+                  }}
+                  placeholder={t('sessions.selectDoctor', {
+                    defaultValue: 'All doctors',
+                  })}
+                  searchPlaceholder={t('users.searchDoctors', {
+                    defaultValue: 'Search doctors',
+                  })}
+                  onSearchChange={doctorLookup.setSearch}
+                  hasMore={doctorLookup.hasNextPage}
+                  onLoadMore={doctorLookup.fetchNextPage}
+                  isLoading={doctorLookup.isLoading}
+                  isLoadingMore={doctorLookup.isFetchingNextPage}
+                  isError={doctorLookup.isError}
+                  selectedOption={selectedDoctorOption}
+                  emptyText={t('common.noData', { defaultValue: 'No data' })}
+                  loadingText={t('common.loading')}
+                  loadMoreText={t('common.loadMore', {
+                    defaultValue: 'Load more',
+                  })}
+                  errorText={t('messages.errorOccurred')}
+                />
+              </div>
+
               <div className="flex gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-muted-foreground">
@@ -229,7 +316,13 @@ export default function PatientPaymentsReportPage() {
                       const nextFrom = value || '';
                       setFromDateState(nextFrom);
                       setPageState(1);
-                      updateFiltersInUrl(selectedPatientId, nextFrom, toDate, 1);
+                      updateFiltersInUrl(
+                        selectedPatientId,
+                        selectedDoctorId,
+                        nextFrom,
+                        toDate,
+                        1,
+                      );
                     }}
                     placeholder={t('reports.fromPlaceholder', {
                       defaultValue: 'From date',
@@ -247,7 +340,13 @@ export default function PatientPaymentsReportPage() {
                       const nextTo = value || '';
                       setToDateState(nextTo);
                       setPageState(1);
-                      updateFiltersInUrl(selectedPatientId, fromDate, nextTo, 1);
+                      updateFiltersInUrl(
+                        selectedPatientId,
+                        selectedDoctorId,
+                        fromDate,
+                        nextTo,
+                        1,
+                      );
                     }}
                     placeholder={t('reports.toPlaceholder', {
                       defaultValue: 'To date',
@@ -323,7 +422,13 @@ export default function PatientPaymentsReportPage() {
                     onClick={() => {
                       const nextPage = Math.max(1, page - 1);
                       setPageState(nextPage);
-                      updateFiltersInUrl(selectedPatientId, fromDate, toDate, nextPage);
+                      updateFiltersInUrl(
+                        selectedPatientId,
+                        selectedDoctorId,
+                        fromDate,
+                        toDate,
+                        nextPage,
+                      );
                     }}
                   >
                     {t('common.previous')}
@@ -338,7 +443,13 @@ export default function PatientPaymentsReportPage() {
                     onClick={() => {
                       const nextPage = Math.min(totalPages || 1, page + 1);
                       setPageState(nextPage);
-                      updateFiltersInUrl(selectedPatientId, fromDate, toDate, nextPage);
+                      updateFiltersInUrl(
+                        selectedPatientId,
+                        selectedDoctorId,
+                        fromDate,
+                        toDate,
+                        nextPage,
+                      );
                     }}
                   >
                     {t('common.next')}

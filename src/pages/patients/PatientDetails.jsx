@@ -82,6 +82,7 @@ import {
   ArrowRightLeft,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { normalizeProgramItems } from "@/lib/programItems";
 
 const BALANCE_ACTION_TYPES = {
   ADD_BALANCE: "add_balance",
@@ -864,7 +865,7 @@ export default function PatientDetailsPage() {
   }, [activeClinicalRecord?.clinicalHistory]);
 
   const currentProgramItems = useMemo(() => {
-    return normalizeTextItems(activeClinicalRecord?.programs);
+    return normalizeProgramItems(activeClinicalRecord?.programs);
   }, [activeClinicalRecord?.programs]);
 
   const completedSessionsCount = useMemo(() => {

@@ -5,8 +5,26 @@ import toast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { LocalizedDatePicker } from "@/components/common/LocalizedDatePicker";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ImpactMetric, ImpactPanel } from "@/components/common/ImpactPanel";
 import {
@@ -17,7 +35,11 @@ import {
   useUpdateSessionStatus,
   useDeleteSession,
 } from "@/hooks/useSessions";
-import { useSessionPayments, useDeletePayment } from "@/hooks/usePayments";
+import {
+  useSessionPayments,
+  useUpdatePayment,
+  useDeletePayment,
+} from "@/hooks/usePayments";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
   CLINIC_PROFILES,
@@ -61,6 +83,7 @@ import {
   getClinicProfileBadgeVariant,
   getSessionStatusBadgeVariant,
 } from "@/lib/visualTokens";
+import { normalizeProgramItems } from "@/lib/programItems";
 
 const getStatusActionLabel = (statusKey, t) => {
   if (statusKey === SESSION_STATUS.ARRIVED) {
@@ -257,13 +280,7 @@ export default function SessionDetailsPage() {
 
   const currentPrograms = useMemo(() => {
     if (!session || session.programs == null) return [];
-    if (Array.isArray(session.programs)) {
-      return session.programs
-        .map((item) => (item == null ? "" : String(item)))
-        .filter((item) => item.trim().length > 0);
-    }
-    const single = String(session.programs);
-    return single.trim().length ? [single] : [];
+    return normalizeProgramItems(session.programs);
   }, [session]);
 
   const currentNotes = (() => {
@@ -1147,9 +1164,13 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
     useSessionPayments(sessionId);
 
   const canCreatePayment = can(PERMISSIONS["payments:create"]);
+  const canUpdatePayment = can(PERMISSIONS["payments:update"]);
   const canViewInvoices = can(PERMISSIONS["invoices:view"]);
   const canUseInvoiceActions = canViewInvoices && !isDoctorOnly;
+  const updatePayment = useUpdatePayment();
   const deletePayment = useDeletePayment();
+  const [paymentBeingEdited, setPaymentBeingEdited] = useState(null);
+  const [paymentDraft, setPaymentDraft] = useState(null);
   const [paymentPendingDelete, setPaymentPendingDelete] = useState(null);
   const [invoiceLoadingPaymentId, setInvoiceLoadingPaymentId] = useState(null);
 
@@ -1180,6 +1201,44 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
   };
 
   const isRtl = i18n.language === "ar";
+  const startEditingPayment = (payment) => {
+    setPaymentBeingEdited(payment);
+    setPaymentDraft({
+      paymentMethod: payment.paymentMethod || "cash",
+      paymentDate: payment.paymentDate
+        ? String(payment.paymentDate).slice(0, 10)
+        : "",
+      referenceNumber: payment.referenceNumber || "",
+      notes: payment.notes || "",
+    });
+  };
+
+  const closePaymentEditor = () => {
+    if (updatePayment.isPending) return;
+    setPaymentBeingEdited(null);
+    setPaymentDraft(null);
+  };
+
+  const savePaymentMetadata = () => {
+    if (!paymentBeingEdited || !paymentDraft?.paymentMethod) return;
+    updatePayment.mutate(
+      {
+        paymentId: paymentBeingEdited.id,
+        data: {
+          paymentMethod: paymentDraft.paymentMethod,
+          paymentDate: paymentDraft.paymentDate || null,
+          referenceNumber: paymentDraft.referenceNumber.trim() || null,
+          notes: paymentDraft.notes.trim() || null,
+        },
+      },
+      {
+        onSuccess: () => {
+          setPaymentBeingEdited(null);
+          setPaymentDraft(null);
+        },
+      },
+    );
+  };
 
   return (
     <Card>
@@ -1259,9 +1318,14 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
                       {t("payments.paymentDate")}
                     </th>
                     <th className="px-3 py-2 font-medium">
+                      {t("payments.referenceNumber")}
+                    </th>
+                    <th className="px-3 py-2 font-medium">
                       {t("sessions.notes")}
                     </th>
-                    {(isAdmin || canUseInvoiceActions) && (
+                    {(isAdmin ||
+                      canUpdatePayment ||
+                      canUseInvoiceActions) && (
                       <th className="px-3 py-2 font-medium text-right">
                         {t("common.actions")}
                       </th>
@@ -1279,10 +1343,25 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
                       <td className="px-3 py-2">
                         {p.paymentDate ? formatDate(p.paymentDate, "PP") : "--"}
                       </td>
+                      <td className="px-3 py-2">
+                        {p.referenceNumber || "--"}
+                      </td>
                       <td className="px-3 py-2">{p.notes || "--"}</td>
-                      {(isAdmin || canUseInvoiceActions) && (
+                      {(isAdmin ||
+                        canUpdatePayment ||
+                        canUseInvoiceActions) && (
                         <td className="px-3 py-2 text-right">
                           <div className="flex justify-end gap-2">
+                            {canUpdatePayment && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => startEditingPayment(p)}
+                                disabled={updatePayment.isPending}
+                              >
+                                {t("common.edit")}
+                              </Button>
+                            )}
                             {canUseInvoiceActions && (
                               <Button
                                 variant="outline"
@@ -1319,6 +1398,150 @@ function SessionPaymentsSection({ sessionId, isAdmin, isDoctorOnly }) {
             <p className="text-muted-foreground">{t("payments.noPayments")}</p>
           ))}
       </CardContent>
+      <Dialog
+        open={!!paymentBeingEdited}
+        onOpenChange={(open) => {
+          if (!open) closePaymentEditor();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("payments.editPayment", {
+                defaultValue: "Edit payment",
+              })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("payments.editPaymentDescription", {
+                defaultValue:
+                  "Update payment metadata. The visit and amount are protected.",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          {paymentBeingEdited && paymentDraft && (
+            <form
+              className="grid gap-4 sm:grid-cols-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                savePaymentMetadata();
+              }}
+            >
+              <div className="space-y-2">
+                <Label htmlFor="edit-payment-session">
+                  {t("payments.session")}
+                </Label>
+                <Input
+                  id="edit-payment-session"
+                  value={`#${sessionId}`}
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-payment-amount">
+                  {t("payments.amount")}
+                </Label>
+                <Input
+                  id="edit-payment-amount"
+                  value={paymentBeingEdited.amount}
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-payment-method">
+                  {t("payments.method")}
+                </Label>
+                <Select
+                  value={paymentDraft.paymentMethod}
+                  onValueChange={(paymentMethod) =>
+                    setPaymentDraft((current) => ({
+                      ...current,
+                      paymentMethod,
+                    }))
+                  }
+                  disabled={updatePayment.isPending}
+                >
+                  <SelectTrigger id="edit-payment-method">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">{t("payments.cash")}</SelectItem>
+                    <SelectItem value="instapay">
+                      {t("payments.instapay")}
+                    </SelectItem>
+                    <SelectItem value="eWallet">
+                      {t("payments.eWallet")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-payment-date">
+                  {t("payments.paymentDate")}
+                </Label>
+                <LocalizedDatePicker
+                  id="edit-payment-date"
+                  value={paymentDraft.paymentDate}
+                  onChange={(paymentDate) =>
+                    setPaymentDraft((current) => ({
+                      ...current,
+                      paymentDate,
+                    }))
+                  }
+                  disabled={updatePayment.isPending}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="edit-payment-reference">
+                  {t("payments.referenceNumber")}
+                </Label>
+                <Input
+                  id="edit-payment-reference"
+                  value={paymentDraft.referenceNumber}
+                  onChange={(event) =>
+                    setPaymentDraft((current) => ({
+                      ...current,
+                      referenceNumber: event.target.value,
+                    }))
+                  }
+                  maxLength={100}
+                  disabled={updatePayment.isPending}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="edit-payment-notes">
+                  {t("sessions.notes")}
+                </Label>
+                <Textarea
+                  id="edit-payment-notes"
+                  value={paymentDraft.notes}
+                  onChange={(event) =>
+                    setPaymentDraft((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
+                  }
+                  disabled={updatePayment.isPending}
+                />
+              </div>
+              <DialogFooter className="sm:col-span-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={closePaymentEditor}
+                  disabled={updatePayment.isPending}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button type="submit" disabled={updatePayment.isPending}>
+                  {updatePayment.isPending
+                    ? t("common.loading")
+                    : t("common.save")}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
       <ConfirmDialog
         title={t("payments.deleteTitle", { defaultValue: "Delete payment" })}
         description={t("payments.deleteDescription", {

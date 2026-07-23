@@ -34,6 +34,21 @@ export function useCreatePayment() {
   });
 }
 
+export function useUpdatePayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ paymentId, data }) => paymentsApi.update(paymentId, data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['payments'] });
+      toast.success('Payment updated successfully');
+    },
+    onError: (error) => {
+      const message = error.response?.data?.message || 'Failed to update payment';
+      toast.error(message);
+    },
+  });
+}
+
 export function useDeletePayment() {
   const queryClient = useQueryClient();
   return useMutation({

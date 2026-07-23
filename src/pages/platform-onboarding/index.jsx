@@ -949,9 +949,9 @@ export default function PlatformOnboardingPage() {
                 </span>
                 <span>
                   {t('platformOnboarding.readiness.count', {
-                    completed: completedReadinessCount,
+                    count: completedReadinessCount,
                     total: readiness.length,
-                    defaultValue: '{{completed}}/{{total}} ready',
+                    defaultValue: '{{count}} of {{total}} ready',
                   })}
                 </span>
               </div>

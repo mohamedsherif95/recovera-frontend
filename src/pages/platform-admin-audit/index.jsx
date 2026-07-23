@@ -41,12 +41,20 @@ import { dateOnlyToUtcEndIso, dateOnlyToUtcStartIso } from '@/lib/time';
 
 const areaIcons = {
   billing: Receipt,
+  clinic_finance: AlertTriangle,
   subscriptions: CreditCard,
   tenant_setup: Building2,
   governance: ShieldCheck,
 };
 
-const areaOptions = ['all', 'billing', 'subscriptions', 'tenant_setup', 'governance'];
+const areaOptions = [
+  'all',
+  'billing',
+  'clinic_finance',
+  'subscriptions',
+  'tenant_setup',
+  'governance',
+];
 const statusOptions = ['all', 'success', 'error'];
 const limitOptions = [25, 50, 100];
 

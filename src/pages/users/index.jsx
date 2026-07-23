@@ -138,6 +138,11 @@ export default function UsersPage() {
   const debouncedUserSearch = useDebounce(userSearch, 400);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyCreateForm);
+  const [identityUser, setIdentityUser] = useState(null);
+  const [identityForm, setIdentityForm] = useState({
+    fullName: '',
+    email: '',
+  });
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [assignmentUser, setAssignmentUser] = useState(null);
   const [assignmentForm, setAssignmentForm] = useState({
@@ -479,6 +484,54 @@ export default function UsersPage() {
       roleName: isPlatformAdmin ? USER_ROLES.MANAGER : USER_ROLES.DOCTOR,
     });
     setCreateDialogOpen(true);
+  };
+
+  const openIdentityDialog = (user) => {
+    setIdentityUser(user);
+    setIdentityForm({
+      fullName: user.fullName || '',
+      email: user.email || '',
+    });
+  };
+
+  const handleIdentitySubmit = (event) => {
+    event.preventDefault();
+    if (!identityUser) return;
+
+    const fullName = identityForm.fullName.trim();
+    const email = identityForm.email.trim();
+    if (fullName.length < 2 || !email) {
+      toast.error(
+        t('users.identityRequired', {
+          defaultValue: 'Enter a valid full name and email address.',
+        }),
+      );
+      return;
+    }
+
+    updateUser.mutate(
+      {
+        id: identityUser.id,
+        data: { fullName, email },
+        options: platformScopeOptions,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            t('users.identityUpdated', {
+              defaultValue: 'User details updated.',
+            }),
+          );
+          setIdentityUser(null);
+        },
+        onError: (error) => {
+          toast.error(
+            error.response?.data?.message ||
+              t('messages.errorOccurred'),
+          );
+        },
+      },
+    );
   };
 
   useEffect(() => {
@@ -1018,6 +1071,25 @@ export default function UsersPage() {
       );
     };
 
+    const renderIdentityAction = (row) => {
+      const canEditIdentity =
+        canToggleStatus && (!isAdminAccount(row) || isPlatformAdmin);
+      if (!canEditIdentity) return '--';
+
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={(event) => {
+            event.stopPropagation();
+            openIdentityDialog(row);
+          }}
+        >
+          {t('common.edit')}
+        </Button>
+      );
+    };
+
     if (isPlatformAdminRoute) {
       return [
         {
@@ -1075,6 +1147,11 @@ export default function UsersPage() {
           className: 'w-36',
           cellClassName: 'w-36',
           cell: (row) => renderStatusControl(row),
+        },
+        {
+          key: 'actions',
+          header: t('common.actions'),
+          cell: (row) => renderIdentityAction(row),
         },
       ];
     }
@@ -1230,6 +1307,11 @@ export default function UsersPage() {
         className: 'w-32',
         cellClassName: 'w-32',
         cell: (row) => renderStatusControl(row),
+      },
+      {
+        key: 'actions',
+        header: t('common.actions'),
+        cell: (row) => renderIdentityAction(row),
       },
     ];
   })();
@@ -1618,6 +1700,94 @@ export default function UsersPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={Boolean(identityUser)}
+        onOpenChange={(open) => {
+          if (!open && !updateUser.isPending) setIdentityUser(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('users.editUser', { defaultValue: 'Edit user' })}
+            </DialogTitle>
+            <DialogDescription>
+              {t('users.editIdentityDescription', {
+                defaultValue:
+                  'Update the user’s display name and email. Username, roles, and branch scope are managed separately.',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          {identityUser && (
+            <form className="space-y-4" onSubmit={handleIdentitySubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-username">
+                  {t('users.username')}
+                </Label>
+                <Input
+                  id="edit-user-username"
+                  value={identityUser.username || ''}
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-full-name">
+                  {t('users.fullName')}
+                </Label>
+                <Input
+                  id="edit-user-full-name"
+                  value={identityForm.fullName}
+                  onChange={(event) =>
+                    setIdentityForm((current) => ({
+                      ...current,
+                      fullName: event.target.value,
+                    }))
+                  }
+                  minLength={2}
+                  maxLength={255}
+                  required
+                  disabled={updateUser.isPending}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-email">
+                  {t('users.email')}
+                </Label>
+                <Input
+                  id="edit-user-email"
+                  type="email"
+                  value={identityForm.email}
+                  onChange={(event) =>
+                    setIdentityForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  required
+                  disabled={updateUser.isPending}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIdentityUser(null)}
+                  disabled={updateUser.isPending}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button type="submit" disabled={updateUser.isPending}>
+                  {updateUser.isPending && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {t('common.save')}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-2xl">

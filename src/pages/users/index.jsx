@@ -26,6 +26,7 @@ import { accessApi } from '@/api/endpoints/access';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useClinics } from '@/hooks/useClinics';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -47,6 +48,7 @@ import {
   UserCog,
   UserPlus,
   Users,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { resolveEffectiveClinicId } from '@/lib/branchScope';
@@ -133,6 +135,7 @@ export default function UsersPage() {
   const [branchFilter, setBranchFilter] = useState('all');
   const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [userSearch, setUserSearch] = useState('');
+  const debouncedUserSearch = useDebounce(userSearch, 400);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyCreateForm);
   const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
@@ -142,11 +145,16 @@ export default function UsersPage() {
     primaryBranchId: '',
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedUserSearch]);
+
   const { data, isLoading, isError, refetch, isFetching } = useUsers(
     {
       page,
       limit: pageSize,
       branchId: branchFilter !== 'all' ? Number(branchFilter) : undefined,
+      search: debouncedUserSearch.trim() || undefined,
     },
     {
       enabled: !needsClinicSelection,
@@ -297,7 +305,7 @@ export default function UsersPage() {
     user?.roles?.map((role) => role?.name).filter(Boolean) || [];
 
   const filteredUsers = useMemo(() => {
-    const normalizedSearch = userSearch.trim().toLowerCase();
+    const normalizedSearch = debouncedUserSearch.trim().toLowerCase();
 
     return users.filter((user) => {
       const roleNames = getRoleNames(user);
@@ -350,7 +358,7 @@ export default function UsersPage() {
     roleFilter,
     statusFilter,
     assignmentFilter,
-    userSearch,
+    debouncedUserSearch,
     currentBranches,
     t,
   ]);
@@ -486,7 +494,13 @@ export default function UsersPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [roleFilter, statusFilter, branchFilter, assignmentFilter, userSearch]);
+  }, [
+    roleFilter,
+    statusFilter,
+    branchFilter,
+    assignmentFilter,
+    debouncedUserSearch,
+  ]);
 
   useEffect(() => {
     if (!createDialogOpen) return;
@@ -1417,19 +1431,35 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="flex flex-col gap-3 border-y bg-muted/30 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-            {isPlatformAdminRoute && (
-              <div className="relative w-full lg:max-w-sm">
+            <div className="relative w-full lg:max-w-sm">
+              <Label htmlFor="user-directory-search" className="sr-only">
+                {t('users.searchUsers', {
+                  defaultValue: 'Search users',
+                })}
+              </Label>
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
+                  id="user-directory-search"
                   value={userSearch}
                   onChange={(event) => setUserSearch(event.target.value)}
-                  placeholder={t('platformAdmin.userAccess.searchPlaceholder', {
-                    defaultValue: 'Search user, email, role, or branch...',
+                  placeholder={t('users.searchPlaceholder', {
+                    defaultValue: 'Search by name, username, or email',
                   })}
-                  className="h-9 pl-9"
+                  className="h-9 px-9"
                 />
-              </div>
-            )}
+              {userSearch && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
+                  onClick={() => setUserSearch('')}
+                  aria-label={t('common.clear', { defaultValue: 'Clear search' })}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span>{t('users.role')}</span>

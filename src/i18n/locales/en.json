@@ -1628,6 +1628,8 @@
     "transactionInvoice": "Transaction",
     "voidInvoice": "Void invoice",
     "voidInvoiceDescription": "This invoice will be marked void. The underlying payments and visits remain unchanged.",
+    "voidReason": "Void reason",
+    "voidReasonPlaceholder": "Explain why this invoice is being voided",
     "voided": "Void"
   },
   "paymentMethods": {

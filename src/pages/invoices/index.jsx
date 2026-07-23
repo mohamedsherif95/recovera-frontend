@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { AsyncSearchableSelect } from '@/components/common/AsyncSearchableSelect';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import DateRangePicker from '@/components/common/DateRangePicker';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { PageHeader } from '@/components/common/PageHeader';
@@ -14,10 +13,13 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -139,6 +141,7 @@ export default function InvoicesPage() {
 
   const [detailsInvoiceId, setDetailsInvoiceId] = useState(null);
   const [pendingVoidInvoice, setPendingVoidInvoice] = useState(null);
+  const [voidReason, setVoidReason] = useState('');
 
   useEffect(() => {
     if (isReadOnlyBranch) {
@@ -261,18 +264,17 @@ export default function InvoicesPage() {
   };
 
   const handleVoidInvoice = () => {
-    if (isReadOnlyBranch || !pendingVoidInvoice) return;
+    const reason = voidReason.trim();
+    if (isReadOnlyBranch || !pendingVoidInvoice || !reason) return;
     voidInvoice.mutate(
       {
         invoiceId: pendingVoidInvoice.id,
-        data: {},
+        data: { reason },
       },
       {
         onSuccess: () => {
           setPendingVoidInvoice(null);
-        },
-        onError: () => {
-          setPendingVoidInvoice(null);
+          setVoidReason('');
         },
       },
     );
@@ -599,6 +601,7 @@ export default function InvoicesPage() {
                                 onClick={() => {
                                   if (isReadOnlyBranch) return;
                                   setPendingVoidInvoice(invoice);
+                                  setVoidReason('');
                                 }}
                                 disabled={isReadOnlyBranch}
                                 title={isReadOnlyBranch ? readOnlyTooltip : undefined}
@@ -702,6 +705,17 @@ export default function InvoicesPage() {
                 </div>
               </div>
 
+              {selectedInvoice.status === 'void' && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
+                  <div className="text-xs font-medium uppercase">
+                    {t('reports.voidReason', { defaultValue: 'Void reason' })}
+                  </div>
+                  <div className="mt-1 whitespace-pre-line">
+                    {selectedInvoice.voidReason || '--'}
+                  </div>
+                </div>
+              )}
+
               {Array.isArray(selectedInvoice?.snapshot?.lineItems) &&
                 selectedInvoice.snapshot.lineItems.length > 0 && (
                   <div className="space-y-2">
@@ -750,26 +764,80 @@ export default function InvoicesPage() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog
+      <Dialog
         open={Boolean(pendingVoidInvoice)}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !voidInvoice.isPending) {
             setPendingVoidInvoice(null);
+            setVoidReason('');
           }
         }}
-        title={t('reports.voidInvoice', { defaultValue: 'Void invoice' })}
-        description={t('reports.voidInvoiceDescription', {
-          defaultValue:
-            'This invoice will be marked as void and kept for audit history.',
-        })}
-        confirmText={t('reports.voidInvoice', { defaultValue: 'Void' })}
-        isLoading={voidInvoice.isPending}
-        confirmProps={{
-          disabled: isReadOnlyBranch || voidInvoice.isPending,
-          title: isReadOnlyBranch ? readOnlyTooltip : undefined,
-        }}
-        onConfirm={handleVoidInvoice}
-      />
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t('reports.voidInvoice', { defaultValue: 'Void invoice' })}
+            </DialogTitle>
+            <DialogDescription>
+              {t('reports.voidInvoiceDescription', {
+                defaultValue:
+                  'This invoice will be marked as void and kept for audit history.',
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleVoidInvoice();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="invoice-void-reason">
+                {t('reports.voidReason', { defaultValue: 'Void reason' })}
+              </Label>
+              <Textarea
+                id="invoice-void-reason"
+                value={voidReason}
+                onChange={(event) => setVoidReason(event.target.value)}
+                maxLength={500}
+                required
+                disabled={voidInvoice.isPending}
+                placeholder={t('reports.voidReasonPlaceholder', {
+                  defaultValue: 'Explain why this invoice is being voided',
+                })}
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPendingVoidInvoice(null);
+                  setVoidReason('');
+                }}
+                disabled={voidInvoice.isPending}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                disabled={
+                  isReadOnlyBranch ||
+                  voidInvoice.isPending ||
+                  !voidReason.trim()
+                }
+                title={isReadOnlyBranch ? readOnlyTooltip : undefined}
+              >
+                {voidInvoice.isPending
+                  ? t('common.loading')
+                  : t('reports.voidInvoice', { defaultValue: 'Void' })}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

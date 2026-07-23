@@ -631,6 +631,8 @@
     "transactionInvoice": "معاملة",
     "voidInvoice": "إلغاء الفاتورة",
     "voidInvoiceDescription": "سيتم وضع علامة إلغاء على هذه الفاتورة. ستبقى المدفوعات والزيارات المرتبطة بها دون تغيير.",
+    "voidReason": "سبب الإلغاء",
+    "voidReasonPlaceholder": "وضّح سبب إلغاء هذه الفاتورة",
     "voided": "ملغاة"
   },
   "paymentMethods": {

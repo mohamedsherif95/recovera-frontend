@@ -61,6 +61,7 @@ import {
   getClinicProfileBadgeVariant,
   getSessionStatusBadgeVariant,
 } from "@/lib/visualTokens";
+import { normalizeProgramItems } from "@/lib/programItems";
 
 const getStatusActionLabel = (statusKey, t) => {
   if (statusKey === SESSION_STATUS.ARRIVED) {
@@ -257,13 +258,7 @@ export default function SessionDetailsPage() {
 
   const currentPrograms = useMemo(() => {
     if (!session || session.programs == null) return [];
-    if (Array.isArray(session.programs)) {
-      return session.programs
-        .map((item) => (item == null ? "" : String(item)))
-        .filter((item) => item.trim().length > 0);
-    }
-    const single = String(session.programs);
-    return single.trim().length ? [single] : [];
+    return normalizeProgramItems(session.programs);
   }, [session]);
 
   const currentNotes = (() => {

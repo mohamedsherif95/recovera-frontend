@@ -82,7 +82,9 @@ export default function PatientBalancesReportPage() {
 
   const summary = data?.summary || {
     totalUnusedBalance: 0,
+    totalAmountDue: 0,
     patientsWithUnusedBalance: 0,
+    patientsWithAmountDue: 0,
   };
   const total = data?.meta?.total ?? rows.length;
   const totalPages = Math.max(data?.meta?.totalPages ?? 0, 1);
@@ -112,6 +114,23 @@ export default function PatientBalancesReportPage() {
         ),
       },
       {
+        key: 'amountDue',
+        header: t('patients.amountStillDue', {
+          defaultValue: 'Amount still due',
+        }),
+        cell: (row) => (
+          <span
+            className={
+              Number(row.amountDue) > 0
+                ? 'font-medium text-amber-700 dark:text-amber-300'
+                : 'text-muted-foreground'
+            }
+          >
+            {formatCurrency(row.amountDue ?? 0)}
+          </span>
+        ),
+      },
+      {
         key: 'lastBalanceActivityAt',
         header: t('reports.lastBalanceActivity', {
           defaultValue: 'Last balance activity',
@@ -129,10 +148,11 @@ export default function PatientBalancesReportPage() {
     <div className="space-y-6">
       <PageHeader
         title={t('reports.patientBalancesTitle', {
-          defaultValue: 'Patient Unused Balances',
+          defaultValue: 'Patient balances and dues',
         })}
         description={t('reports.patientBalancesDescription', {
-          defaultValue: 'Patients with positive unused balance in the system.',
+          defaultValue:
+            'Review unused patient credit and outstanding package amounts.',
         })}
         onBack={() => navigate('/patient-payments')}
       />
@@ -141,19 +161,25 @@ export default function PatientBalancesReportPage() {
         icon={Wallet}
         tone="commercial"
         title={t('reports.balanceWorkbenchTitle', {
-          defaultValue: 'Unused balance workbench',
+          defaultValue: 'Balance and due workbench',
         })}
         description={t('reports.balanceWorkbenchDescription', {
           defaultValue:
             'Track patient credit that is still available, then open the balance log when a front-desk or finance question needs context.',
         })}
       >
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <ImpactMetric
             label={t('reports.totalUnusedBalance', {
               defaultValue: 'Total Unused Balance',
             })}
             value={formatCurrency(summary.totalUnusedBalance ?? 0)}
+          />
+          <ImpactMetric
+            label={t('reports.totalAmountDue', {
+              defaultValue: 'Total amount due',
+            })}
+            value={formatCurrency(summary.totalAmountDue ?? 0)}
           />
           <ImpactMetric
             label={t('reports.patientsWithUnusedBalance', {
@@ -211,7 +237,7 @@ export default function PatientBalancesReportPage() {
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-base">
             {t('reports.unusedBalanceReportTable', {
-              defaultValue: 'Patients with unused balance',
+              defaultValue: 'Patient balances and dues',
             })}
           </CardTitle>
           <Badge variant="secondary" className="w-fit">
@@ -233,7 +259,7 @@ export default function PatientBalancesReportPage() {
           ) : rows.length === 0 ? (
             <div className="py-6 text-center text-muted-foreground text-sm">
               {t('reports.noPatientBalancesFound', {
-                defaultValue: 'No patients with unused balance found.',
+                defaultValue: 'No patient balances or dues found.',
               })}
             </div>
           ) : (
@@ -257,8 +283,25 @@ export default function PatientBalancesReportPage() {
                           {row.patientName || '--'}
                         </div>
                       </div>
-                      <div className="shrink-0 text-end font-semibold text-emerald-700 dark:text-emerald-300">
-                        {formatCurrency(row.balance ?? 0)}
+                      <div className="shrink-0 space-y-1 text-end">
+                        <div className="font-semibold text-emerald-700 dark:text-emerald-300">
+                          {t('reports.currentUnusedBalance', {
+                            defaultValue: 'Current unused balance',
+                          })}
+                          : {formatCurrency(row.balance ?? 0)}
+                        </div>
+                        <div
+                          className={
+                            Number(row.amountDue) > 0
+                              ? 'font-semibold text-amber-700 dark:text-amber-300'
+                              : 'text-muted-foreground'
+                          }
+                        >
+                          {t('patients.amountStillDue', {
+                            defaultValue: 'Amount still due',
+                          })}
+                          : {formatCurrency(row.amountDue ?? 0)}
+                        </div>
                       </div>
                     </div>
                     <div className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
